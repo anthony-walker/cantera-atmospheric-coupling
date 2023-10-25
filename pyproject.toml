@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools"]
+
+[project]
+name= "cac"
+authors = [
+    {name = "Anthony Walker", email = "walkanth@oregonstate.edu"}
+]
+description = "Cantera atmospheric coupling applications"
+requires-python = ">=3.8"
+dependencies = [
+    "click",
+    "sympy",
+    "rdkit",
+    "pubchempy",
+    "numpy",
+    "matplotlib",
+    "pyyaml",
+    "pytest",
+    "pytest-cov",
+    "pytest-xdist",
+    "pep8",
+]
+dynamic = ["version"]
+
+[project.scripts]
+extractor = "cac.extractor.extractor:main"
+
+[project.urls]
+repository = "https://github.com/anthony-walker/cantera-atmospheric-coupling"
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[tool.setuptools.dynamic]
+version = {attr = "cac.constants.VERSION"}
