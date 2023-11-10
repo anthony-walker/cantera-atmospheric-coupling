@@ -25,6 +25,8 @@ dynamic = ["version"]
 
 [project.scripts]
 extractor = "cac.extractor.extractor:main"
+combustor = "cac.combustor:run_combustor_atm_sim"
+cookstove = "cac.cookstove:run_cookstove_sim"
 
 [project.urls]
 repository = "https://github.com/anthony-walker/cantera-atmospheric-coupling"

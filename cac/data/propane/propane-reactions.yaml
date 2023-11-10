@@ -1,0 +1,2568 @@
+atmosphere-reactions:
+- equation: ACETOL + OH + O2 => HO2 + MGLYOX + H2O
+  rate-constant:
+    A: '9.64e+11'
+    b: '0.0'
+    Ea: '606.0966099999999'
+- equation: ACETOL + 2.0 O2 => CH3CO3 + HCHO + HO2
+  type: zenith-angle-rate
+  l: '5.804e-06'
+  m: '1.092'
+  n: '0.377'
+  scalar: '1'
+- equation: C2H4 + NO3 + O2 => ETHENO3O2
+  rate-constant:
+    A: '1.99e+12'
+    b: '0.0'
+    Ea: '-5723.1417599999995'
+- equation: C2H4 + O3 => CH2OOA + HCHO
+  rate-constant:
+    A: '5.48e+09'
+    b: '0.0'
+    Ea: '-5126.981159999999'
+- equation: C2H4 + OH + O2 => HOCH2CH2O2
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KMT15
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: C2H5CHO + NO3 + O2 => C2H5CO3 + HNO3
+  rate-constant:
+    A: '1.95e+12'
+    b: '0.0'
+    Ea: '-3696.1957199999997'
+- equation: C2H5CHO + OH + O2 => C2H5CO3 + H2O
+  rate-constant:
+    A: '2.95e+12'
+    b: '0.0'
+    Ea: '804.8168099999999'
+- equation: C2H5CHO + 2.0 O2 => C2H5O2 + CO + HO2
+  type: zenith-angle-rate
+  l: '2.879e-05'
+  m: '1.067'
+  n: '0.358'
+  scalar: '1'
+- equation: C2H5CO3 + HO2 => C2H5O2 + OH + CO2
+  rate-constant:
+    A: '1.38e+11'
+    b: '0.0'
+    Ea: '1947.45796'
+- equation: C2H5CO3 + HO2 => O3 + PROPACID
+  rate-constant:
+    A: '4.70e+10'
+    b: '0.0'
+    Ea: '1947.45796'
+- equation: C2H5CO3 + HO2 => PERPROACID + O2
+  rate-constant:
+    A: '1.28e+11'
+    b: '0.0'
+    Ea: '1947.45796'
+- equation: C2H5CO3 + NO + O2 => C2H5O2 + NO2 + CO2
+  rate-constant:
+    A: '4.03e+12'
+    b: '0.0'
+    Ea: '675.64868'
+- equation: C2H5CO3 + NO2 => PPN
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KFPAN
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: C2H5CO3 + NO3 => C2H5O2 + NO2 + CO2
+  rate-constant:
+    A: '2.41e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: C2H5CO3 + 0.5 O2 => C2H5O2 + CO2
+  type: complex-rate
+  A: '4.22e+12'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - RO2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: C2H5CO3 + 0.5 H2O => PROPACID + 0.75 O2
+  type: complex-rate
+  A: '1.81e+12'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - RO2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: C2H5NO3 + OH => CH3CHO + NO2 + H2O
+  rate-constant:
+    A: '4.03e+11'
+    b: '0.0'
+    Ea: '-784.94479'
+- equation: C2H5NO3 => C2H5O + NO2
+  type: zenith-angle-rate
+  l: '1.907e-06'
+  m: '1.244'
+  n: '0.335'
+  scalar: '1'
+- equation: C2H5O + O2 => CH3CHO + HO2
+  type: complex-rate
+  A: '1.45e+10'
+  b: '0.0'
+  Ea: '-645.84065'
+  species-names:
+  - O2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: C2H5O2 + HO2 => C2H5OOH + O2
+  rate-constant:
+    A: '2.59e+11'
+    b: '0.0'
+    Ea: '1728.86574'
+- equation: C2H5O2 + NO => C2H5NO3
+  rate-constant:
+    A: '1.38e+10'
+    b: '0.0'
+    Ea: '755.13676'
+- equation: C2H5O2 + NO => C2H5O + NO2
+  rate-constant:
+    A: '1.52e+12'
+    b: '0.0'
+    Ea: '755.13676'
+- equation: C2H5O2 + NO3 => C2H5O + NO2 + O2
+  rate-constant:
+    A: '1.39e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: C2H5O2 => C2H5O + 0.5 O2
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KUNKNOWN23
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: C2H5O2 + 0.5 H2O => C2H5OH + 0.75 O2
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KUNKNOWN24
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: C2H5O2 => CH3CHO + 0.5 H2O + 0.25 O2
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KUNKNOWN25
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: C2H5OH + OH => C2H5O + H2O
+  rate-constant:
+    A: '9.03e+10'
+    b: '0.0'
+    Ea: '39.74404'
+- equation: C2H5OH + OH + O2 => CH3CHO + HO2 + H2O
+  rate-constant:
+    A: '1.63e+12'
+    b: '0.0'
+    Ea: '39.74404'
+- equation: C2H5OH + OH + O2 => HOCH2CH2O2 + H2O
+  rate-constant:
+    A: '9.03e+10'
+    b: '0.0'
+    Ea: '39.74404'
+- equation: C2H5OOH + OH => C2H5O2 + H2O
+  rate-constant:
+    A: '1.14e+12'
+    b: '0.0'
+    Ea: '377.56838'
+- equation: C2H5OOH + OH => CH3CHO + OH + H2O
+  rate-constant:
+    A: '4.82e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: C2H5OOH => C2H5O + OH
+  type: zenith-angle-rate
+  l: '7.649e-06'
+  m: '0.682'
+  n: '0.279'
+  scalar: '1'
+- equation: C2H6 + CL + O2 => C2H5O2 + HCL
+  rate-constant:
+    A: '5.00e+13'
+    b: '0.0'
+    Ea: '-198.72019999999998'
+- equation: C2H6 + OH + O2 => C2H5O2 + H2O
+  rate-constant:
+    A: '4.16e+12'
+    b: '0.0'
+    Ea: '-1987.202'
+- equation: C3H6 + NO3 + O2 => PRONO3AO2
+  rate-constant:
+    A: '9.70e+10'
+    b: '0.0'
+    Ea: '-2295.2183099999997'
+- equation: C3H6 + NO3 + O2 => PRONO3BO2
+  rate-constant:
+    A: '1.80e+11'
+    b: '0.0'
+    Ea: '-2295.2183099999997'
+- equation: C3H6 + O3 => CH2OOB + CH3CHO
+  rate-constant:
+    A: '1.66e+09'
+    b: '0.0'
+    Ea: '-3735.9397599999998'
+- equation: C3H6 + O3 => CH3CHOOA + HCHO
+  rate-constant:
+    A: '1.66e+09'
+    b: '0.0'
+    Ea: '-3735.9397599999998'
+- equation: C3H6 + OH + O2 => HYPROPO2
+  type: complex-rate
+  A: '5.24e+23'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KMT16
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: C3H6 + OH + O2 => IPROPOLO2
+  type: complex-rate
+  A: '7.83e+22'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KMT16
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: C3H8 + CL + O2 => IC3H7O2 + HCL
+  rate-constant:
+    A: '3.63e+13'
+    b: '0.0'
+    Ea: '149.04014999999998'
+- equation: C3H8 + CL + O2 => NC3H7O2 + HCL
+  rate-constant:
+    A: '4.97e+13'
+    b: '0.0'
+    Ea: '-178.84817999999999'
+- equation: C3H8 + OH + O2 => IC3H7O2 + H2O
+  rate-constant:
+    A: '3.37e+12'
+    b: '0.0'
+    Ea: '-1162.51317'
+- equation: C3H8 + OH + O2 => NC3H7O2 + H2O
+  rate-constant:
+    A: '1.21e+12'
+    b: '0.0'
+    Ea: '-1162.51317'
+- equation: C3PAN1 + OH => CO + HOCH2CHO + NO2 + H2O + 0.5 O2
+  rate-constant:
+    A: '2.72e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: C3PAN1 => HOC2H4CO3 + NO2
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KBPAN
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: CH2OO + CO => HCHO + CO2
+  rate-constant:
+    A: '7.23e+08'
+    b: '0.0'
+    Ea: '0.0'
+- equation: CH2OO + NO => HCHO + NO2
+  rate-constant:
+    A: '6.02e+09'
+    b: '0.0'
+    Ea: '0.0'
+- equation: CH2OO + NO2 => HCHO + NO3
+  rate-constant:
+    A: '6.02e+08'
+    b: '0.0'
+    Ea: '0.0'
+- equation: CH2OO + SO2 => HCHO + SO3
+  rate-constant:
+    A: '4.22e+10'
+    b: '0.0'
+    Ea: '0.0'
+- equation: CH2OO + H2O => H2O2 + HCHO
+  type: complex-rate
+  A: '3.61e+06'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - H2O
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: CH2OO => HCOOH
+  type: complex-rate
+  A: '6.02e+06'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - H2O
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: CH2OOA => CH2OO
+  rate-constant:
+    A: '2.23e+29'
+    b: '0.0'
+    Ea: '0.0'
+- equation: CH2OOA => CO + H2O
+  rate-constant:
+    A: '3.01e+29'
+    b: '0.0'
+    Ea: '0.0'
+- equation: CH2OOA + O2 => CO + HO2 + OH
+  rate-constant:
+    A: '7.83e+28'
+    b: '0.0'
+    Ea: '0.0'
+- equation: CH2OOB => CH2OO
+  rate-constant:
+    A: '1.45e+29'
+    b: '0.0'
+    Ea: '0.0'
+- equation: CH2OOB => CO + H2O
+  rate-constant:
+    A: '2.41e+29'
+    b: '0.0'
+    Ea: '0.0'
+- equation: CH2OOB + O2 => CO + HO2 + OH
+  rate-constant:
+    A: '2.17e+29'
+    b: '0.0'
+    Ea: '0.0'
+- equation: CH3CHO + NO3 + O2 => CH3CO3 + HNO3
+  rate-constant:
+    A: '8.43e+11'
+    b: '0.0'
+    Ea: '-3696.1957199999997'
+- equation: CH3CHO + OH + O2 => CH3CO3 + H2O
+  rate-constant:
+    A: '2.69e+12'
+    b: '0.0'
+    Ea: '685.58469'
+- equation: CH3CHO + OH + O2 => HCOCH2O2 + H2O
+  rate-constant:
+    A: '1.42e+11'
+    b: '0.0'
+    Ea: '685.58469'
+- equation: CH3CHO + 2.0 O2 => CH3O2 + CO + HO2
+  type: zenith-angle-rate
+  l: '7.344e-06'
+  m: '1.202'
+  n: '0.417'
+  scalar: '1'
+- equation: CH3CHOHCHO + NO3 + O2 => CH3CHOHCO3 + HNO3
+  rate-constant:
+    A: '2.08e+12'
+    b: '0.0'
+    Ea: '-3700.1701239999998'
+- equation: CH3CHOHCHO + OH + O2 => CH3CHOHCO3 + H2O
+  rate-constant:
+    A: '1.02e+13'
+    b: '0.0'
+    Ea: '0.0'
+- equation: CH3CHOHCHO + 2.0 O2 => CH3CHO + CO + HO2 + HO2
+  type: zenith-angle-rate
+  l: '7.914e-05'
+  m: '0.764'
+  n: '0.364'
+  scalar: '1'
+- equation: CH3CHOHCO3 + HO2 => CH3CHO + HO2 + OH + CO2
+  rate-constant:
+    A: '1.38e+11'
+    b: '0.0'
+    Ea: '1947.45796'
+- equation: CH3CHOHCO3 + HO2 => IPROPOLPER + O2
+  rate-constant:
+    A: '1.75e+11'
+    b: '0.0'
+    Ea: '1947.45796'
+- equation: CH3CHOHCO3 + NO + O2 => CH3CHO + HO2 + NO2 + CO2
+  rate-constant:
+    A: '4.52e+12'
+    b: '0.0'
+    Ea: '576.28858'
+- equation: CH3CHOHCO3 + NO2 => IPROPOLPAN
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KFPAN
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: CH3CHOHCO3 + NO3 => CH3CHO + HO2 + NO2 + CO2
+  rate-constant:
+    A: '2.41e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: CH3CHOHCO3 + 0.5 O2 => CH3CHO + HO2 + CO2
+  type: complex-rate
+  A: '6.02e+12'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - RO2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: CH3CHOO + CO => CH3CHO + CO2
+  rate-constant:
+    A: '7.23e+08'
+    b: '0.0'
+    Ea: '0.0'
+- equation: CH3CHOO + NO => CH3CHO + NO2
+  rate-constant:
+    A: '6.02e+09'
+    b: '0.0'
+    Ea: '0.0'
+- equation: CH3CHOO + NO2 => CH3CHO + NO3
+  rate-constant:
+    A: '6.02e+08'
+    b: '0.0'
+    Ea: '0.0'
+- equation: CH3CHOO + SO2 => CH3CHO + SO3
+  rate-constant:
+    A: '4.22e+10'
+    b: '0.0'
+    Ea: '0.0'
+- equation: CH3CHOO + H2O => CH3CHO + H2O2
+  type: complex-rate
+  A: '3.61e+06'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - H2O
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: CH3CHOO => CH3CO2H
+  type: complex-rate
+  A: '6.02e+06'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - H2O
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: CH3CHOOA => CH3CHOO
+  rate-constant:
+    A: '1.45e+29'
+    b: '0.0'
+    Ea: '0.0'
+- equation: CH3CHOOA + O2 => CH3O2 + CO + OH
+  rate-constant:
+    A: '2.17e+29'
+    b: '0.0'
+    Ea: '0.0'
+- equation: CH3CHOOA + 2.0 O2 => CH3O2 + HO2 + CO2
+  rate-constant:
+    A: '1.20e+29'
+    b: '0.0'
+    Ea: '0.0'
+- equation: CH3CHOOA => CH4 + CO2
+  rate-constant:
+    A: '1.20e+29'
+    b: '0.0'
+    Ea: '0.0'
+- equation: CH3CO2H + OH + O2 => CH3O2 + H2O + CO2
+  rate-constant:
+    A: '4.82e+11'
+    b: '0.0'
+    Ea: '0.0'
+- equation: CH3CO3 + HO2 => CH3CO2H + O3
+  rate-constant:
+    A: '4.70e+10'
+    b: '0.0'
+    Ea: '1947.45796'
+- equation: CH3CO3 + HO2 => CH3CO3H + O2
+  rate-constant:
+    A: '1.28e+11'
+    b: '0.0'
+    Ea: '1947.45796'
+- equation: CH3CO3 + HO2 => CH3O2 + OH + CO2
+  rate-constant:
+    A: '1.38e+11'
+    b: '0.0'
+    Ea: '1947.45796'
+- equation: CH3CO3 + NO + O2 => CH3O2 + NO2 + CO2
+  rate-constant:
+    A: '4.52e+12'
+    b: '0.0'
+    Ea: '576.28858'
+- equation: CH3CO3 + NO2 => PAN
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KFPAN
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: CH3CO3 + NO3 => CH3O2 + NO2 + CO2
+  rate-constant:
+    A: '2.41e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: CH3CO3 + 0.5 H2O => CH3CO2H + 0.75 O2
+  type: complex-rate
+  A: '1.81e+12'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - RO2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: CH3CO3 + 0.5 O2 => CH3O2 + CO2
+  type: complex-rate
+  A: '4.22e+12'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - RO2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: CH3CO3H + OH => CH3CO3 + H2O
+  rate-constant:
+    A: '2.23e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: CH3CO3H + O2 => CH3O2 + OH + CO2
+  type: zenith-angle-rate
+  l: '7.649e-06'
+  m: '0.682'
+  n: '0.279'
+  scalar: '1'
+- equation: CH3COCH2O + O2 => CH3CO3 + HCHO
+  rate-constant:
+    A: '6.02e+29'
+    b: '0.0'
+    Ea: '0.0'
+- equation: CH3COCH2O2 + HO2 => CH3COCH2O + OH + O2
+  rate-constant:
+    A: '1.23e+10'
+    b: '0.0'
+    Ea: '2484.0025'
+- equation: CH3COCH2O2 + HO2 => HYPERACET + O2
+  rate-constant:
+    A: '6.96e+10'
+    b: '0.0'
+    Ea: '2484.0025'
+- equation: CH3COCH2O2 + NO => CH3COCH2O + NO2
+  rate-constant:
+    A: '1.63e+12'
+    b: '0.0'
+    Ea: '715.3927199999999'
+- equation: CH3COCH2O2 + NO3 => CH3COCH2O + NO2 + O2
+  rate-constant:
+    A: '1.39e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: CH3COCH2O2 + 0.5 H2O => ACETOL + 0.75 O2
+  type: complex-rate
+  A: '4.03e+11'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - RO2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: CH3COCH2O2 => CH3COCH2O + 0.5 O2
+  type: complex-rate
+  A: '1.21e+12'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - RO2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: CH3COCH2O2 => MGLYOX + 0.5 H2O + 0.25 O2
+  type: complex-rate
+  A: '4.03e+11'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - RO2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: CH3COCH3 + OH + O2 => CH3COCH2O2 + H2O
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KUNKNOWN100
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: CH3COCH3 + 2.0 O2 => CH3CO3 + CH3O2
+  type: zenith-angle-rate
+  l: '7.992e-07'
+  m: '1.578'
+  n: '0.271'
+  scalar: '1'
+- equation: CH3NO3 + OH => HCHO + NO2 + H2O
+  rate-constant:
+    A: '2.41e+11'
+    b: '0.0'
+    Ea: '-1679.18569'
+- equation: CH3NO3 => CH3O + NO2
+  type: zenith-angle-rate
+  l: '1.588e-06'
+  m: '1.154'
+  n: '0.318'
+  scalar: '1'
+- equation: CH3O + O2 => HCHO + HO2
+  type: complex-rate
+  A: '4.34e+10'
+  b: '0.0'
+  Ea: '-2146.17816'
+  species-names:
+  - O2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: CH3O2 + HO2 => CH3OOH + O2
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KUNKNOWN105
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: CH3O2 + HO2 => HCHO + H2O + O2
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KUNKNOWN106
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: CH3O2 + NO => CH3NO3
+  rate-constant:
+    A: '1.39e+09'
+    b: '0.0'
+    Ea: '715.3927199999999'
+- equation: CH3O2 + NO => CH3O + NO2
+  rate-constant:
+    A: '1.38e+12'
+    b: '0.0'
+    Ea: '715.3927199999999'
+- equation: CH3O2 + NO2 => CH3O2NO2
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KMT13
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: CH3O2 + NO3 => CH3O + NO2 + O2
+  rate-constant:
+    A: '7.23e+11'
+    b: '0.0'
+    Ea: '0.0'
+- equation: CH3O2 => CH3O + 0.5 O2
+  type: complex-rate
+  A: '8.91e+11'
+  b: '0.0'
+  Ea: '-1033.34504'
+  species-names:
+  - RO2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: CH3O2 + 0.5 H2O => CH3OH + 0.75 O2
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KUNKNOWN112
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: CH3O2 => HCHO + 0.5 H2O + 0.25 O2
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KUNKNOWN113
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: CH3O2NO2 => CH3O2 + NO2
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KMT14
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: CH3OH + OH + O2 => HCHO + HO2 + H2O
+  rate-constant:
+    A: '1.72e+12'
+    b: '0.0'
+    Ea: '-685.58469'
+- equation: CH3OOH + OH => CH3O2 + H2O
+  rate-constant:
+    A: '1.92e+12'
+    b: '0.0'
+    Ea: '377.56838'
+- equation: CH3OOH + OH => HCHO + OH + H2O
+  rate-constant:
+    A: '1.28e+12'
+    b: '0.0'
+    Ea: '377.56838'
+- equation: CH3OOH => CH3O + OH
+  type: zenith-angle-rate
+  l: '7.649e-06'
+  m: '0.682'
+  n: '0.279'
+  scalar: '1'
+- equation: CH4 + CL + O2 => CH3O2 + HCL
+  rate-constant:
+    A: '3.97e+12'
+    b: '0.0'
+    Ea: '-2464.13048'
+- equation: CH4 + OH + O2 => CH3O2 + H2O
+  rate-constant:
+    A: '1.11e+12'
+    b: '0.0'
+    Ea: '-3358.37138'
+- equation: CHOPRNO3 + NO3 + O2 => HNO3 + PRNO3CO3
+  rate-constant:
+    A: '2.08e+12'
+    b: '0.0'
+    Ea: '-3700.1701239999998'
+- equation: CHOPRNO3 + OH + O2 => PRNO3CO3 + H2O
+  rate-constant:
+    A: '2.14e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: CHOPRNO3 => NO2 + PROPALO
+  type: zenith-angle-rate
+  l: '4.365e-05'
+  m: '1.089'
+  n: '0.323'
+  scalar: '10.0'
+- equation: CO + OH + O2 => HO2 + CO2
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KMT05
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: ETHENO3O => HCHO + HCHO + NO2
+  rate-constant:
+    A: '4.22e+27'
+    b: '0.0'
+    Ea: '0.0'
+- equation: ETHENO3O + O2 => HO2 + NO3CH2CHO
+  type: complex-rate
+  A: '1.51e+10'
+  b: '0.0'
+  Ea: '-596.1605999999999'
+  species-names:
+  - O2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: ETHENO3O2 + HO2 => ETHO2HNO3 + O2
+  rate-constant:
+    A: '6.78e+10'
+    b: '0.0'
+    Ea: '2583.3626'
+- equation: ETHENO3O2 + NO => ETHENO3O + NO2
+  rate-constant:
+    A: '1.63e+12'
+    b: '0.0'
+    Ea: '715.3927199999999'
+- equation: ETHENO3O2 + NO3 => ETHENO3O + NO2 + O2
+  rate-constant:
+    A: '1.39e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: ETHENO3O2 => ETHENO3O + 0.5 O2
+  type: complex-rate
+  A: '2.17e+11'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - RO2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: ETHENO3O2 + 0.5 H2O => ETHOHNO3 + 0.75 O2
+  type: complex-rate
+  A: '7.23e+10'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - RO2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: ETHENO3O2 => NO3CH2CHO + 0.5 H2O + 0.25 O2
+  type: complex-rate
+  A: '7.23e+10'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - RO2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: ETHGLY + OH + O2 => HO2 + HOCH2CHO + H2O
+  rate-constant:
+    A: '8.73e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: ETHO2HNO3 + OH => ETHENO3O2 + H2O
+  rate-constant:
+    A: '1.14e+12'
+    b: '0.0'
+    Ea: '377.56838'
+- equation: ETHO2HNO3 + OH => NO3CH2CHO + OH + H2O
+  rate-constant:
+    A: '9.76e+11'
+    b: '0.0'
+    Ea: '0.0'
+- equation: ETHO2HNO3 => ETHENO3O + OH
+  type: zenith-angle-rate
+  l: '7.649e-06'
+  m: '0.682'
+  n: '0.279'
+  scalar: '1'
+- equation: ETHOHNO3 + OH => HOCH2CHO + NO2 + H2O
+  rate-constant:
+    A: '5.06e+11'
+    b: '0.0'
+    Ea: '0.0'
+- equation: GLYOX + NO3 => HCOCO + HNO3
+  rate-constant:
+    A: '8.67e+11'
+    b: '0.0'
+    Ea: '-3700.1701239999998'
+- equation: GLYOX + OH => HCOCO + H2O
+  rate-constant:
+    A: '1.87e+12'
+    b: '0.0'
+    Ea: '675.64868'
+- equation: GLYOX => CO + CO + H2
+  type: zenith-angle-rate
+  l: '6.845e-05'
+  m: '0.130'
+  n: '0.201'
+  scalar: '1'
+- equation: GLYOX + 2.0 O2 => CO + CO + HO2 + HO2
+  type: zenith-angle-rate
+  l: '3.802e-05'
+  m: '0.644'
+  n: '0.312'
+  scalar: '1'
+- equation: GLYOX => CO + HCHO
+  type: zenith-angle-rate
+  l: '1.032e-05'
+  m: '0.130'
+  n: '0.201'
+  scalar: '1'
+- equation: H2 + OH + O2 => HO2 + H2O
+  rate-constant:
+    A: '4.64e+12'
+    b: '0.0'
+    Ea: '-4173.1242'
+- equation: H2O2 + OH => HO2 + H2O
+  rate-constant:
+    A: '1.75e+12'
+    b: '0.0'
+    Ea: '-317.95232'
+- equation: H2O2 => OH + OH
+  type: zenith-angle-rate
+  l: '1.041e-05'
+  m: '0.723'
+  n: '0.279'
+  scalar: '1'
+- equation: HCHO + NO3 + O2 => CO + HNO3 + HO2
+  rate-constant:
+    A: '3.31e+08'
+    b: '0.0'
+    Ea: '0.0'
+- equation: HCHO + OH + O2 => CO + HO2 + H2O
+  rate-constant:
+    A: '3.25e+12'
+    b: '0.0'
+    Ea: '268.27227'
+- equation: HCHO => CO + H2
+  type: zenith-angle-rate
+  l: '6.853e-05'
+  m: '0.477'
+  n: '0.323'
+  scalar: '1'
+- equation: HCHO + 2.0 O2 => CO + HO2 + HO2
+  type: zenith-angle-rate
+  l: '4.642e-05'
+  m: '0.762'
+  n: '0.353'
+  scalar: '1'
+- equation: HCOCH2O + O2 => CO + HCHO + HO2
+  rate-constant:
+    A: '6.02e+29'
+    b: '0.0'
+    Ea: '0.0'
+- equation: HCOCH2O2 + HO2 => HCOCH2OOH + O2
+  rate-constant:
+    A: '6.78e+10'
+    b: '0.0'
+    Ea: '2583.3626'
+- equation: HCOCH2O2 + NO => HCOCH2O + NO2
+  rate-constant:
+    A: '1.63e+12'
+    b: '0.0'
+    Ea: '715.3927199999999'
+- equation: HCOCH2O2 + NO3 => HCOCH2O + NO2 + O2
+  rate-constant:
+    A: '1.39e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: HCOCH2O2 => GLYOX + 0.5 H2O + 0.25 O2
+  type: complex-rate
+  A: '2.41e+11'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - RO2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: HCOCH2O2 => HCOCH2O + 0.5 O2
+  type: complex-rate
+  A: '7.23e+11'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - RO2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: HCOCH2O2 + 0.5 H2O => HOCH2CHO + 0.75 O2
+  type: complex-rate
+  A: '2.41e+11'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - RO2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: HCOCH2OOH + OH => GLYOX + OH + H2O
+  rate-constant:
+    A: '1.75e+13'
+    b: '0.0'
+    Ea: '0.0'
+- equation: HCOCH2OOH + OH => HCOCH2O2 + H2O
+  rate-constant:
+    A: '1.14e+12'
+    b: '0.0'
+    Ea: '377.56838'
+- equation: HCOCH2OOH + O2 => CO + HCHO + HO2 + OH
+  type: zenith-angle-rate
+  l: '2.792e-05'
+  m: '0.805'
+  n: '0.338'
+  scalar: '1'
+- equation: HCOCH2OOH => HCOCH2O + OH
+  type: zenith-angle-rate
+  l: '7.649e-06'
+  m: '0.682'
+  n: '0.279'
+  scalar: '1'
+- equation: HCOCO + O2 => CO + CO + HO2
+  type: complex-rate
+  A: '3.01e+12'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - O2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+  duplicate: true
+- equation: HCOCO + O2 => CO + CO + HO2
+  rate-constant:
+    A: '4.22e+35'
+    b: '0.0'
+    Ea: '-6279.55832'
+  duplicate: true
+- equation: HCOCO + O2 => CO + OH + CO2
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KUNKNOWN163
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: HCOCO + O2 => HCOCO3
+  type: complex-rate
+  A: '9.64e+12'
+  b: '0.0'
+  Ea: '-1092.9611'
+  species-names:
+  - O2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: HCOCO2H + OH + O2 => CO + HO2 + H2O + CO2
+  rate-constant:
+    A: '7.41e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: HCOCO2H + 2.0 O2 => CO + HO2 + HO2 + CO2
+  type: zenith-angle-rate
+  l: '1.537e-04'
+  m: '0.170'
+  n: '0.208'
+  scalar: '1'
+- equation: HCOCO3 + HO2 => CO + HO2 + OH + CO2
+  rate-constant:
+    A: '1.38e+11'
+    b: '0.0'
+    Ea: '1947.45796'
+- equation: HCOCO3 + HO2 => HCOCO2H + O3
+  rate-constant:
+    A: '4.70e+10'
+    b: '0.0'
+    Ea: '1947.45796'
+- equation: HCOCO3 + HO2 => HCOCO3H + O2
+  rate-constant:
+    A: '1.28e+11'
+    b: '0.0'
+    Ea: '1947.45796'
+- equation: HCOCO3 + NO + O2 => CO + HO2 + NO2 + CO2
+  rate-constant:
+    A: '4.52e+12'
+    b: '0.0'
+    Ea: '576.28858'
+- equation: HCOCO3 + NO2 + O2 => CO + HO2 + NO3 + CO2
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KFPAN
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: HCOCO3 + NO3 => CO + HO2 + NO2 + CO2
+  rate-constant:
+    A: '2.41e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: HCOCO3 + 0.5 O2 => CO + HO2 + CO2
+  type: complex-rate
+  A: '4.22e+12'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - RO2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: HCOCO3 + 0.5 H2O => HCOCO2H + 0.75 O2
+  type: complex-rate
+  A: '1.81e+12'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - RO2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: HCOCO3H + OH => HCOCO3 + H2O
+  rate-constant:
+    A: '9.51e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: HCOCO3H + O2 => CO + HO2 + OH + CO2
+  type: zenith-angle-rate
+  l: '2.792e-05'
+  m: '0.805'
+  n: '0.338'
+  scalar: '1'
+  duplicate: true
+- equation: HCOCO3H + O2 => CO + HO2 + OH + CO2
+  type: zenith-angle-rate
+  l: '7.649e-06'
+  m: '0.682'
+  n: '0.279'
+  scalar: '1'
+  duplicate: true
+- equation: HCOOH + OH + O2 => HO2 + H2O + CO2
+  rate-constant:
+    A: '2.71e+11'
+    b: '0.0'
+    Ea: '0.0'
+- equation: HNO3 + OH => NO3 + H2O
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KMT11
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: HNO3 => NO2 + OH
+  type: zenith-angle-rate
+  l: '9.312e-07'
+  m: '1.230'
+  n: '0.307'
+  scalar: '1'
+- equation: HO1C3NO3 + OH => HOC2H4CHO + NO2 + H2O
+  rate-constant:
+    A: '2.67e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: HO1C3NO3 => HO1C3O + NO2
+  type: zenith-angle-rate
+  l: '2.485e-06'
+  m: '1.196'
+  n: '0.328'
+  scalar: '1'
+- equation: HO1C3O + O2 => HO2 + HOC2H4CHO
+  type: complex-rate
+  A: '1.51e+10'
+  b: '0.0'
+  Ea: '-596.1605999999999'
+  species-names:
+  - O2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: HO1C3O2 + HO2 => HO1C3OOH + O2
+  rate-constant:
+    A: '9.11e+10'
+    b: '0.0'
+    Ea: '2583.3626'
+- equation: HO1C3O2 + NO => HO1C3NO3
+  rate-constant:
+    A: '3.09e+10'
+    b: '0.0'
+    Ea: '715.3927199999999'
+- equation: HO1C3O2 + NO => HO1C3O + NO2
+  rate-constant:
+    A: '1.60e+12'
+    b: '0.0'
+    Ea: '715.3927199999999'
+- equation: HO1C3O2 + NO3 => HO1C3O + NO2 + O2
+  rate-constant:
+    A: '1.39e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: HO1C3O2 => HO1C3O + 0.5 O2
+  type: complex-rate
+  A: '2.17e+11'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - RO2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: HO1C3O2 => HOC2H4CHO + 0.5 H2O + 0.25 O2
+  type: complex-rate
+  A: '7.23e+10'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - RO2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: HO1C3O2 + 0.5 H2O => HOC3H6OH + 0.75 O2
+  type: complex-rate
+  A: '7.23e+10'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - RO2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: HO1C3OOH + OH => HO1C3O2 + H2O
+  rate-constant:
+    A: '1.14e+12'
+    b: '0.0'
+    Ea: '377.56838'
+- equation: HO1C3OOH + OH => HOC2H4CHO + OH + H2O
+  rate-constant:
+    A: '9.15e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: HO1C3OOH => HO1C3O + OH
+  type: zenith-angle-rate
+  l: '7.649e-06'
+  m: '0.682'
+  n: '0.279'
+  scalar: '1'
+- equation: HO2 + HO2 => H2O2 + O2
+  type: complex-rate
+  A: '1.14e-09'
+  b: '0.0'
+  Ea: '1947.45796'
+  species-names:
+  - M
+  function-names:
+  - KMT06
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+  duplicate: true
+- equation: HO2 + HO2 => H2O2 + O2
+  type: complex-rate
+  A: '1.32e+11'
+  b: '0.0'
+  Ea: '1192.3211999999999'
+  function-names:
+  - KMT06
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+  duplicate: true
+- equation: HO2 + HOC2H4CO3 => HOC2H4CO2H + O3
+  rate-constant:
+    A: '4.70e+10'
+    b: '0.0'
+    Ea: '1947.45796'
+- equation: HO2 + HOC2H4CO3 => HOC2H4CO3H + O2
+  rate-constant:
+    A: '1.28e+11'
+    b: '0.0'
+    Ea: '1947.45796'
+- equation: HO2 + HOC2H4CO3 => HOCH2CH2O2 + OH + CO2
+  rate-constant:
+    A: '1.38e+11'
+    b: '0.0'
+    Ea: '1947.45796'
+- equation: HO2 + HOCH2CH2O2 => HYETHO2H + O2
+  rate-constant:
+    A: '9.21e+10'
+    b: '0.0'
+    Ea: '2583.3626'
+- equation: HO2 + HOCH2CO3 => HCHO + HO2 + OH + CO2
+  rate-constant:
+    A: '1.38e+11'
+    b: '0.0'
+    Ea: '1947.45796'
+- equation: HO2 + HOCH2CO3 => HOCH2CO2H + O3
+  rate-constant:
+    A: '4.70e+10'
+    b: '0.0'
+    Ea: '1947.45796'
+- equation: HO2 + HOCH2CO3 => HOCH2CO3H + O2
+  rate-constant:
+    A: '1.28e+11'
+    b: '0.0'
+    Ea: '1947.45796'
+- equation: HO2 + HYPROPO2 => HYPROPO2H + O2
+  rate-constant:
+    A: '9.11e+10'
+    b: '0.0'
+    Ea: '2583.3626'
+- equation: HO2 + IC3H7O2 => IC3H7OOH + O2
+  rate-constant:
+    A: '9.11e+10'
+    b: '0.0'
+    Ea: '2583.3626'
+- equation: HO2 + IPROPOLO2 => IPROPOLO2H + O2
+  rate-constant:
+    A: '9.11e+10'
+    b: '0.0'
+    Ea: '2583.3626'
+- equation: HO2 + NC3H7O2 => NC3H7OOH + O2
+  rate-constant:
+    A: '9.11e+10'
+    b: '0.0'
+    Ea: '2583.3626'
+- equation: HO2 + NO => NO2 + OH
+  rate-constant:
+    A: '2.08e+12'
+    b: '0.0'
+    Ea: '536.54454'
+- equation: HO2 + NO2 => HO2NO2
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KMT09
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: HO2 + NO3 => NO2 + OH + O2
+  rate-constant:
+    A: '2.41e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: HO2 + NO3CH2CO3 => HCHO + NO2 + OH + CO2 + O2
+  rate-constant:
+    A: '1.38e+11'
+    b: '0.0'
+    Ea: '1947.45796'
+- equation: HO2 + NO3CH2CO3 => NO3CH2CO2H + O3
+  rate-constant:
+    A: '4.70e+10'
+    b: '0.0'
+    Ea: '1947.45796'
+- equation: HO2 + NO3CH2CO3 => NO3CH2CO3H + O2
+  rate-constant:
+    A: '1.28e+11'
+    b: '0.0'
+    Ea: '1947.45796'
+- equation: HO2 + O3 => OH + 2.0 O2
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KUNKNOWN214
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: HO2 + OH => H2O + O2
+  rate-constant:
+    A: '2.89e+13'
+    b: '0.0'
+    Ea: '496.8005'
+- equation: HO2 + PRNO3CO3 => CH3CHO + NO2 + OH + CO2 + O2
+  rate-constant:
+    A: '1.38e+11'
+    b: '0.0'
+    Ea: '1947.45796'
+- equation: HO2 + PRNO3CO3 => O3 + PRNO3CO2H
+  rate-constant:
+    A: '4.70e+10'
+    b: '0.0'
+    Ea: '1947.45796'
+- equation: HO2 + PRNO3CO3 => PRNO3CO3H + O2
+  rate-constant:
+    A: '1.28e+11'
+    b: '0.0'
+    Ea: '1947.45796'
+- equation: HO2 + PRONO3AO2 => PR1O2HNO3 + O2
+  rate-constant:
+    A: '9.11e+10'
+    b: '0.0'
+    Ea: '2583.3626'
+- equation: HO2 + PRONO3BO2 => PR2O2HNO3 + O2
+  rate-constant:
+    A: '9.11e+10'
+    b: '0.0'
+    Ea: '2583.3626'
+- equation: HO2NO2 + OH => NO2 + H2O + O2
+  rate-constant:
+    A: '1.93e+11'
+    b: '0.0'
+    Ea: '1371.16938'
+- equation: HO2NO2 => HO2 + NO2
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KMT10
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: HOC2H4CHO + NO3 + O2 => HNO3 + HOC2H4CO3
+  rate-constant:
+    A: '2.08e+12'
+    b: '0.0'
+    Ea: '-3700.1701239999998'
+- equation: HOC2H4CHO + OH + O2 => HOC2H4CO3 + H2O
+  rate-constant:
+    A: '1.84e+13'
+    b: '0.0'
+    Ea: '0.0'
+- equation: HOC2H4CHO + 2.0 O2 => CO + HO2 + HOCH2CH2O2
+  type: zenith-angle-rate
+  l: '2.792e-05'
+  m: '0.805'
+  n: '0.338'
+  scalar: '1'
+- equation: HOC2H4CO2H + OH + O2 => HOCH2CH2O2 + H2O + CO2
+  rate-constant:
+    A: '8.37e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: HOC2H4CO3 + NO + O2 => HOCH2CH2O2 + NO2 + CO2
+  rate-constant:
+    A: '4.52e+12'
+    b: '0.0'
+    Ea: '576.28858'
+- equation: HOC2H4CO3 + NO2 => C3PAN1
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KFPAN
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: HOC2H4CO3 + NO3 => HOCH2CH2O2 + NO2 + CO2
+  rate-constant:
+    A: '2.41e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: HOC2H4CO3 + 0.5 H2O => HOC2H4CO2H + 0.75 O2
+  type: complex-rate
+  A: '1.81e+12'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - RO2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: HOC2H4CO3 + 0.5 O2 => HOCH2CH2O2 + CO2
+  type: complex-rate
+  A: '4.22e+12'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - RO2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: HOC2H4CO3H + OH => HOC2H4CO3 + H2O
+  rate-constant:
+    A: '1.04e+13'
+    b: '0.0'
+    Ea: '0.0'
+- equation: HOC2H4CO3H + O2 => HOCH2CH2O2 + OH + CO2
+  type: zenith-angle-rate
+  l: '7.649e-06'
+  m: '0.682'
+  n: '0.279'
+  scalar: '1'
+- equation: HOC3H6OH + OH + O2 => HO2 + HOC2H4CHO + H2O
+  rate-constant:
+    A: '5.86e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: HOCH2CH2O + O2 => HCHO + HCHO + HO2
+  rate-constant:
+    A: '5.72e+37'
+    b: '0.0'
+    Ea: '-11899.365576'
+- equation: HOCH2CH2O + O2 => HO2 + HOCH2CHO
+  type: complex-rate
+  A: '1.51e+10'
+  b: '0.0'
+  Ea: '-596.1605999999999'
+  species-names:
+  - O2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: HOCH2CH2O2 + NO => ETHOHNO3
+  rate-constant:
+    A: '8.13e+09'
+    b: '0.0'
+    Ea: '715.3927199999999'
+- equation: HOCH2CH2O2 + NO => HOCH2CH2O + NO2
+  rate-constant:
+    A: '1.62e+12'
+    b: '0.0'
+    Ea: '715.3927199999999'
+- equation: HOCH2CH2O2 + NO3 => HOCH2CH2O + NO2 + O2
+  rate-constant:
+    A: '1.39e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: HOCH2CH2O2 + 0.5 H2O => ETHGLY + 0.75 O2
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KUNKNOWN240
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: HOCH2CH2O2 => HOCH2CH2O + 0.5 O2
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KUNKNOWN241
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: HOCH2CH2O2 => HOCH2CHO + 0.5 H2O + 0.25 O2
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KUNKNOWN242
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: HOCH2CHO + NO3 + O2 => HNO3 + HOCH2CO3
+  rate-constant:
+    A: '8.67e+11'
+    b: '0.0'
+    Ea: '-3700.1701239999998'
+- equation: HOCH2CHO + OH + O2 => GLYOX + HO2 + H2O
+  rate-constant:
+    A: '1.20e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: HOCH2CHO + OH + O2 => HOCH2CO3 + H2O
+  rate-constant:
+    A: '4.82e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: HOCH2CHO + 2.0 O2 => CO + HCHO + HO2 + HO2
+  type: zenith-angle-rate
+  l: '2.792e-05'
+  m: '0.805'
+  n: '0.338'
+  scalar: '1'
+- equation: HOCH2CO2H + OH + O2 => HCHO + HO2 + H2O + CO2
+  rate-constant:
+    A: '1.64e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: HOCH2CO3 + NO + O2 => HCHO + HO2 + NO2 + CO2
+  rate-constant:
+    A: '4.52e+12'
+    b: '0.0'
+    Ea: '576.28858'
+- equation: HOCH2CO3 + NO2 => PHAN
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KFPAN
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: HOCH2CO3 + NO3 => HCHO + HO2 + NO2 + CO2
+  rate-constant:
+    A: '2.41e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: HOCH2CO3 + 0.5 O2 => HCHO + HO2 + CO2
+  type: complex-rate
+  A: '4.22e+12'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - RO2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: HOCH2CO3 + 0.5 H2O => HOCH2CO2H + 0.75 O2
+  type: complex-rate
+  A: '1.81e+12'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - RO2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: HOCH2CO3H + OH => HOCH2CO3 + H2O
+  rate-constant:
+    A: '3.73e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: HOCH2CO3H + O2 => HCHO + HO2 + OH + CO2
+  type: zenith-angle-rate
+  l: '7.649e-06'
+  m: '0.682'
+  n: '0.279'
+  scalar: '1'
+- equation: HONO + OH => NO2 + H2O
+  rate-constant:
+    A: '1.51e+12'
+    b: '0.0'
+    Ea: '516.67252'
+- equation: HONO => NO + OH
+  type: zenith-angle-rate
+  l: '2.644e-03'
+  m: '0.261'
+  n: '0.288'
+  scalar: '1'
+- equation: HSO3 + O2 => HO2 + SO3
+  type: complex-rate
+  A: '7.83e+11'
+  b: '0.0'
+  Ea: '-655.77666'
+  species-names:
+  - O2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: HYETHO2H + OH => HOCH2CH2O2 + H2O
+  rate-constant:
+    A: '1.14e+12'
+    b: '0.0'
+    Ea: '377.56838'
+- equation: HYETHO2H + OH => HOCH2CHO + OH + H2O
+  rate-constant:
+    A: '8.31e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: HYETHO2H => HOCH2CH2O + OH
+  type: zenith-angle-rate
+  l: '7.649e-06'
+  m: '0.682'
+  n: '0.279'
+  scalar: '1'
+- equation: HYPERACET + OH => CH3COCH2O2 + H2O
+  rate-constant:
+    A: '1.14e+12'
+    b: '0.0'
+    Ea: '377.56838'
+- equation: HYPERACET + OH => MGLYOX + OH + H2O
+  rate-constant:
+    A: '5.05e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: HYPERACET + O2 => CH3CO3 + HCHO + OH
+  type: zenith-angle-rate
+  l: '5.804e-06'
+  m: '1.092'
+  n: '0.377'
+  scalar: '1'
+- equation: HYPERACET => CH3COCH2O + OH
+  type: zenith-angle-rate
+  l: '7.649e-06'
+  m: '0.682'
+  n: '0.279'
+  scalar: '1'
+- equation: HYPROPO + O2 => CH3CHO + HCHO + HO2
+  rate-constant:
+    A: '1.20e+38'
+    b: '0.0'
+    Ea: '-12737.96482'
+- equation: HYPROPO2 + NO => HYPROPO + NO2
+  rate-constant:
+    A: '1.59e+12'
+    b: '0.0'
+    Ea: '715.3927199999999'
+- equation: HYPROPO2 + NO => PROPOLNO3
+  rate-constant:
+    A: '3.74e+10'
+    b: '0.0'
+    Ea: '715.3927199999999'
+- equation: HYPROPO2 + NO3 => HYPROPO + NO2 + O2
+  rate-constant:
+    A: '1.39e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: HYPROPO2 => ACETOL + 0.5 H2O + 0.25 O2
+  type: complex-rate
+  A: '1.06e+11'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - RO2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: HYPROPO2 => HYPROPO + 0.5 O2
+  type: complex-rate
+  A: '3.18e+11'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - RO2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: HYPROPO2 + 0.5 H2O => PROPGLY + 0.75 O2
+  type: complex-rate
+  A: '1.06e+11'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - RO2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: HYPROPO2H + OH => ACETOL + OH + H2O
+  rate-constant:
+    A: '1.47e+13'
+    b: '0.0'
+    Ea: '0.0'
+- equation: HYPROPO2H + OH => HYPROPO2 + H2O
+  rate-constant:
+    A: '1.14e+12'
+    b: '0.0'
+    Ea: '377.56838'
+- equation: HYPROPO2H => HYPROPO + OH
+  type: zenith-angle-rate
+  l: '7.649e-06'
+  m: '0.682'
+  n: '0.279'
+  scalar: '1'
+- equation: IC3H7NO3 + OH => CH3COCH3 + NO2 + H2O
+  rate-constant:
+    A: '3.73e+11'
+    b: '0.0'
+    Ea: '-457.05645999999996'
+- equation: IC3H7NO3 => IC3H7O + NO2
+  type: zenith-angle-rate
+  l: '4.095e-06'
+  m: '1.111'
+  n: '0.316'
+  scalar: '1'
+- equation: IC3H7O + O2 => CH3COCH3 + HO2
+  type: complex-rate
+  A: '9.03e+09'
+  b: '0.0'
+  Ea: '-457.05645999999996'
+  species-names:
+  - O2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: IC3H7O2 + NO => IC3H7NO3
+  rate-constant:
+    A: '6.83e+10'
+    b: '0.0'
+    Ea: '715.3927199999999'
+- equation: IC3H7O2 + NO => IC3H7O + NO2
+  rate-constant:
+    A: '1.56e+12'
+    b: '0.0'
+    Ea: '715.3927199999999'
+- equation: IC3H7O2 + NO3 => IC3H7O + NO2 + O2
+  rate-constant:
+    A: '1.39e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: IC3H7O2 => CH3COCH3 + 0.5 H2O + 0.25 O2
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KUNKNOWN281
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: IC3H7O2 => IC3H7O + 0.5 O2
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KUNKNOWN282
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: IC3H7O2 + 0.5 H2O => IPROPOL + 0.75 O2
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KUNKNOWN283
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: IC3H7OOH + OH => CH3COCH3 + OH + H2O
+  rate-constant:
+    A: '1.00e+13'
+    b: '0.0'
+    Ea: '0.0'
+- equation: IC3H7OOH + OH => IC3H7O2 + H2O
+  rate-constant:
+    A: '1.14e+12'
+    b: '0.0'
+    Ea: '377.56838'
+- equation: IC3H7OOH => IC3H7O + OH
+  type: zenith-angle-rate
+  l: '7.649e-06'
+  m: '0.682'
+  n: '0.279'
+  scalar: '1'
+- equation: IPROPOL + OH + O2 => CH3COCH3 + HO2 + H2O
+  rate-constant:
+    A: '1.35e+12'
+    b: '0.0'
+    Ea: '397.44039999999995'
+- equation: IPROPOL + OH + O2 => IPROPOLO2 + H2O
+  rate-constant:
+    A: '2.18e+11'
+    b: '0.0'
+    Ea: '397.44039999999995'
+- equation: IPROPOLO + O2 => CH3CHO + HCHO + HO2
+  rate-constant:
+    A: '1.20e+38'
+    b: '0.0'
+    Ea: '-10939.54701'
+- equation: IPROPOLO2 + NO => IPROPOLO + NO2
+  rate-constant:
+    A: '1.61e+12'
+    b: '0.0'
+    Ea: '715.3927199999999'
+- equation: IPROPOLO2 + NO => PROLNO3
+  rate-constant:
+    A: '1.46e+10'
+    b: '0.0'
+    Ea: '715.3927199999999'
+- equation: IPROPOLO2 + NO3 => IPROPOLO + NO2 + O2
+  rate-constant:
+    A: '1.39e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: IPROPOLO2 => CH3CHOHCHO + 0.5 H2O + 0.25 O2
+  type: complex-rate
+  A: '2.41e+11'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - RO2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: IPROPOLO2 => IPROPOLO + 0.5 O2
+  type: complex-rate
+  A: '7.23e+11'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - RO2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: IPROPOLO2 + 0.5 H2O => PROPGLY + 0.75 O2
+  type: complex-rate
+  A: '2.41e+11'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - RO2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: IPROPOLO2H + OH => CH3CHOHCHO + OH + H2O
+  rate-constant:
+    A: '1.10e+13'
+    b: '0.0'
+    Ea: '0.0'
+- equation: IPROPOLO2H + OH => IPROPOLO2 + H2O
+  rate-constant:
+    A: '1.14e+12'
+    b: '0.0'
+    Ea: '377.56838'
+- equation: IPROPOLO2H => IPROPOLO + OH
+  type: zenith-angle-rate
+  l: '7.649e-06'
+  m: '0.682'
+  n: '0.279'
+  scalar: '1'
+- equation: IPROPOLPAN + OH => CH3CHO + CO + NO2 + H2O + O2
+  rate-constant:
+    A: '1.41e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: IPROPOLPAN => CH3CHOHCO3 + NO2
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KBPAN
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: IPROPOLPER + OH => CH3CHOHCO3 + H2O
+  rate-constant:
+    A: '5.62e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: IPROPOLPER + O2 => CH3CHO + HO2 + OH + CO2
+  type: zenith-angle-rate
+  l: '7.649e-06'
+  m: '0.682'
+  n: '0.279'
+  scalar: '1'
+- equation: MGLYOX + NO3 + O2 => CH3CO3 + CO + HNO3
+  rate-constant:
+    A: '2.08e+12'
+    b: '0.0'
+    Ea: '-3700.1701239999998'
+- equation: MGLYOX + OH + O2 => CH3CO3 + CO + H2O
+  rate-constant:
+    A: '1.14e+12'
+    b: '0.0'
+    Ea: '1142.64115'
+- equation: MGLYOX + 2.0 O2 => CH3CO3 + CO + HO2
+  type: zenith-angle-rate
+  l: '1.537e-04'
+  m: '0.170'
+  n: '0.208'
+  scalar: '1'
+- equation: N2O5 => NO2 + NO3
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KMT04
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: NC3H7NO3 + OH => C2H5CHO + NO2 + H2O
+  rate-constant:
+    A: '3.49e+11'
+    b: '0.0'
+    Ea: '0.0'
+- equation: NC3H7NO3 => NC3H7O + NO2
+  type: zenith-angle-rate
+  l: '2.485e-06'
+  m: '1.196'
+  n: '0.328'
+  scalar: '1'
+- equation: NC3H7O + O2 => C2H5CHO + HO2
+  type: complex-rate
+  A: '1.57e+10'
+  b: '0.0'
+  Ea: '-506.73650999999995'
+  species-names:
+  - O2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: NC3H7O2 + NO => NC3H7NO3
+  rate-constant:
+    A: '3.49e+10'
+    b: '0.0'
+    Ea: '695.5206999999999'
+- equation: NC3H7O2 + NO => NC3H7O + NO2
+  rate-constant:
+    A: '1.71e+12'
+    b: '0.0'
+    Ea: '695.5206999999999'
+- equation: NC3H7O2 + NO3 => NC3H7O + NO2 + O2
+  rate-constant:
+    A: '1.39e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: NC3H7O2 => C2H5CHO + 0.5 H2O + 0.25 O2
+  type: complex-rate
+  A: '7.81e+10'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - RO2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: NC3H7O2 => NC3H7O + 0.5 O2
+  type: complex-rate
+  A: '2.34e+11'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - RO2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: NC3H7O2 + 0.5 H2O => NPROPOL + 0.75 O2
+  type: complex-rate
+  A: '7.81e+10'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - RO2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: NC3H7OOH + OH => C2H5CHO + OH + H2O
+  rate-constant:
+    A: '6.62e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: NC3H7OOH + OH => NC3H7O2 + H2O
+  rate-constant:
+    A: '1.14e+12'
+    b: '0.0'
+    Ea: '377.56838'
+- equation: NC3H7OOH => NC3H7O + OH
+  type: zenith-angle-rate
+  l: '7.649e-06'
+  m: '0.682'
+  n: '0.279'
+  scalar: '1'
+- equation: NO + NO + O2 => NO2 + NO2
+  type: complex-rate
+  A: '1.99e-15'
+  b: '0.0'
+  Ea: '1053.21706'
+  species-names:
+  - O2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: NO + NO3 => NO2 + NO2
+  rate-constant:
+    A: '1.08e+13'
+    b: '0.0'
+    Ea: '218.59222'
+- equation: NO + NO3CH2CO3 => HCHO + NO2 + NO2 + CO2
+  rate-constant:
+    A: '4.52e+12'
+    b: '0.0'
+    Ea: '576.28858'
+- equation: NO + O => NO2
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KMT01
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: NO + O3 => NO2 + O2
+  rate-constant:
+    A: '8.43e+11'
+    b: '0.0'
+    Ea: '-2603.2346199999997'
+- equation: NO + OH => HONO
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KMT07
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: NO + PRNO3CO3 => CH3CHO + NO2 + NO2 + CO2
+  rate-constant:
+    A: '4.52e+12'
+    b: '0.0'
+    Ea: '576.28858'
+- equation: NO + PRONO3AO2 => NO2 + PRONO3AO
+  rate-constant:
+    A: '1.63e+12'
+    b: '0.0'
+    Ea: '715.3927199999999'
+- equation: NO + PRONO3BO2 => NO2 + PRONO3BO
+  rate-constant:
+    A: '1.63e+12'
+    b: '0.0'
+    Ea: '715.3927199999999'
+- equation: NO2 + NO3 => N2O5
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KMT03
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: NO2 + NO3 => NO + NO2 + O2
+  rate-constant:
+    A: '2.71e+10'
+    b: '0.0'
+    Ea: '-2503.87452'
+- equation: NO2 + NO3CH2CO3 => NO3CH2PAN
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KFPAN
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: NO2 + O => NO + O2
+  rate-constant:
+    A: '3.31e+12'
+    b: '0.0'
+    Ea: '373.593976'
+- equation: NO2 + O => NO3
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KMT02
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: NO2 + O3 => NO3 + O2
+  rate-constant:
+    A: '8.43e+10'
+    b: '0.0'
+    Ea: '-4908.38894'
+- equation: NO2 + OH => HNO3
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KMT08
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: NO2 + PRNO3CO3 => PRNO3PAN
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KFPAN
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: NO2 => NO + O
+  type: zenith-angle-rate
+  l: '1.165e-02'
+  m: '0.244'
+  n: '0.267'
+  scalar: '1'
+- equation: NO3 + NO3CH2CHO + O2 => HNO3 + NO3CH2CO3
+  rate-constant:
+    A: '8.67e+11'
+    b: '0.0'
+    Ea: '-3700.1701239999998'
+- equation: NO3 + NO3CH2CO3 => HCHO + NO2 + NO2 + CO2 + O2
+  rate-constant:
+    A: '2.41e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: NO3 + OH => HO2 + NO2
+  rate-constant:
+    A: '1.20e+13'
+    b: '0.0'
+    Ea: '0.0'
+- equation: NO3 + PRNO3CO3 => CH3CHO + NO2 + NO2 + CO2 + O2
+  rate-constant:
+    A: '2.41e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: NO3 + PRONO3AO2 => NO2 + PRONO3AO + O2
+  rate-constant:
+    A: '1.39e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: NO3 + PRONO3BO2 => NO2 + PRONO3BO + O2
+  rate-constant:
+    A: '1.39e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: NO3 => NO + O2
+  type: zenith-angle-rate
+  l: '2.485e-02'
+  m: '0.168'
+  n: '0.108'
+  scalar: '1'
+- equation: NO3 => NO2 + O
+  type: zenith-angle-rate
+  l: '1.747e-01'
+  m: '0.155'
+  n: '0.125'
+  scalar: '1'
+- equation: NO3CH2CHO + OH + O2 => NO3CH2CO3 + H2O
+  rate-constant:
+    A: '2.05e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: NO3CH2CHO => HCOCH2O + NO2
+  type: zenith-angle-rate
+  l: '4.365e-05'
+  m: '1.089'
+  n: '0.323'
+  scalar: '4.3'
+- equation: NO3CH2CO2H + OH => HCHO + NO2 + H2O + CO2
+  rate-constant:
+    A: '1.01e+11'
+    b: '0.0'
+    Ea: '0.0'
+- equation: NO3CH2CO3 => HCHO + NO2 + CO2 + 0.5 O2
+  type: complex-rate
+  A: '4.22e+12'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - RO2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: NO3CH2CO3 + 0.5 H2O => NO3CH2CO2H + 0.75 O2
+  type: complex-rate
+  A: '1.81e+12'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - RO2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: NO3CH2CO3H + OH => NO3CH2CO3 + H2O
+  rate-constant:
+    A: '2.19e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: NO3CH2CO3H => HCHO + NO2 + OH + CO2
+  type: zenith-angle-rate
+  l: '7.649e-06'
+  m: '0.682'
+  n: '0.279'
+  scalar: '1'
+- equation: NO3CH2PAN + OH => CO + HCHO + NO2 + NO2 + 0.5 H2O + 1.25 O2
+  rate-constant:
+    A: '6.74e+09'
+    b: '0.0'
+    Ea: '0.0'
+- equation: NO3CH2PAN => NO2 + NO3CH2CO3
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KBPAN
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: NOA + OH => MGLYOX + NO2 + H2O
+  rate-constant:
+    A: '4.03e+11'
+    b: '0.0'
+    Ea: '0.0'
+- equation: NOA => CH3COCH2O + NO2
+  type: zenith-angle-rate
+  l: '4.365e-05'
+  m: '1.089'
+  n: '0.323'
+  scalar: '1'
+- equation: NPROPOL + OH + O2 => C2H5CHO + HO2 + H2O
+  rate-constant:
+    A: '1.37e+12'
+    b: '0.0'
+    Ea: '139.10414'
+- equation: NPROPOL + OH + O2 => HO1C3O2 + H2O
+  rate-constant:
+    A: '1.75e+11'
+    b: '0.0'
+    Ea: '139.10414'
+- equation: NPROPOL + OH + O2 => HYPROPO2 + H2O
+  rate-constant:
+    A: '1.23e+12'
+    b: '0.0'
+    Ea: '139.10414'
+- equation: O + O3 => 2.0 O2
+  rate-constant:
+    A: '4.82e+12'
+    b: '0.0'
+    Ea: '-4093.6361199999997'
+- equation: O + SO2 => SO3
+  type: complex-rate
+  A: '2.41e-08'
+  b: '0.0'
+  Ea: '-1987.202'
+  species-names:
+  - M
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: O + O2 => O3
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KUNKNOWN362
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+  duplicate: true
+- equation: O + O2 => O3
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KUNKNOWN363
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+  duplicate: true
+- equation: O1D => O
+  type: complex-rate
+  A: '1.20e+13'
+  b: '0.0'
+  Ea: '258.33626'
+  species-names:
+  - N2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+  duplicate: true
+- equation: O1D => O
+  type: complex-rate
+  A: '1.93e+13'
+  b: '0.0'
+  Ea: '133.14253399999998'
+  species-names:
+  - O2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+  duplicate: true
+- equation: O1D + H2O => OH + OH
+  type: complex-rate
+  A: '1.29e+14'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - H2O
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: O3 + OH => HO2 + O2
+  rate-constant:
+    A: '1.02e+12'
+    b: '0.0'
+    Ea: '-1867.9698799999999'
+- equation: O3 => O + O2
+  type: zenith-angle-rate
+  l: '4.775e-04'
+  m: '0.298'
+  n: '0.080'
+  scalar: '1'
+- equation: O3 => O1D + O2
+  type: zenith-angle-rate
+  l: '6.073e-05'
+  m: '1.743'
+  n: '0.474'
+  scalar: '1'
+- equation: OH + PAN => CO + HCHO + NO2 + H2O + 0.5 O2
+  rate-constant:
+    A: '1.81e+10'
+    b: '0.0'
+    Ea: '0.0'
+- equation: OH + PERPROACID => C2H5CO3 + H2O
+  rate-constant:
+    A: '2.66e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: OH + PHAN => CO + HCHO + NO2 + H2O + O2
+  rate-constant:
+    A: '6.74e+11'
+    b: '0.0'
+    Ea: '0.0'
+- equation: OH + PPN => CH3CHO + CO + NO2 + H2O + 0.5 O2
+  rate-constant:
+    A: '7.65e+11'
+    b: '0.0'
+    Ea: '0.0'
+- equation: OH + PR1O2HNO3 => CHOPRNO3 + OH + H2O
+  rate-constant:
+    A: '1.02e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: OH + PR1O2HNO3 => PRONO3AO2 + H2O
+  rate-constant:
+    A: '1.14e+12'
+    b: '0.0'
+    Ea: '377.56838'
+- equation: OH + PR2O2HNO3 => NOA + OH + H2O
+  rate-constant:
+    A: '2.09e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: OH + PR2O2HNO3 => PRONO3BO2 + H2O
+  rate-constant:
+    A: '1.14e+12'
+    b: '0.0'
+    Ea: '377.56838'
+- equation: OH + PRNO3CO2H => CH3CHO + NO2 + H2O + CO2
+  rate-constant:
+    A: '1.89e+11'
+    b: '0.0'
+    Ea: '0.0'
+- equation: OH + PRNO3CO3H => PRNO3CO3 + H2O
+  rate-constant:
+    A: '2.27e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: OH + PRNO3PAN => CH3CHO + CO + NO2 + NO2 + 0.5 H2O + 1.25 O2
+  rate-constant:
+    A: '8.61e+10'
+    b: '0.0'
+    Ea: '0.0'
+- equation: OH + PROLNO3 => CH3CHOHCHO + NO2 + H2O
+  rate-constant:
+    A: '1.03e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: OH + PROPACID + O2 => C2H5O2 + H2O + CO2
+  rate-constant:
+    A: '7.23e+11'
+    b: '0.0'
+    Ea: '0.0'
+- equation: OH + PROPGLY + O2 => ACETOL + HO2 + H2O
+  rate-constant:
+    A: '7.75e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: OH + PROPGLY + O2 => CH3CHOHCHO + HO2 + H2O
+  rate-constant:
+    A: '4.89e+12'
+    b: '0.0'
+    Ea: '0.0'
+- equation: OH + PROPOLNO3 => ACETOL + NO2 + H2O
+  rate-constant:
+    A: '5.52e+11'
+    b: '0.0'
+    Ea: '0.0'
+- equation: OH + SO2 => HSO3
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KMT12
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: PAN => CH3CO3 + NO2
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KBPAN
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: PERPROACID + O2 => C2H5O2 + OH + CO2
+  type: zenith-angle-rate
+  l: '7.649e-06'
+  m: '0.682'
+  n: '0.279'
+  scalar: '1'
+- equation: PHAN => HOCH2CO3 + NO2
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KBPAN
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: PPN => C2H5CO3 + NO2
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KBPPN
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: PR1O2HNO3 => OH + PRONO3AO
+  type: zenith-angle-rate
+  l: '7.649e-06'
+  m: '0.682'
+  n: '0.279'
+  scalar: '1'
+- equation: PR2O2HNO3 => OH + PRONO3BO
+  type: zenith-angle-rate
+  l: '7.649e-06'
+  m: '0.682'
+  n: '0.279'
+  scalar: '1'
+- equation: PRNO3CO3 => CH3CHO + NO2 + CO2 + 0.5 O2
+  type: complex-rate
+  A: '4.22e+12'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - RO2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: PRNO3CO3 + 0.5 H2O => PRNO3CO2H + 0.75 O2
+  type: complex-rate
+  A: '1.81e+12'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - RO2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: PRNO3CO3H => CH3CHO + NO2 + OH + CO2
+  type: zenith-angle-rate
+  l: '7.649e-06'
+  m: '0.682'
+  n: '0.279'
+  scalar: '1'
+- equation: PRNO3PAN => NO2 + PRNO3CO3
+  type: complex-rate
+  A: '1.00e+00'
+  b: '0.0'
+  Ea: '0.0'
+  function-names:
+  - KBPAN
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: PRONO3AO => CH3CHO + HCHO + NO2
+  rate-constant:
+    A: '4.22e+27'
+    b: '0.0'
+    Ea: '0.0'
+- equation: PRONO3AO + O2 => CHOPRNO3 + HO2
+  type: complex-rate
+  A: '1.51e+10'
+  b: '0.0'
+  Ea: '-596.1605999999999'
+  species-names:
+  - O2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: PRONO3AO2 => CHOPRNO3 + 0.5 H2O + 0.25 O2
+  type: complex-rate
+  A: '7.23e+10'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - RO2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: PRONO3AO2 => PRONO3AO + 0.5 O2
+  type: complex-rate
+  A: '2.17e+11'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - RO2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: PRONO3AO2 + 0.5 H2O => PROPOLNO3 + 0.75 O2
+  type: complex-rate
+  A: '7.23e+10'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - RO2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: PRONO3BO => CH3CHO + HCHO + NO2
+  rate-constant:
+    A: '4.22e+27'
+    b: '0.0'
+    Ea: '0.0'
+- equation: PRONO3BO + O2 => HO2 + NOA
+  type: complex-rate
+  A: '1.51e+10'
+  b: '0.0'
+  Ea: '-596.1605999999999'
+  species-names:
+  - O2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: PRONO3BO2 => NOA + 0.5 H2O + 0.25 O2
+  type: complex-rate
+  A: '4.82e+09'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - RO2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: PRONO3BO2 + 0.5 H2O => PROLNO3 + 0.75 O2
+  type: complex-rate
+  A: '4.82e+09'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - RO2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: PRONO3BO2 => PRONO3BO + 0.5 O2
+  type: complex-rate
+  A: '1.45e+10'
+  b: '0.0'
+  Ea: '0.0'
+  species-names:
+  - RO2
+  pyfile: propane_complex_rates.py
+  ro2file: propane-ro2-sum.txt
+- equation: PROPALO + O2 => CH3CHO + CO + HO2
+  rate-constant:
+    A: '6.02e+29'
+    b: '0.0'
+    Ea: '0.0'
+aerosol-reactions:
+- equation: HNO3 => NA
+  rate-constant:
+    A: '3.61e+18'
+    b: '0.0'
+    Ea: '0.0'
+- equation: N2O5 + H2O => NA + NA
+  rate-constant:
+    A: '2.41e+20'
+    b: '0.0'
+    Ea: '0.0'

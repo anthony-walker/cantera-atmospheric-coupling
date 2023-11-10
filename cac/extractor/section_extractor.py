@@ -22,18 +22,7 @@ def extract_from_fac(facfile, dirname, replace_generics=True, replace_complex=Tr
     with open(sfile, "w") as f:
         for sp in species:
             f.write(f"{sp.strip()}\n")
-    # substitute in generic rate coefficients where possible
-    gcs = {}
-    generic_coeffs = re.sub(r"\s*", "", sections.pop(0))
-    for gc in generic_coeffs.split(";")[:-1]:
-        gc_key, gc_rate = gc.split("=")
-        gc_rate = re.sub(r"EXP", r"exp", gc_rate)
-        gc_rate = re.sub(r"(\d+)[DE]([+-]?)(\d+)", r"\1e\2\3", gc_rate)
-        gc_rate = re.sub(r"[@]([-]?\d+([.]\d+)?([e][+-]?\d+)?)", r"**(\1)", gc_rate)
-        gcs[gc_key] = gc_rate
-    # complex coefficients
-    # complex_coeffs = sections.pop(0)
-    # substitute in generic rate coefficients where possible
+    # substitute in complex rate coefficients where possible
     ccs = {}
     complex_coeffs = re.sub(r"\s*", "", sections.pop(0))
     complex_coeffs = re.sub(r"[*]+[;]", "", complex_coeffs)
@@ -82,14 +71,7 @@ def extract_from_fac(facfile, dirname, replace_generics=True, replace_complex=Tr
         rrs.append((reaction.strip(), rate))
     rrs.sort()
     reactions, rates = zip(*rrs)
-    # replace rates with generic rates maybe
-    if replace_generics:
-        rate_str = "\n".join(rates)
-        sort_gc = list(gcs.items())
-        sort_gc.sort(key=lambda x: len(x[0]), reverse=True)
-        for gc, gc_exp in sort_gc:
-            rate_str = rate_str.replace(gc, gc_exp)
-        rates = rate_str.split("\n")
+
     if replace_complex:
         arrhen_regex = r"\d+([.]\d*)?([e][+-]\d+)?(([*]\d+([.]\d*)?([e][+-]\d+)?)+)?([*][(]TEMP[/]\d+[)][*][*][-]?\d+([.]\d*)?)?([*]exp[(][-]?\d+[/]TEMP[)])?(([*]\d+([.]\d*)?([e][+-]\d+)?)+)?"
         rate_str = "\n".join(rates)

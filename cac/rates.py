@@ -3,8 +3,8 @@ import math
 import inspect
 import numpy as np
 import cantera as ct
-import methane_complex_rates as mcm_complex_rates
-
+import jetfuel_complex_rates as mcm_complex_rates
+# import propane_complex_rates as mcm_complex_rates
 
 class ZenithAngleData(ct.ExtensibleRateData):
     __slots__ = ("zenith_angle", "cza")

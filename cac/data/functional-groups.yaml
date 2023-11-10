@@ -5,6 +5,9 @@ functional-groups:
   Acyl Halide Cl: C(=O)Cl
   Acyl Halide I: C(=O)I
   Alcohol: CO
+  Alcohol (primary): CO
+  Alcohol (secondary): CC(O)C
+  Alcohol (tertiary): C(C)(C)O
   Aldehyde: CC=O
   Alkene: C=C
   Alkyne: C#C
@@ -39,6 +42,7 @@ functional-groups:
   Isothiocyanate: N=C=S
   Ketal: C(OC)C(=O)C(OC)C
   Ketone: C(=O)C
+  Methyl: C
   Nitrile: C#N
   Nitro: C[N+](=O)[O-]
   Orthoester: C(=O)OC(OC)OC
@@ -54,68 +58,154 @@ functional-groups:
   Thiol: CS
   Thiophosphate: COP(=S)(O)O
   Thiosulfate: COS(=O)(O)S
-  Methyl: C
-  Alcohol (primary): "CO"
-  Alcohol (secondary): "CC(O)C"
-  Alcohol (tertiary): "C(C)(C)O"
-
 smiles-groups:
-  C: CH3
-  C#C: C2H2
-  C#N: CHN
-  C(=O): CH2O
+  CC(F)(F)F: C2H3F3
+  C1=CC=C(C=C1)C2=CC=CC=C2: C12H10
+  C1C=CC2=CC=CC=C21: C9H8
+  C1CCNC1: C4H9N
+  CC#CC: C4H6
+  CCC(CC)CO: C6H14O
+  CC=C=C(C)C: C6H10
+  CN=NC: C2H6N2
+  CC(=O)N(C)C: C4H9NO
+  CC(=NC)N(C)C: C5H12N2
+  CC(=O)OC(=O)C: C4H6O3
   C(=O)Br: CHBrO
-  C(=O)C: C2H4O
   C(=O)Cl: CHClO
+  C(=O)F: CHFO
   C(=O)I: CHIO
+  CC=O: C2H4O
   C(=O)N: CH3NO
-  C(=O)N(C)C: C3H7NO
-  C(=O)NC: C2H5NO
-  C(=O)NC(=O): C2H3NO2
+  C1=CC=C2C=C3C=CC=CC3=CC2=C1: C14H10
+  CN=[N+]=[N-]: CH3N3
+  C1=CC=CC=C1: C6H6
+  C1=CC=C(C=C1)S: C6H6S
+  C1CCC(CC1)C2CCCCC2: C12H22
+  Br: BrH
+  CCC=C: C4H8
+  C(=O)=O: CO2
   C(=O)O: CH2O2
-  C(=O)OC: C2H4O2
-  C(=O)OC(=O): C2H2O3
-  C(=O)OC(OC)OC: C4H8O4
-  C(=O)SC: C2H4OS
-  C(OC)C(=O)C: C4H8O2
-  C(OC)C(=O)C(OC)C: C6H12O3
-  C1=CC=C(C=C1)O: C6H6O
-  C1=CC=CC=C1: C6H5
-  C1OC1: C2H4O
+  Cl: ClH
+  COCCl: C2H5ClO
+  C1=CC=C1: C4H4
+  C1CCCCCC1: C7H14
+  C1CCCCC1: C6H12
+  C1CC=CC=C1: C6H8
+  C1CCCC1: C5H10
+  C1C=CC=C1: C5H6
+  C1CC1: C3H6
+  C1C=C1: C3H4
+  CC: C2H6
+  COC: C2H6O
+  CCOCC: C4H10O
+  C=[N+]=[N-]: CH2N2
+  '[NH4+].[NH4+].[O-]S(=O)(=S)[O-]': H8N2O3S2
+  "N": H3N
+  CCS: C2H6S
   C=C: C2H4
-  C=CNC: C3H7N
+  COC=O: C2H4O2
+  F: FH
+  C=O: CH2O
+  C1=COC=C1: C4H4O
+  C#N: CHN
+  '[OH-]': HO-
+  "NO": H3NO
+  C1CC2=CC=CC=C2C1: C9H10
+  CC(=O)C: C3H6O
+  C: CH4
+  CS: CH4S
+  CC(=O)OC: C3H6O2
+  CN1CCCC1: C5H11N
+  CC(C)(C)OC: C5H12O
+  C1=CC=C2C=CC=CC2=C1: C10H8
+  N(=O)O: HNO2
+  C[N+](=O)[O-]: CH3NO2
+  C1=CC2=CC=CC2=C1: C8H6
+  C1CC2CCNCC2C1: C8H15N
+  C1CCC(CC1)O: C6H12O
+  O: H2O
+  OO: H2O2
+  C1CC[N+](=O)CC1: C5H10NO+
+  CN: CH5N
+  C1CCC2(CC1)CCCCC2: C11H20
+  O=S=O: O2S
+  C[N+](C)(C)C: C4H12N+
+  S: H2S
+  OS(=O)(=S)O: H2O3S2
+  CN(C)C: C3H9N
+  C1=CC=C2C(=C1)C3=CC=CC=C3C4=CC=CC=C24: C18H12
+  C#C: C2H2
+  CN(C)C=O: C3H7NO
+  CNC=O: C2H5NO
+  C(=O)NC=O: C2H3NO2
+  C(=O)OC=O: C2H2O3
+  COC(OC)OC=O: C4H8O4
+  CSC=O: C2H4OS
+  CC(=O)COC: C4H8O2
+  CC(C(=O)COC)OC: C6H12O3
+  C1=CC=C(C=C1)O: C6H6O
+  CNC=C: C3H7N
   C=N: CH3N
   C=NN: CH4N2
-  C=NO: CH3NO
-  C=[N+]=[N-]: CH2N2
-  CB(O)O: CH5BO2
+  B(C)(O)O: CH5BO2
   CBr: CH3Br
-  CC=O: C2H4O
   CCl: CH3Cl
   CF: CH3F
   CI: CH3I
-  CN: CH5N
-  CN(C)C: C3H9N
   CNC: C2H7N
   CO: CH4O
-  COC: C2H6O
   COCO: C2H6O2
   COCOC: C3H8O2
   COP(=O)(O)O: CH5O4P
   COP(=S)(O)O: CH5O3PS
   COS(=O)(=O)O: CH4O4S
   COS(=O)(O)S: CH6O3S2
-  CS: CH4S
-  CSC: C2H6S
   CSSC: C2H6S2
-  C[N+](=O)[O-]: CH3NO2
-  C[S](=O)(=O)C: C2H6O2S
-  C[S](=O)C: C2H6OS
-  N=C=O: CHNO
-  N=C=S: CHNS
+  CS(=O)(=O)C: C2H6O2S
+  CS(=O)C: C2H6OS
+  C(=N)=O: CHNO
+  C(=N)=S: CHNS
   N=N: H2N2
   N=[N+]=[N-]: HN3
-  '[CH2]C1=CC=CC=C1': C7H7
-  CC(O)C: C3H8O
-  CO: CH4O
+  CC1=CC=CC=C1: C7H8
   CC(C)O: C3H8O
+  CCCC: C4H10
+  CC(C)(C)N: C4H11N
+  CC(C)(C)C: C5H12
+  CCC: C3H8
+  CC#N: C2H3N
+  C=CN: C2H5N
+  C=[N]=[N]=N: N3
+  CS(=O)(=O)O: CH4O3S
+  CP: CH5P
+  CP=O: CH3OP
+  CP(=O)(O)O: CH5O3P
+  CC[Si](C)(C)OC: C5H14OSi
+  C[CH2-].[Mg+2].[Br-]: C2H5BrMg
+  CC[Si](Cl)(Cl)Cl: C2H5Cl3Si
+  C1=CC=NC=C1: C5H5N
+  C1=CN=CN=C1: C4H4N2
+  C1=CC=CS=C1: C4H4S
+  C1CC=CC1: C5H8
+  C1CC1=O: C3H4O
+  C1CC(=O)C1: C4H6O
+  C1CCC(=O)C1: C5H8O
+  C1CCC(=O)CC1: C6H10O
+  O=O: O2
+  "[HH]": H2
+  "[H]": H
+  "[Ar]": AR
+  "N#N": N2
+  "[N]": "N"
+  "[O]": O
+  "[He]": HE
+  "[Ne]": NE
+  "[Rn]": RN
+  "[Xe]": XE
+  "[Kr]": KR
+  "[Og]": OG
+  "[C-]#[O+]": CO
+  "[CH3+]": CH3
+  "[CH2]": CH2
+  "[CH2]C#N": Ch2CN
+

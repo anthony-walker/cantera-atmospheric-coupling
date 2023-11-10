@@ -9,7 +9,7 @@ import concurrent.futures as cf
 from cac.constants import DATA_DIR
 from rdkit.Chem import rdMolDescriptors
 
-MCM_SPECIES_URL = "http://chmlin9.leeds.ac.uk/MCM/browse.htt?species={:s}"
+MCM_SPECIES_URL = "https://mcm.york.ac.uk/MCM/species/{:s}"
 yaml.Dumper.ignore_aliases = lambda *args : True
 
 # add species that are assumed available in atmospherics
@@ -104,17 +104,16 @@ def get_not_found_species(specie):
         response = requests.get(MCM_SPECIES_URL.format(specie))
         if response.status_code == 200:
             # get smiles string
-            res = re.search(r'smiles["][\>].*[\<]', response.text)
-            smiles = res.group(0)[8:-1]
+            res = re.search(r'strong[\>]Smiles: [^\<]*', response.text)
+            smiles = res.group(0)[15:]
             # get inchi
-            res = re.search(r'inchi["][\>].*[\<]', response.text)
-            inchi = res.group(0)[7:-1]
+            res = re.search(r'strong[\>]InChI: InChI=[^\<]*', response.text)
+            inchi = res.group(0)[14:]
             # try to get canonical smiles from inchi
             try:
                 cmp = pcp.get_compounds(inchi, "inchi")[0]
                 smiles = cmp.canonical_smiles
                 molecule_name = smiles_to_semi_structural(smiles)
-
                 # try to construct semi-structural formula
                 if species_data.get(molecule_name, {}):
                     sm_data = species_data[molecule_name]
@@ -130,7 +129,8 @@ def get_not_found_species(specie):
                         found = True
                     else:
                         raise Exception("Species composition does not match")
-            except:
+            except Exception as e:
+                # print(e)
                 pass
             # try to locate with the inchi string if it wasn't found
             if not found:
@@ -146,6 +146,7 @@ def get_not_found_species(specie):
                         note_str += f"It was found using the InCHI representation: {molecule_name}."
                         found = True
                 except Exception as e:
+                    # print(e)
                     pass
             # add smiles and inchi string to notes
             note_str += f"SMILES: {smiles}\n"
@@ -160,6 +161,8 @@ def get_not_found_species(specie):
             construct_data["note"] = note_str
             if not found:
                 print(f"Constructed as well as possible {specie}...")
+            construct_data["smiles"] = smiles
+            construct_data["inchi"] = inchi
         return construct_data
 
 
@@ -196,3 +199,6 @@ def write_species_extraction(prefix, dirname):
     sfile = os.path.join(dirname, f"{prefix}-species.yaml")
     with open(sfile, "w") as f:
         yaml.safe_dump(data, f, default_flow_style=False, sort_keys=False)
+
+if __name__ == "__main__":
+    get_not_found_species("BZEMUCCO")
