@@ -4,8 +4,10 @@ import click
 import ruamel.yaml
 import pubchempy as pcp
 from rdkit import Chem
+import cantera as ct
 from cac.constants import DATA_DIR
 from ruamel.yaml.comments import CommentedMap
+
 
 def semi_structural_to_smiles(semi_structural, functional_group_list):
     # Start by replacing functional groups
@@ -19,6 +21,7 @@ def semi_structural_to_smiles(semi_structural, functional_group_list):
     if temp_struct:
         raise Exception("Semi-structural formula not completed.")
     return smiles
+
 
 def update_mechanism_with_smiles_and_inchi(filename):
     # open all data
@@ -134,6 +137,30 @@ def spmatch(spone, sptwo):
     return res1 or res2 or res3
 
 
+def reactmatch(rone, rtwo):
+    rt1, pt1 = re.split(r"[<]?[=][>]", rone, maxsplit=1)
+    rt2, pt2 = re.split(r"[<]?[=][>]", rtwo, maxsplit=1)
+    dicts = []
+    for sec in [rt1, pt1, rt2, pt2]:
+        cdict = {}
+        for sp in re.split(r"[(]?[+]", sec):
+            csp = sp.strip().split(" ")
+            if len(csp) > 1:
+                ordr = float(csp[0].strip())
+                key = csp[1].strip()
+            else:
+                ordr = 1
+                key = csp[0].strip()
+            cdict[key] = ordr + cdict.get(key, 0)
+        dicts.append(cdict)
+    rt1, pt1, rt2, pt2 = dicts
+    if (rt1 == rt2 and pt1 == pt2) or (rt1 == pt2 and rt2 == pt1):
+        print("Matches", rone, rtwo)
+        return True
+    else:
+        return False
+
+
 def merge_mechanisms(fuel, atmosphere):
     """ A code to merge atmospheric and gas phase mechanisms
 
@@ -201,11 +228,7 @@ def merge_mechanisms(fuel, atmosphere):
         found = False
         if not r.get("duplicate", False):
             for cr in all_reactions:
-                eqn1 = cr["equation"]
-                eqn2 = r["equation"]
-                eqn1 = sorted(list(set(re.sub("[^A-Za-z]+", " ", eqn1).split())))
-                eqn2 = sorted(list(set(re.sub("[^A-Za-z]+", " ", eqn2).split())))
-                if eqn1 == eqn2:
+                if reactmatch(cr["equation"], r["equation"]):
                     found = True
                     break
         if not found:
@@ -221,6 +244,44 @@ def merge_mechanisms(fuel, atmosphere):
     comb_file = fuel.split(".")[0] + "-"+ atmosphere.split(".")[0] +".yaml"
     with open(comb_file, "w") as f:
         yaml.dump(fuel_data, f)
+
+
+def simple_merge(mech1, mech2):
+    yaml = ruamel.yaml.YAML(typ='safe', pure=True)
+    # open all data
+    with open(mech1, "r") as f:
+        data1 = yaml.load(f)
+    with open(mech2, "r") as f:
+        data2 = yaml.load(f)
+    # get first phase for each set and merge them
+    phase1 = data1["phases"][0]
+    phase2 = data2["phases"][0]
+    # merge elements
+    phase1["elements"] = list(set(phase1.get("elements", []) + phase2.get("elements", [])))
+    needed = []
+    # add all needed species
+    for sp in phase2["species"]:
+        if sp not in phase1["species"]:
+            needed.append(sp)
+            phase1["species"].append(sp)
+    for sp in data2["species"]:
+        if sp["name"] in needed:
+            data1["species"].append(sp)
+    # add all needed reactions
+    all_reactions = data1["reactions"]
+    for r2 in data2["reactions"]:
+        found = False
+        for r1 in all_reactions:
+            if r2.get("duplicate", False) or reactmatch(r1["equation"], r2["equation"]):
+                found =  True
+                break
+        if not found:
+            all_reactions.append(r2)
+    data1["reactions"] = all_reactions
+    # add all info to file
+    with open("simple-combined.yaml", "w") as f:
+        yaml.dump(data1, f)
+
 
 @click.command()
 @click.argument('fuel', nargs=1, type=str)

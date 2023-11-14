@@ -417,68 +417,146 @@ def FPPN(T, M):
 def KBPPN(T, M):
     return (KPPN0(T, M) * KPPNI(T, M) * FPPN(T, M)) / (KPPN0(T, M) + KPPNI(T, M))
 
-def KUNKNOWN22(T):
+def KUNKNOWN97(T):
     return 1.4e-18*T**2*math.exp(194/T)
 
-def KUNKNOWN205(RO2, T):
+def KUNKNOWN623(RO2, T):
     return 9.74293590248853e-14*RO2*math.exp(365/T)**0.5
 
-def KUNKNOWN206(RO2, T):
+def KUNKNOWN624(RO2, T):
     return 3.24764530082951e-14*RO2*math.exp(365/T)**0.5
 
-def KUNKNOWN207(RO2, T):
+def KUNKNOWN625(RO2, T):
     return 3.24764530082951e-14*RO2*math.exp(365/T)**0.5
 
-def KUNKNOWN467(RO2, T):
+def KUNKNOWN2584(RO2, T):
     return 1.98876846314497e-14*RO2*math.exp(1985/T)**0.5
 
-def KUNKNOWN468(RO2, T):
+def KUNKNOWN2585(RO2, T):
     return 5.9663053894349e-14*RO2*math.exp(1985/T)**0.5
 
-def KUNKNOWN469(RO2, T):
+def KUNKNOWN2586(RO2, T):
     return 1.98876846314497e-14*RO2*math.exp(1985/T)**0.5
 
-def KUNKNOWN575(T):
+def KUNKNOWN3596(T):
     return 1.7e-14*math.exp(423/T)+8.8e-12*math.exp(-1320/T)
 
-def KUNKNOWN593(T):
+def KUNKNOWN3614(T):
     return 3.8e-13*(1-1/(1+498*math.exp(-1160/T)))*math.exp(780/T)
 
-def KUNKNOWN594(T):
+def KUNKNOWN3615(T):
     return 3.8e-13*math.exp(780/T)/(1+498*math.exp(-1160/T))
 
-def KUNKNOWN600(RO2, T):
+def KUNKNOWN3621(RO2, T):
     return 1.03e-13*RO2*(1-7.18*math.exp(-885/T))*math.exp(365/T)
 
-def KUNKNOWN601(RO2, T):
+def KUNKNOWN3622(RO2, T):
     return 1.03e-13*RO2*(1-7.18*math.exp(-885/T))*math.exp(365/T)
 
-def KUNKNOWN770(T, O2):
+def KUNKNOWN3631(T):
+    return 2.88e-17*T**2*math.exp(309/T)
+
+def KUNKNOWN3754(T):
+    return 4070000000.0*math.exp(100000000.0/T**3)*math.exp(-8591/T)
+
+def KUNKNOWN3755(T):
+    return 4070000000.0*math.exp(100000000.0/T**3)*math.exp(-8591/T)
+
+def KUNKNOWN3769(T):
+    return 11000000000.0*math.exp(100000000.0/T**3)*math.exp(-8174/T)
+
+def KUNKNOWN3770(T):
+    return 11000000000.0*math.exp(100000000.0/T**3)*math.exp(-8174/T)
+
+def KUNKNOWN5583(T):
+    return 22000000000.0*math.exp(100000000.0/T**3)*math.exp(-8174/T)
+
+def KUNKNOWN5603(T):
+    return 8140000000.0*math.exp(100000000.0/T**3)*math.exp(-8591/T)
+
+def KUNKNOWN5656(O2, T):
     return 1.6e-11*O2*(1-math.exp(-550/T))
 
-def KUNKNOWN871(T):
+def KUNKNOWN6623(T):
     return 9.70625962752295e-28*T**4.57*math.exp(693/T)
 
-def KUNKNOWN934(RO2, T):
+def KUNKNOWN7232(RO2, T):
     return 3.58530333444745e-14*RO2*math.exp(1365/T)**0.5
 
-def KUNKNOWN935(RO2, T):
+def KUNKNOWN7233(RO2, T):
     return 1.07559100033423e-13*RO2*math.exp(1365/T)**0.5
 
-def KUNKNOWN936(RO2, T):
+def KUNKNOWN7234(RO2, T):
     return 3.58530333444745e-14*RO2*math.exp(1365/T)**0.5
 
-def KUNKNOWN992(RO2, T):
+def KUNKNOWN7404(RO2, T):
     return 1.62382265041476e-13*RO2*math.exp(-1835/T)**0.5
 
-def KUNKNOWN993(RO2, T):
+def KUNKNOWN7405(RO2, T):
     return 4.87146795124426e-13*RO2*math.exp(-1835/T)**0.5
 
-def KUNKNOWN994(RO2, T):
+def KUNKNOWN7406(RO2, T):
     return 1.62382265041476e-13*RO2*math.exp(-1835/T)**0.5
 
-def KUNKNOWN1382(N2, T, O2):
+def KUNKNOWN7418(T):
+    return 2.3896e-18*T**2*math.exp(225/T)
+
+def KUNKNOWN7419(T):
+    return 9.2104e-18*T**2*math.exp(225/T)
+
+def KUNKNOWN7691(T):
+    return 1119708193.47403*T**1.7*math.exp(-4733/T)
+
+def KUNKNOWN7692(T):
+    return 1119708193.47403*T**1.7*math.exp(-4079/T)
+
+def KUNKNOWN8075(T):
+    return 1.08748e-17*T**2*math.exp(494/T)
+
+def KUNKNOWN8076(T):
+    return 1.5252e-18*T**2*math.exp(494/T)
+
+def KUNKNOWN9452(T):
+    return 3.13e-17*T**2*math.exp(416/T)
+
+def KUNKNOWN9563(T):
+    return 1119708193.47403*T**1.7*math.exp(-4733/T)
+
+def KUNKNOWN9564(T):
+    return 1119708193.47403*T**1.7*math.exp(-4079/T)
+
+def KUNKNOWN9582(T):
+    return 2.0252e-18*T**2*math.exp(183/T)
+
+def KUNKNOWN9583(T):
+    return 1.38592e-17*T**2*math.exp(183/T)
+
+def KUNKNOWN9584(T):
+    return 8.5156e-18*T**2*math.exp(183/T)
+
+def KUNKNOWN9586(T):
+    return 9.333e-19*T**2*math.exp(414/T)
+
+def KUNKNOWN9587(T):
+    return 6.4413e-18*T**2*math.exp(414/T)
+
+def KUNKNOWN9588(T):
+    return 7.9254e-18*T**2*math.exp(414/T)
+
+def KUNKNOWN9589(T):
+    return 1.59e-17*T**2*math.exp(478/T)
+
+def KUNKNOWN9590(T):
+    return 2.76e-17*T**2*math.exp(378/T)
+
+def KUNKNOWN9591(T):
+    return 2.51e-17*T**2*math.exp(447/T)
+
+def KUNKNOWN9749(T):
+    return 1.8e-17*T**2*math.exp(-189/T)
+
+def KUNKNOWN10579(O2, N2, T):
     return 1.5441990796514e-27*N2*O2/T**2.6
 
-def KUNKNOWN1383(T, O2):
+def KUNKNOWN10580(O2, T):
     return 1.65449901391222e-27*O2**2/T**2.6
