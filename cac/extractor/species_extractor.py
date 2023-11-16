@@ -1,16 +1,17 @@
 import os
 import re
-import yaml
 import warnings
 import requests
+import ruamel.yaml
 from rdkit import Chem
 import pubchempy as pcp
 import concurrent.futures as cf
 from cac.constants import DATA_DIR
 from rdkit.Chem import rdMolDescriptors
 
+yaml = ruamel.yaml.YAML(typ='safe')
+default_flow_style=False
 MCM_SPECIES_URL = "https://mcm.york.ac.uk/MCM/species/{:s}"
-yaml.Dumper.ignore_aliases = lambda *args : True
 
 # add species that are assumed available in atmospherics
 add_species = ["H2O", "O2", "H", "N2", "AR", "CO2", "HCL", "HBR"]
@@ -20,12 +21,12 @@ species_data = {}
 
 
 with open(os.path.join(DATA_DIR, "functional-groups.yaml")) as f:
-    functional_groups = yaml.safe_load(f)["smiles-groups"]
+    functional_groups = yaml.load(f)["smiles-groups"]
 functional_group_list = sorted(functional_groups.items(), key=lambda x: len(x[0]), reverse=True)
 
 def print_functional_group_formulas():
     with open(os.path.join(DATA_DIR, "functional-groups.yaml")) as f:
-        fct_gs = yaml.safe_load(f)["functional-groups"]
+        fct_gs = yaml.load(f)["functional-groups"]
     for group, smiles in fct_gs.items():
         mol = Chem.MolFromSmiles(smiles)
         print(group, smiles, rdMolDescriptors.CalcMolFormula(mol))
@@ -71,7 +72,7 @@ def make_species_database(dir_name):
     all_species = {}
     for cf in files:
         with open(os.path.join(dir_name, cf), "r") as f:
-            data = yaml.safe_load(f)
+            data = yaml.load(f)
             if "species" in data.keys():
                 for sp in data["species"]:
                     # ensure all names are upper cases
@@ -85,7 +86,7 @@ def make_species_database(dir_name):
                         all_species[sp_name].update(sp)
     # output species to file
     with open("all-model-species.yaml", "w") as f:
-        yaml.safe_dump(all_species, f, default_flow_style=False, sort_keys=False)
+        yaml.dump(all_species, f, default_flow_style=False, sort_keys=False)
 
 
 def get_not_found_species(specie):
@@ -170,7 +171,7 @@ def assign_global_species_data():
     global species_data
     all_sp_file = os.path.join(DATA_DIR, "all-model-species.yaml")
     with open(all_sp_file, "r") as f:
-        species_data = yaml.safe_load(f)
+        species_data = yaml.load(f)
 
 
 def get_species_data(prefix, dirname):
@@ -198,7 +199,7 @@ def write_species_extraction(prefix, dirname):
     # output species to file
     sfile = os.path.join(dirname, f"{prefix}-species.yaml")
     with open(sfile, "w") as f:
-        yaml.safe_dump(data, f, default_flow_style=False, sort_keys=False)
+        yaml.dump(data, f, default_flow_style=False, sort_keys=False)
 
 if __name__ == "__main__":
     get_not_found_species("BZEMUCCO")

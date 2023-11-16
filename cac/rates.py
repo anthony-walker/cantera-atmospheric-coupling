@@ -1,10 +1,15 @@
 import re
+import os
+import sys
 import math
 import inspect
 import numpy as np
 import cantera as ct
-import jetfuel_complex_rates as mcm_complex_rates
-# import propane_complex_rates as mcm_complex_rates
+import importlib.util as iu
+from cac.constants import DATA_DIR
+
+mcm_complex_rates = None
+mcm_complex_funcs = None
 
 class ZenithAngleData(ct.ExtensibleRateData):
     __slots__ = ("zenith_angle", "cza")
@@ -42,11 +47,10 @@ class ZenithAngleRate(ct.ExtensibleRate):
 
 
 class ComplexData(ct.ExtensibleRateData):
-    __slots__ = ("ro2_sum", "mcm_complex_funcs", "thermo")
+    __slots__ = ("ro2_sum", "thermo")
 
     def __init__(self):
         self.ro2_sum = None
-        self.mcm_complex_funcs = dict(inspect.getmembers(mcm_complex_rates, inspect.isfunction))
         self.thermo = None
 
     def update(self, gas):
@@ -72,6 +76,18 @@ class ComplexRate(ct.ExtensibleRate):
         self.species_names = node.get("species-names", [])
         if not isinstance(self.species_names, list):
             self.species_names = [self.species_names]
+        # this accesses a global module and assigns functions
+        global mcm_complex_rates
+        global mcm_complex_funcs
+        if mcm_complex_rates is None:
+            pyfile = node.get("pyfile")
+            prefix = pyfile.split("_")[0]
+            filename = os.path.join(DATA_DIR, prefix, pyfile)
+            modname = pyfile.split(".")[0]
+            spec = iu.spec_from_file_location(modname, filename)
+            mcm_complex_rates = iu.module_from_spec(spec)
+            spec.loader.exec_module(mcm_complex_rates)
+            mcm_complex_funcs = dict(inspect.getmembers(mcm_complex_rates, inspect.isfunction))
 
     def get_parameters(self, node):
         node["A"] = self.A
@@ -84,7 +100,7 @@ class ComplexRate(ct.ExtensibleRate):
         rate = self.A * data.thermo.T ** self.b * np.exp(-self.Ea / ct.gas_constant / data.thermo.T)
         # multiply by functions
         for f in self.function_names:
-            fcn = data.mcm_complex_funcs[f]
+            fcn = mcm_complex_funcs[f]
             args = inspect.getargspec(fcn).args
             built_args = []
             for a in args:
@@ -179,11 +195,10 @@ class CubedTempRate(ct.ExtensibleRate):
 
 
 class HalfPowerData(ct.ExtensibleRateData):
-    __slots__ = ("ro2_sum", "mcm_complex_funcs", "thermo")
+    __slots__ = ("ro2_sum", "thermo")
 
     def __init__(self):
         self.ro2_sum = None
-        self.mcm_complex_funcs = dict(inspect.getmembers(mcm_complex_rates, inspect.isfunction))
         self.thermo = None
 
     def update(self, gas):
@@ -210,6 +225,18 @@ class HalfPowerRate(ct.ExtensibleRate):
         self.species_names = node.get("species-names", [])
         if not isinstance(self.species_names, list):
             self.species_names = [self.species_names]
+        # this accesses a global module and assigns functions
+        global mcm_complex_rates
+        global mcm_complex_funcs
+        if mcm_complex_rates is None:
+            pyfile = node.get("pyfile")
+            prefix = pyfile.split("_")[0]
+            filename = os.path.join(DATA_DIR, prefix, pyfile)
+            modname = pyfile.split(".")[0]
+            spec = iu.spec_from_file_location(modname, filename)
+            mcm_complex_rates = iu.module_from_spec(spec)
+            spec.loader.exec_module(mcm_complex_rates)
+            mcm_complex_funcs = dict(inspect.getmembers(mcm_complex_rates, inspect.isfunction))
 
     def get_parameters(self, node):
         node["A"] = self.A
@@ -223,15 +250,16 @@ class HalfPowerRate(ct.ExtensibleRate):
         rate = self.A * data.thermo.T ** self.b * np.exp(-self.Ea / ct.gas_constant / data.thermo.T)
         # multiply by functions
         for f in self.function_names:
-            fcn = data.mcm_complex_funcs[f]
+            fcn = mcm_complex_funcs[f]
             args = inspect.getargspec(fcn).args
             built_args = []
             for a in args:
                 if "T" == a:
                     built_args.append(data.thermo.T)
                 elif "M" == a:
-                    # TODO: Construct M
-                    built_args.append(1)
+                    M = data.thermo.concentrations[data.thermo.species_index("O2")]
+                    M = data.thermo.concentrations[data.thermo.species_index("N2")]
+                    built_args.append(M)
                 else:
                     built_args.append(data.thermo.concentrations[data.thermo.species_index(a)])
             rate *= fcn(*built_args)

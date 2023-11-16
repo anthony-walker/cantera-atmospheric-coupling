@@ -1,6 +1,7 @@
 import os
 import sys
 import click
+import numpy
 import cantera as ct
 import matplotlib.pyplot as plt
 from cac.constants import DATA_DIR
@@ -41,12 +42,13 @@ def run_combustor_atm_sim(equiv_ratio, test, steadystate, precon, endtime, nstep
     inlet = ct.Reservoir(fuel)
 
     # create combustor
-    # fuel.equilibrate("HP")
+    radius = 0.15
+    height = 0.28
     combustor = AerosolReactor(fuel)
-    combustor.volume = 2.36e-2
+    combustor.volume = numpy.pi * radius * radius * height
 
     # create atmosphere model
-    atms = AerosolSolution(fuel_model, name="gas", transport_model=None)
+    atms = AerosolSolution(fuel_model, name="atmosphere", transport_model=None)
     atms.TPX = 300, ct.one_atm, "H2O: 0.04, O2:0.2095, N2:0.7808"
     atms.equilibrate('HP')
 
@@ -54,22 +56,23 @@ def run_combustor_atm_sim(equiv_ratio, test, steadystate, precon, endtime, nstep
     far_field = ct.Reservoir(atms)
 
     # create atmosphere reactor
-    atmosphere = AerosolReactor(atms)
+    atmosphere = AerosolConstPressureReactor(atms)
     atmosphere.volume = 1e6
+
     # Flow between reactors
     ctres = 0.005
     def mass_flow_combustor(t):
         return combustor.mass / ctres
+
+    # # heat transfer wall between reactors
+    w = ct.Wall(combustor, atmosphere, A=2*numpy.pi*radius*height, U=500)
 
     # connect inlet to combustor
     inlet_mfc = ct.MassFlowController(inlet, combustor, mdot=mass_flow_combustor)
 
     # combustor to atmosphere
     outlet_mfc = ct.MassFlowController(combustor, atmosphere, mdot=mass_flow_combustor)
-
-    # atmosphere to far field
-    # outlet_far = ct.MassFlowController(atmosphere, far_field, mdot=atmos_to_ff)
-    # outlet_far = ct.PressureController(atmosphere, far_field, primary=outlet_mfc, K=0.1)
+    outlet_pfc = ct.PressureController(atmosphere, far_field, primary=outlet_mfc, K=0.01)
     # setup reactor network
     net = ct.ReactorNet([combustor, atmosphere])
     net.derivative_settings = {"skip-falloff": True,
@@ -94,27 +97,28 @@ def run_combustor_atm_sim(equiv_ratio, test, steadystate, precon, endtime, nstep
         print()
 
     if steadystate:
+        print_reactor_stats()
         net.advance_to_steady_state()
-        print(net.time)
+        print_reactor_stats()
     elif not test:
         # Run a loop over decreasing residence times, until the reactor is extinguished,
         # saving the state after each iteration.
         comb_states = ct.SolutionArray(fuel)
         atms_states = ct.SolutionArray(atms)
         times = []
-        # adding the initial conditions
-        comb_states.append(combustor.thermo.state)
-        atms_states.append( atmosphere.thermo.state)
-        times.append(net.time)
+        # # adding the initial conditions
+        # comb_states.append(combustor.thermo.state)
+        # atms_states.append( atmosphere.thermo.state)
+        # times.append(net.time)
         # loop for an hour of simulation time
         while net.time < endtime:
             print_reactor_stats()
             # try:
             for i in range(nsteps):
                 net.step()
-            comb_states.append(combustor.thermo.state)
-            atms_states.append(atmosphere.thermo.state)
-            times.append(net.time)
+            # comb_states.append(combustor.thermo.state)
+            # atms_states.append(atmosphere.thermo.state)
+            # times.append(net.time)
             # except Exception as e:
             #     break
         print_reactor_stats()

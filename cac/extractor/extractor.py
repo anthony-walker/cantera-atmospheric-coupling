@@ -1,22 +1,26 @@
 import re
 import os
-import yaml
 import time
 import click
 import string
 import random
 import shutil
 import datetime
+import ruamel.yaml
 from cac.constants import DATA_DIR
 from cac.extractor.section_extractor import extract_from_fac
 from cac.extractor.species_extractor import write_species_extraction
 from cac.extractor.reaction_extractor import write_balanced_reaction_list
+
+yaml = ruamel.yaml.YAML(typ='safe')
+default_flow_style=False
 
 def regenerate_files(facfile, dirname):
     prefix = facfile.split(".")[0]
     extract_from_fac(facfile, dirname)
     write_species_extraction(prefix, dirname)
     write_balanced_reaction_list(prefix, dirname)
+
 
 @click.command()
 @click.argument('facfile', nargs=1)
@@ -49,16 +53,16 @@ def main(facfile, regenerate=True):
     # open template file
     tfile = os.path.join(DATA_DIR, "template.yaml")
     with open(tfile, "r") as f:
-        aerosol_data = yaml.safe_load(f)
+        aerosol_data = yaml.load(f)
         aerosol_data["date"] = datetime.datetime.now()
     # open mcm-species
     sfile = os.path.join(prefix_dir, f"{prefix}-species.yaml")
     with open(sfile, "r") as f:
-        species_data = yaml.safe_load(f)
+        species_data = yaml.load(f)
     # open reactions
     rfile = os.path.join(prefix_dir, f"{prefix}-reactions.yaml")
     with open(rfile, "r") as f:
-        reaction_data = yaml.safe_load(f)
+        reaction_data = yaml.load(f)
     # get all species names
     species_names, species_items = zip(*species_data.items())
     # get all elements
@@ -78,7 +82,7 @@ def main(facfile, regenerate=True):
     aerosol_data["atmosphere-reactions"] = reaction_data["atmosphere-reactions"]
     aerosol_data["aerosol-reactions"] = reaction_data["aerosol-reactions"]
     with open(f"{prefix}.yaml", "w") as f:
-        yaml.safe_dump(aerosol_data, f, default_flow_style=False, sort_keys=False)
+        yaml.dump(aerosol_data, f, default_flow_style=False, sort_keys=False)
     # Format unruly lists like elements and species in phases to make more readable.
     with open(f"{prefix}.yaml", "r") as f:
         content = f.read()

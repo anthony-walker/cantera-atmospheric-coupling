@@ -1,7 +1,10 @@
 import os
 import re
-import yaml
+import ruamel.yaml
 import cac.extractor.rate_extractor as rate_extractor
+
+yaml = ruamel.yaml.YAML(typ='safe')
+default_flow_style=False
 
 def get_reactants_products(reaction):
     reactants, products = reaction.split("=")
@@ -23,6 +26,7 @@ def get_composition_sum(comp_list):
 
 def get_merged_reaction(reactants, products):
     return " + ".join(reactants) + " => " + " + ".join(products)
+
 
 def balance_by_comps(species, react, prod, total_rcomp, total_pcomp, comp_elem, all_elems):
     elem_diff = total_rcomp.get(comp_elem, 0) - total_pcomp.get(comp_elem, 0)
@@ -46,13 +50,14 @@ def balance_by_comps(species, react, prod, total_rcomp, total_pcomp, comp_elem, 
         for ele, amt in all_elems.items():
             total_rcomp[ele] = elem_fraction * amt + total_rcomp[ele] if ele in total_rcomp.keys() else elem_fraction * amt
 
+
 def get_balanced_reaction_list(prefix, dirname):
     rtext = os.path.join(dirname, f"{prefix}-reactions.txt")
     with open(rtext, "r") as f:
         reactions = f.read().split("\n")[:-1]
     syaml = os.path.join(dirname, f"{prefix}-species.yaml")
     with open(syaml, "r") as f:
-        species = yaml.safe_load(f)
+        species = yaml.load(f)
     # split reactions
     balanced_reactions = []
     for r in reactions:
@@ -108,4 +113,4 @@ def write_balanced_reaction_list(prefix, dirname):
     # sort out known aerosol reactions
     rfile = os.path.join(dirname, f"{prefix}-reactions.yaml")
     with open(rfile, "w") as f:
-        yaml.safe_dump({"atmosphere-reactions": reacts, "aerosol-reactions": aero_reacts}, f, default_flow_style=False, sort_keys=False)
+        yaml.dump({"atmosphere-reactions": reacts, "aerosol-reactions": aero_reacts}, f, default_flow_style=False, sort_keys=False)
