@@ -24,6 +24,7 @@ dependencies = [
 dynamic = ["version"]
 
 [project.scripts]
+merger = "cac.merger:merge_commandline"
 extractor = "cac.extractor.extractor:main"
 combustor = "cac.combustor:run_combustor_atm_sim"
 cookstove = "cac.cookstove:run_cookstove_sim"

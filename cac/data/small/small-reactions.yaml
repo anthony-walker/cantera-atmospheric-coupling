@@ -1,0 +1,377 @@
+aerosol-reactions:
+- equation: HNO3 => NA
+  rate-constant:
+    A: '3.61e+18'
+    Ea: '0.0'
+    b: '0.0'
+- equation: N2O5 + H2O => NA + NA
+  rate-constant:
+    A: '2.41e+20'
+    Ea: '0.0'
+    b: '0.0'
+atmosphere-reactions:
+- equation: CH3OH + OH + O2 => HCHO + HO2 + H2O
+  rate-constant:
+    A: '1.72e+12'
+    Ea: '-685.58469'
+    b: '0.0'
+- equation: H2 + OH + O2 => HO2 + H2O
+  rate-constant:
+    A: '4.64e+12'
+    Ea: '-4173.1242'
+    b: '0.0'
+- equation: H2O2 + OH => HO2 + H2O
+  rate-constant:
+    A: '1.75e+12'
+    Ea: '-317.95232'
+    b: '0.0'
+- equation: HCHO + NO3 + O2 => CO + HNO3 + HO2
+  rate-constant:
+    A: '3.31e+08'
+    Ea: '0.0'
+    b: '0.0'
+- equation: HCHO + OH + O2 => CO + HO2 + H2O
+  rate-constant:
+    A: '3.25e+12'
+    Ea: '268.27227'
+    b: '0.0'
+- equation: HO2 + NO => NO2 + OH
+  rate-constant:
+    A: '2.08e+12'
+    Ea: '536.54454'
+    b: '0.0'
+- equation: HO2 + NO3 => NO2 + OH + O2
+  rate-constant:
+    A: '2.41e+12'
+    Ea: '0.0'
+    b: '0.0'
+- equation: HO2 + OH => H2O + O2
+  rate-constant:
+    A: '2.89e+13'
+    Ea: '496.8005'
+    b: '0.0'
+- equation: HO2NO2 + OH => NO2 + H2O + O2
+  rate-constant:
+    A: '1.93e+11'
+    Ea: '1371.16938'
+    b: '0.0'
+- equation: HONO + OH => NO2 + H2O
+  rate-constant:
+    A: '1.51e+12'
+    Ea: '516.67252'
+    b: '0.0'
+- equation: NO + NO3 => NO2 + NO2
+  rate-constant:
+    A: '1.08e+13'
+    Ea: '218.59222'
+    b: '0.0'
+- equation: NO + O3 => NO2 + O2
+  rate-constant:
+    A: '8.43e+11'
+    Ea: '-2603.2346199999997'
+    b: '0.0'
+- equation: NO2 + NO3 => NO + NO2 + O2
+  rate-constant:
+    A: '2.71e+10'
+    Ea: '-2503.87452'
+    b: '0.0'
+- duplicate: true
+  equation: NO2 + O => NO + O2
+  rate-constant:
+    A: '3.31e+12'
+    Ea: '373.593976'
+    b: '0.0'
+- equation: NO2 + O3 => NO3 + O2
+  rate-constant:
+    A: '8.43e+10'
+    Ea: '-4908.38894'
+    b: '0.0'
+- equation: NO3 + OH => HO2 + NO2
+  rate-constant:
+    A: '1.20e+13'
+    Ea: '0.0'
+    b: '0.0'
+- equation: O + O3 => 2.0 O2
+  rate-constant:
+    A: '4.82e+12'
+    Ea: '-4093.6361199999997'
+    b: '0.0'
+- equation: O3 + OH => HO2 + O2
+  rate-constant:
+    A: '1.02e+12'
+    Ea: '-1867.9698799999999'
+    b: '0.0'
+- A: '1.00e+00'
+  Ea: '0.0'
+  b: '0.0'
+  equation: CO + OH + O2 => HO2 + CO2
+  function-names:
+  - KMT05
+  pyfile: small_complex_rates.py
+  ro2file: small-ro2-sum.txt
+  type: complex-rate
+- A: '1.00e+00'
+  Ea: '0.0'
+  b: '0.0'
+  equation: HNO3 + OH => NO3 + H2O
+  function-names:
+  - KMT11
+  pyfile: small_complex_rates.py
+  ro2file: small-ro2-sum.txt
+  type: complex-rate
+- A: '1.14e-09'
+  Ea: '1947.45796'
+  b: '0.0'
+  duplicate: true
+  equation: HO2 + HO2 => H2O2 + O2
+  function-names:
+  - KMT06
+  pyfile: small_complex_rates.py
+  ro2file: small-ro2-sum.txt
+  species-names:
+  - M
+  type: complex-rate
+- A: '1.32e+11'
+  Ea: '1192.3211999999999'
+  b: '0.0'
+  duplicate: true
+  equation: HO2 + HO2 => H2O2 + O2
+  function-names:
+  - KMT06
+  pyfile: small_complex_rates.py
+  ro2file: small-ro2-sum.txt
+  type: complex-rate
+- A: '1.00e+00'
+  Ea: '0.0'
+  b: '0.0'
+  equation: HO2 + NO2 => HO2NO2
+  function-names:
+  - KMT09
+  pyfile: small_complex_rates.py
+  ro2file: small-ro2-sum.txt
+  type: complex-rate
+- A: '1.00e+00'
+  Ea: '0.0'
+  b: '0.0'
+  equation: HO2 + O3 => OH + 2.0 O2
+  function-names:
+  - KUNKNOWN17
+  pyfile: small_complex_rates.py
+  ro2file: small-ro2-sum.txt
+  type: complex-rate
+- A: '1.00e+00'
+  Ea: '0.0'
+  b: '0.0'
+  equation: HO2NO2 => HO2 + NO2
+  function-names:
+  - KMT10
+  pyfile: small_complex_rates.py
+  ro2file: small-ro2-sum.txt
+  type: complex-rate
+- A: '7.83e+11'
+  Ea: '-655.77666'
+  b: '0.0'
+  equation: HSO3 + O2 => HO2 + SO3
+  pyfile: small_complex_rates.py
+  ro2file: small-ro2-sum.txt
+  species-names:
+  - O2
+  type: complex-rate
+- A: '1.00e+00'
+  Ea: '0.0'
+  b: '0.0'
+  equation: N2O5 => NO2 + NO3
+  function-names:
+  - KMT04
+  pyfile: small_complex_rates.py
+  ro2file: small-ro2-sum.txt
+  type: complex-rate
+- A: '1.99e-15'
+  Ea: '1053.21706'
+  b: '0.0'
+  equation: NO + NO + O2 => NO2 + NO2
+  pyfile: small_complex_rates.py
+  ro2file: small-ro2-sum.txt
+  species-names:
+  - O2
+  type: complex-rate
+- A: '1.00e+00'
+  Ea: '0.0'
+  b: '0.0'
+  equation: NO + O => NO2
+  function-names:
+  - KMT01
+  pyfile: small_complex_rates.py
+  ro2file: small-ro2-sum.txt
+  type: complex-rate
+- A: '1.00e+00'
+  Ea: '0.0'
+  b: '0.0'
+  equation: NO + OH => HONO
+  function-names:
+  - KMT07
+  pyfile: small_complex_rates.py
+  ro2file: small-ro2-sum.txt
+  type: complex-rate
+- A: '1.00e+00'
+  Ea: '0.0'
+  b: '0.0'
+  equation: NO2 + NO3 => N2O5
+  function-names:
+  - KMT03
+  pyfile: small_complex_rates.py
+  ro2file: small-ro2-sum.txt
+  type: complex-rate
+- A: '1.00e+00'
+  Ea: '0.0'
+  b: '0.0'
+  equation: NO2 + O => NO3
+  function-names:
+  - KMT02
+  pyfile: small_complex_rates.py
+  ro2file: small-ro2-sum.txt
+  type: complex-rate
+- A: '1.00e+00'
+  Ea: '0.0'
+  b: '0.0'
+  equation: NO2 + OH => HNO3
+  function-names:
+  - KMT08
+  pyfile: small_complex_rates.py
+  ro2file: small-ro2-sum.txt
+  type: complex-rate
+- A: '2.41e-08'
+  Ea: '-1987.202'
+  b: '0.0'
+  equation: O + SO2 => SO3
+  pyfile: small_complex_rates.py
+  ro2file: small-ro2-sum.txt
+  species-names:
+  - M
+  type: complex-rate
+- A: '1.00e+00'
+  Ea: '0.0'
+  b: '0.0'
+  duplicate: true
+  equation: O + O2 => O3
+  function-names:
+  - KUNKNOWN44
+  pyfile: small_complex_rates.py
+  ro2file: small-ro2-sum.txt
+  type: complex-rate
+- A: '1.00e+00'
+  Ea: '0.0'
+  b: '0.0'
+  duplicate: true
+  equation: O + O2 => O3
+  function-names:
+  - KUNKNOWN45
+  pyfile: small_complex_rates.py
+  ro2file: small-ro2-sum.txt
+  type: complex-rate
+- A: '1.20e+13'
+  Ea: '258.33626'
+  b: '0.0'
+  duplicate: true
+  equation: O1D => O
+  pyfile: small_complex_rates.py
+  ro2file: small-ro2-sum.txt
+  species-names:
+  - N2
+  type: complex-rate
+- A: '1.93e+13'
+  Ea: '133.14253399999998'
+  b: '0.0'
+  duplicate: true
+  equation: O1D => O
+  pyfile: small_complex_rates.py
+  ro2file: small-ro2-sum.txt
+  species-names:
+  - O2
+  type: complex-rate
+- A: '1.29e+14'
+  Ea: '0.0'
+  b: '0.0'
+  equation: O1D + H2O => OH + OH
+  pyfile: small_complex_rates.py
+  ro2file: small-ro2-sum.txt
+  species-names:
+  - H2O
+  type: complex-rate
+- A: '1.00e+00'
+  Ea: '0.0'
+  b: '0.0'
+  equation: OH + SO2 => HSO3
+  function-names:
+  - KMT12
+  pyfile: small_complex_rates.py
+  ro2file: small-ro2-sum.txt
+  type: complex-rate
+photolysis-reactions:
+- equation: H2O2 => OH + OH
+  l: '1.041e-05'
+  m: '0.723'
+  n: '0.279'
+  scalar: '1'
+  type: zenith-angle-rate
+- equation: HCHO => CO + H2
+  l: '6.853e-05'
+  m: '0.477'
+  n: '0.323'
+  scalar: '1'
+  type: zenith-angle-rate
+- equation: HCHO + 2.0 O2 => CO + HO2 + HO2
+  l: '4.642e-05'
+  m: '0.762'
+  n: '0.353'
+  scalar: '1'
+  type: zenith-angle-rate
+- equation: HNO3 => NO2 + OH
+  l: '9.312e-07'
+  m: '1.230'
+  n: '0.307'
+  scalar: '1'
+  type: zenith-angle-rate
+- equation: HONO => NO + OH
+  l: '2.644e-03'
+  m: '0.261'
+  n: '0.288'
+  scalar: '1'
+  type: zenith-angle-rate
+- duplicate: true
+  equation: NO2 + O => NO + O2
+  l: '2.792e-05'
+  m: '0.805'
+  n: '0.338'
+  scalar: '1'
+  type: zenith-angle-rate
+- equation: NO2 => NO + O
+  l: '1.165e-02'
+  m: '0.244'
+  n: '0.267'
+  scalar: '1'
+  type: zenith-angle-rate
+- equation: NO3 => NO + O2
+  l: '2.485e-02'
+  m: '0.168'
+  n: '0.108'
+  scalar: '1'
+  type: zenith-angle-rate
+- equation: NO3 => NO2 + O
+  l: '1.747e-01'
+  m: '0.155'
+  n: '0.125'
+  scalar: '1'
+  type: zenith-angle-rate
+- equation: O3 => O + O2
+  l: '4.775e-04'
+  m: '0.298'
+  n: '0.080'
+  scalar: '1'
+  type: zenith-angle-rate
+- equation: O3 => O1D + O2
+  l: '6.073e-05'
+  m: '1.743'
+  n: '0.474'
+  scalar: '1'
+  type: zenith-angle-rate

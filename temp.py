@@ -2,8 +2,12 @@ import sys
 import ruamel.yaml
 from cac.mechstats import *
 from cac.constants import DATA_DIR
+from cac.merger import update_mechanism_with_smiles_and_inchi
+from cac.merger import update_duplicates_combustor_mechanism
+from cac.merger import test_rmatch
 
-all_mechanisms()
+update_duplicates_combustor_mechanism()
+
 
 # yaml = ruamel.yaml.YAML(typ='safe', pure=True)
 # yaml.preserve_quotes = True

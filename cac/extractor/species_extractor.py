@@ -10,7 +10,7 @@ from cac.constants import DATA_DIR
 from rdkit.Chem import rdMolDescriptors
 
 yaml = ruamel.yaml.YAML(typ='safe')
-default_flow_style=False
+yaml.default_flow_style=False
 MCM_SPECIES_URL = "https://mcm.york.ac.uk/MCM/species/{:s}"
 
 # add species that are assumed available in atmospherics
@@ -86,7 +86,7 @@ def make_species_database(dir_name):
                         all_species[sp_name].update(sp)
     # output species to file
     with open("all-model-species.yaml", "w") as f:
-        yaml.dump(all_species, f, default_flow_style=False, sort_keys=False)
+        yaml.dump(all_species, f)
 
 
 def get_not_found_species(specie):
@@ -199,7 +199,7 @@ def write_species_extraction(prefix, dirname):
     # output species to file
     sfile = os.path.join(dirname, f"{prefix}-species.yaml")
     with open(sfile, "w") as f:
-        yaml.dump(data, f, default_flow_style=False, sort_keys=False)
+        yaml.dump(data, f)
 
 if __name__ == "__main__":
     get_not_found_species("BZEMUCCO")

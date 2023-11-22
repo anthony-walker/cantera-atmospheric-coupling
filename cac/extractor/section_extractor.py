@@ -53,7 +53,11 @@ def extract_from_fac(facfile, dirname, replace_generics=True, replace_complex=Tr
         rate = re.sub(r"[@]", r"**", rate.strip())
         ccs[rname] = str(parse_expr(rate))
     # write ro2 species file
-    species = re.findall(r"(?:[A-Z]+[a-z]*[0-9]*)+", sections.pop(0).split("=")[1])
+    ro2_split = sections.pop(0).split("=")
+    if len(ro2_split) > 1:
+        species = re.findall(r"(?:[A-Z]+[a-z]*[0-9]*)+", ro2_split[1])
+    else:
+        species = []
     ro2_file = os.path.join(dirname, f"{prefix}-ro2-sum.txt")
     with open(ro2_file, "w") as f:
         for sp in species:

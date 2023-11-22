@@ -4,7 +4,7 @@ import ruamel.yaml
 import cac.extractor.rate_extractor as rate_extractor
 
 yaml = ruamel.yaml.YAML(typ='safe')
-default_flow_style=False
+yaml.default_flow_style=False
 
 def get_reactants_products(reaction):
     reactants, products = reaction.split("=")
@@ -91,9 +91,12 @@ def write_balanced_reaction_list(prefix, dirname):
     # merge into reaction yaml data
     reacts = []
     aero_reacts = []
+    photo_reacts = []
     aero_species = ["NA", "SA"]
     ctr = 1
     # count and add duplicate reactions
+    sorted_rate_data = sorted(list(zip(reaction_data, rate_data)), key=lambda x: x[1].get("type", ""))
+    reaction_data, rate_data = zip(*sorted_rate_data)
     dups = [reaction_data.count(r) > 1 for r in reaction_data]
     for cdup, reaction, rate in zip(dups, reaction_data, rate_data):
         temp = {"equation": reaction}
@@ -105,7 +108,9 @@ def write_balanced_reaction_list(prefix, dirname):
             if re.search(f"[ ][^A-Za-z0-9]*{ars}([ ]|$)", reaction):
                 non_aero = False
                 break
-        if non_aero:
+        if temp.get("type", "") == "zenith-angle-rate":
+            photo_reacts.append(temp)
+        elif non_aero:
             reacts.append(temp)
         else:
             aero_reacts.append(temp)
@@ -113,4 +118,4 @@ def write_balanced_reaction_list(prefix, dirname):
     # sort out known aerosol reactions
     rfile = os.path.join(dirname, f"{prefix}-reactions.yaml")
     with open(rfile, "w") as f:
-        yaml.dump({"atmosphere-reactions": reacts, "aerosol-reactions": aero_reacts}, f, default_flow_style=False, sort_keys=False)
+        yaml.dump({"atmosphere-reactions": reacts, "photolysis-reactions": photo_reacts, "aerosol-reactions": aero_reacts}, f)

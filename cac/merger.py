@@ -1,12 +1,132 @@
 import re
 import os
+import copy
 import click
+import datetime
+import warnings
 import ruamel.yaml
+from ruamel.yaml.comments import CommentedMap, CommentedSeq
 import pubchempy as pcp
 from rdkit import Chem
 import cantera as ct
 from cac.constants import DATA_DIR
+from cac.reactors import AerosolSolution
+from cac.rates import *
 from ruamel.yaml.comments import CommentedMap
+
+def FlowMap(*args, **kwargs):
+    m = CommentedMap(*args, **kwargs)
+    m.fa.set_flow_style()
+    return m
+
+def FlowList(*args, **kwargs):
+    lst = CommentedSeq(*args, **kwargs)
+    lst.fa.set_flow_style()
+    return lst
+
+
+def spmatch(spone, sptwo):
+    res1 = spone.get("smiles", "ONE") == sptwo.get("smiles", "TWO")
+    res2 = spone.get("inchi", "ONE") == sptwo.get("inchi", "TWO")
+    res3 = spone.get("name") == sptwo.get("name")
+    return res1 or res2 or res3
+
+
+def merge_all_mechanisms(*mechanisms):
+    yaml = ruamel.yaml.YAML()
+    # yaml.preserve_quotes = True
+    yaml.default_flow_style=False
+    # yaml.sort_keys = False
+    data_sets = [yaml.load(open(m, "r")) for m in mechanisms]
+    mnames = [m.split(".")[0].strip() for m in mechanisms]
+    # get a complete list of elements
+    elements = []
+    for ds in data_sets:
+        for ele in ds["phases"][0]["elements"]:
+            elements.append(ele)
+    elements = list(set(elements))
+    # go through species and identify matching species
+    primary_species = data_sets[0]["species"]
+    smaps = []
+    for i, ds in enumerate(data_sets[1:]):
+        sp_map = {}
+        csp = []
+        for sp2 in ds["species"]:
+            found = False
+            for sp1 in primary_species:
+                if spmatch(sp1, sp2) and sp1["name"] not in csp:
+                    found = True
+                    # transfer any missing keys
+                    for k in sp2.keys():
+                        if k not in sp1.keys():
+                            sp1[k] = sp2[k]
+                    # if names do not match add a mapping
+                    if sp1["name"] != sp2["name"]:
+                        sp_map[sp1["name"]] = sp2["name"]
+                    break
+            if not found:
+                primary_species.append(sp2)
+                csp.append(sp2["name"])
+        smaps.append(sp_map)
+    # get all names
+    all_species_names = [sp["name"] for sp in primary_species]
+    # get all reactions
+    reaction_keys = []
+    for i, ds in enumerate(data_sets):
+        rkeys = list(filter(lambda x: "reaction" in x, ds.keys()))
+        new_rkeys = [ck if ck != "reactions" else f"{mnames[i]}-reactions" for ck in rkeys]
+        for i in range(len(rkeys)):
+            ds[new_rkeys[i]] = ds.pop(rkeys[i])
+        reaction_keys.append(new_rkeys)
+    # make all reactions dictionary
+    all_reactions = {rk:data_sets[0][rk] for rk in reaction_keys[0]}
+    # make all the necessary substitutions
+    for i, mp, rkeys in zip(range(1, 1 + len(smaps)), smaps, reaction_keys[1:]):
+        for ps, nps in mp.items():
+            for r in rkeys:
+                for j, rct in enumerate(data_sets[i][r]):
+                    eqn = f" {rct['equation']} "
+                    if re.search(f"[ ]{nps}[ ]", eqn):
+                        rct["equation"] = re.sub(f"[ ]{nps}[ ]", f" {ps} ", eqn).strip()
+    # make a list of all reactions
+    for i, rkeys in enumerate(reaction_keys[1:], start=1):
+        for rk in rkeys:
+            all_reactions[rk] = data_sets[i][rk]
+    # capture all extensions
+    all_extensions = []
+    for ds in data_sets:
+        for ext in ds.get("extensions", []):
+            all_extensions.append(ext)
+    # update main set and write model
+    main_data_set = data_sets[0]
+    main_data_set["extensions"] = all_extensions
+    main_data_set["species"] =  primary_species
+    main_phase = main_data_set["phases"][0]
+    main_phase["elements"] = FlowList(elements)
+    main_phase["species"] = FlowList(all_species_names)
+    for rk, reacts in all_reactions.items():
+        main_data_set[rk] = reacts
+    main_data_set["phases"][0] = main_phase
+    made_str = f"Made from: {', '.join(mechanisms)}."
+    desc = main_data_set.get("description", made_str)
+    desc += f" {made_str}" if desc != made_str else ""
+    main_data_set["description"] = desc
+    # add all info to file
+    with open("merged.yaml", "w") as f:
+        yaml.dump({"description":main_data_set.pop("description", "")}, f)
+        yaml.dump({"generator":main_data_set.pop("generator", "")}, f)
+        yaml.dump({"input-files":main_data_set.pop("input-files", [])}, f)
+        yaml.dump({"cantera-version":main_data_set.pop("cantera-version", "3.0")}, f)
+        dt = main_data_set.pop("date", datetime.datetime.now())
+        if not isinstance(dt, str):
+            dt = dt.strftime("%m/%d/%Y, %H:%M:%S")
+        yaml.dump({"date":dt}, f)
+        yaml.dump({"units":main_data_set.pop("units", {})}, f)
+        yaml.dump({"extensions":main_data_set.pop("extensions", "")}, f)
+        yaml.dump({"phases":main_data_set.pop("phases", "")}, f)
+        yaml.dump({"species":main_data_set.pop("species", "")}, f)
+        for yk in main_data_set:
+            yaml.dump({yk: main_data_set[yk]}, f)
 
 
 def semi_structural_to_smiles(semi_structural, functional_group_list):
@@ -129,162 +249,154 @@ def update_mechanism_with_smiles_and_inchi(filename):
     with open(updated, "w") as f:
         yaml.dump(mech_data, f)
 
+def print_reaction_props(r):
+    print(r.reaction_type)
+    print(r.products)
+    print(r.reactants)
+    print(dir(r.rate))
+    print(r.rate.type)
+    print(r.rate.sub_type)
+    print(r.reversible)
+    tb = r.third_body
+    print(tb)
+    if tb is not None:
+        print(tb.efficiencies)
+    print()
 
-def spmatch(spone, sptwo):
-    res1 = spone.get("smiles", "ONE") == sptwo.get("smiles", "TWO")
-    res2 = spone.get("inchi", "ONE") == sptwo.get("inchi", "TWO")
-    res3 = spone.get("name") == sptwo.get("name")
-    return res1 or res2 or res3
-
-
-def reactmatch(rone, rtwo):
-    rt1, pt1 = re.split(r"[<]?[=][>]", rone, maxsplit=1)
-    rt2, pt2 = re.split(r"[<]?[=][>]", rtwo, maxsplit=1)
-    dicts = []
-    for sec in [rt1, pt1, rt2, pt2]:
-        cdict = {}
-        for sp in re.split(r"[(]?[+]", sec):
-            csp = sp.strip().split(" ")
-            if len(csp) > 1:
-                ordr = float(csp[0].strip())
-                key = csp[1].strip()
-            else:
-                ordr = 1
-                key = csp[0].strip()
-            cdict[key] = ordr + cdict.get(key, 0)
-        dicts.append(cdict)
-    rt1, pt1, rt2, pt2 = dicts
-    if (rt1 == rt2 and pt1 == pt2) or (rt1 == pt2 and rt2 == pt1):
-        print("Matches", rone, rtwo)
-        return True
-    else:
-        return False
-
-
-def merge_mechanisms(fuel, atmosphere):
-    """ A code to merge atmospheric and gas phase mechanisms
-
-    Args:
-        fuel (str): File name of fuel mechanism
-        atmosphere (str): File name of atmosphere mechanism
-    """
-    yaml = ruamel.yaml.YAML(typ='safe', pure=True)
-    # open all data
-    with open(fuel, "r") as f:
-        fuel_data = yaml.load(f)
-    with open(atmosphere, "r") as f:
-        atms_data = yaml.load(f)
-    # get first phase for each set and merge them
-    fphase = fuel_data["phases"][0]
-    aphase = atms_data["phases"][1]
-    # get merged elements
-    merged_elements = list(set(fphase.get("elements", []) + aphase.get("elements", [])))
-    # go through species and identify matching species
-    matches = []
-    all_matched = []
-    for sp1 in fuel_data["species"]:
-        for sp2 in atms_data["species"]:
-            if spmatch(sp1, sp2):
-                if sp1["name"] in all_matched or sp2["name"] in all_matched:
-                    found = ()
-                    for m1, m2 in matches:
-                        if m1 == sp1["name"] or m2 == sp2["name"]:
-                            found = (m1, m2)
-                            break
-                    if found:
-                        if sp1["name"] == sp2["name"]:
-                            matches.remove(found)
-                            matches.append((sp1["name"], sp2["name"]))
-                        elif found[0] == found[1]:
-                            pass
-                        else:
-                            keep = input(f"Keep {sp1['name']}, {sp2['name']} or {found[0]}, {found[1]}: ")
-                            if not keep:
-                                matches.remove(found)
-                                matches.append((sp1["name"], sp2["name"]))
-                    else:
-                        matches.append((sp1["name"], sp2["name"]))
-                else:
-                    matches.append((sp1["name"], sp2["name"]))
-                all_matched.append(sp1["name"])
-                all_matched.append(sp2["name"])
-    # now make substitutions in atmospheric file and update phases etc
-    matches = {asp:fsp for fsp, asp in matches}
-    all_species = fuel_data["species"]
-    for asp in atms_data["species"]:
-        if matches.get(asp["name"], None) is None:
-            all_species.append(asp)
-    # species name list
-    all_species_names = [sp["name"] for sp in all_species]
-    # get all reactions
-    all_reactions = fuel_data["reactions"]
-    for r in atms_data["atmosphere-reactions"] + atms_data["aerosol-reactions"]:
-        for asp, fsp in matches.items():
-            eqn = f" {r['equation']} "
-            if re.search(f"[ ]{asp}[ ]", eqn):
-                res = re.search(f"[ ]{asp}[ ]", eqn)
-                r["equation"] = re.sub(f"[ ]{asp}[ ]", f" {fsp} ", eqn).strip()
-        # don't add duplicates
-        found = False
-        if not r.get("duplicate", False):
-            for cr in all_reactions:
-                if reactmatch(cr["equation"], r["equation"]):
-                    found = True
+def reactmatch(rone, rtwo, kin):
+    ro1 = ct.Reaction.from_dict(rone, kin)
+    ro2 = ct.Reaction.from_dict(rtwo, kin)
+    # if both equations are thirdbody check more simply
+    tb1 = ro1.third_body
+    tb2 = ro2.third_body
+    match = False
+    if tb1 is not None and tb2 is not None:
+        p1 = ro1.products
+        p2 = ro2.products
+        r1 = ro1.reactants
+        r2 = ro2.reactants
+        match = match or (p1 == p2 and r1 == r2) or (p1 == r2 and r1 == p2)
+    # check for tb in both reactions
+    if not match:
+        prodone = []
+        reactone = []
+        if tb1 is None:
+            prodone.append(ro1.products)
+            reactone.append(ro1.reactants)
+        else:
+            for k in tb1.efficiencies.keys():
+                cr = {k:1.0}
+                cr.update(ro1.reactants)
+                cp = {k:1.0}
+                cp.update(ro1.products)
+                prodone.append(cp)
+                reactone.append(cr)
+        prodtwo = []
+        reacttwo = []
+        if tb2 is None:
+            prodtwo.append(ro2.products)
+            reacttwo.append(ro2.reactants)
+        else:
+            for k in tb2.efficiencies.keys():
+                cr = {k:1.0}
+                cr.update(ro2.reactants)
+                cp = {k:1.0}
+                cp.update(ro2.products)
+                prodtwo.append(cp)
+                reacttwo.append(cr)
+        for p1, r1 in zip(prodone, reactone):
+            for p2, r2 in zip(prodtwo, reacttwo):
+                match = match or (p1 == p2 and r1 == r2) or (p1 == r2 and r1 == p2)
+                if match:
                     break
-        if not found:
-            all_reactions.append(r)
-    # update fuel phase
-    fphase["species"] =  all_species_names
-    fphase["elements"] = merged_elements
-    fuel_data["extensions"] = atms_data["extensions"]
-    fuel_data["species"] = all_species
-    fuel_data["reactions"] = all_reactions
-    fuel_data["phases"][0] =  fphase
-    # add all info to file
-    comb_file = fuel.split(".")[0] + "-"+ atmosphere.split(".")[0] +".yaml"
-    with open(comb_file, "w") as f:
-        yaml.dump(fuel_data, f)
+    if match:
+        print("Matches:")
+        print(rone["equation"])
+        print(rtwo["equation"])
+        print()
+        # input()
+    return match, rtwo.get("duplicate", False)
 
 
-def simple_merge(mech1, mech2):
-    yaml = ruamel.yaml.YAML(typ='safe', pure=True)
-    # open all data
-    with open(mech1, "r") as f:
-        data1 = yaml.load(f)
-    with open(mech2, "r") as f:
-        data2 = yaml.load(f)
-    # get first phase for each set and merge them
-    phase1 = data1["phases"][0]
-    phase2 = data2["phases"][0]
-    # merge elements
-    phase1["elements"] = list(set(phase1.get("elements", []) + phase2.get("elements", [])))
-    needed = []
-    # add all needed species
-    for sp in phase2["species"]:
-        if sp not in phase1["species"]:
-            needed.append(sp)
-            phase1["species"].append(sp)
-    for sp in data2["species"]:
-        if sp["name"] in needed:
-            data1["species"].append(sp)
-    # add all needed reactions
-    all_reactions = data1["reactions"]
-    for r2 in data2["reactions"]:
-        found = False
-        for r1 in all_reactions:
-            if r2.get("duplicate", False) or reactmatch(r1["equation"], r2["equation"]):
-                found =  True
-                break
-        if not found:
-            all_reactions.append(r2)
-    data1["reactions"] = all_reactions
-    # add all info to file
-    with open("simple-combined.yaml", "w") as f:
-        yaml.dump(data1, f)
-
+def update_duplicates_combustor_mechanism():
+    yaml = ruamel.yaml.YAML()
+    # yaml.preserve_quotes = True
+    yaml.default_flow_style=False
+    yaml.representer.ignore_aliases = lambda *args: True
+    # yaml.sort_keys = False
+    combustor_data = yaml.load(open("merged.yaml", "r"))
+    cphase = combustor_data["phases"][0]
+    cphase["name"] = "combustor"
+    cphase["reactions"] = ["farnesene-reactions", "sulfur-reactions"]
+    aphase = copy.deepcopy(cphase)
+    aphase["name"] = "atmosphere"
+    aphase["reactions"] = ["atmosphere-reactions", "aerosol-reactions", "photolysis-reactions", "sulfur-reactions"]
+    combustor_data["phases"].append(aphase)
+    cks = [rk for rk in combustor_data["phases"][0]["reactions"]]
+    aks = [rk for rk in combustor_data["phases"][1]["reactions"]]
+    # create solution object
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        spec = ct.Species.list_from_file("merged.yaml")
+        spec_gas = AerosolSolution(thermo='ideal-gas', kinetics="gas", species=spec)
+    # update combustor reactions
+    combustor_reactions = []
+    for ck in cks:
+        for cr in combustor_data.get(ck, []):
+            duplicate = False
+            known = False
+            for r in combustor_reactions:
+                duplicate, known = reactmatch(r, cr, spec_gas)
+                if duplicate and known:
+                    r["duplicate"] = True
+                    cr["duplicate"] = True
+                    break
+                elif duplicate:
+                    break
+            if (not duplicate) or known:
+                combustor_reactions.append(cr)
+    combustor_data["combustor-reactions"] = combustor_reactions
+    cphase["reactions"] = ["combustor-reactions"]
+    # update atmospheric reactions
+    atms_reactions = combustor_data[aks[0]]
+    for ak in aks:
+        for cr in combustor_data.get(ak, []):
+            duplicate = False
+            known = False
+            for r in atms_reactions:
+                duplicate, known = reactmatch(r, cr, spec_gas)
+                if duplicate and known:
+                    r["duplicate"] = True
+                    cr["duplicate"] = True
+                    break
+                elif duplicate:
+                    break
+            if (not duplicate) or known:
+                atms_reactions.append(cr)
+    combustor_data["atmosphere-reactions"] = atms_reactions
+    aphase["reactions"] = ["atmosphere-reactions"]
+    # pop other reactions
+    for rtype in ["farnesene-reactions", "sulfur-reactions", "aerosol-reactions", "photolysis-reactions"]:
+        combustor_data.pop(rtype, "")
+    # write to file
+    with open("combustor.yaml", "w") as f:
+        yaml.dump(combustor_data, f)
 
 @click.command()
-@click.argument('fuel', nargs=1, type=str)
-@click.argument('atmosphere', nargs=1, type=str)
-def merge_commandline(fuel, atmosphere):
-    merge_mechanisms(fuel, atmosphere)
+@click.argument('mechanisms', nargs=-1)
+def merge_commandline(mechanisms):
+    merge_all_mechanisms(*mechanisms)
+
+def test_rmatch():
+    # create solution object
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        spec = ct.Species.list_from_file("merged.yaml")
+        spec_gas = AerosolSolution(thermo='ideal-gas', kinetics="gas", species=spec)
+    r1 = {"equation": "H2 + HE <=> H + H + HE",
+          "rate-constant": {"A": 4.577e+19, "b": -1.4, "Ea": 1.044e+05}}
+    r2 = {"equation": "H2 + M <=> 2 H + M",
+          "type": "three-body",
+          "efficiencies": {"AR":1.5},
+          "rate-constant": {"A": 5.84e+18, "Ea": 52452.3, "b": -1.1}, "duplicate": True}
+    print(reactmatch(r1, r2, spec_gas))
