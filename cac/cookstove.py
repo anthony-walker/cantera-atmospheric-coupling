@@ -4,7 +4,7 @@ import click
 import cantera as ct
 import matplotlib.pyplot as plt
 from cac.constants import DATA_DIR
-from cac.reactors import AerosolSolution, AerosolReactor
+from cac.reactors import PlumeSolution, PlumeReactor
 
 @click.command()
 @click.argument('folder', nargs=1)
@@ -45,7 +45,7 @@ def run_cookstove_sim(folder, test, steadystate, endtime):
 
     # create atmosphere model
     atmosphere_model = f"{folder}.yaml"
-    atms = AerosolSolution(atmosphere_model, name="atmosphere", transport_model=None)
+    atms = PlumeSolution(atmosphere_model, name="atmosphere", transport_model=None)
     atms.TPX = 300, ct.one_atm, "O2:1.0, N2:3.76"
 
     # create outlet of atmosphere
@@ -53,7 +53,7 @@ def run_cookstove_sim(folder, test, steadystate, endtime):
     entrainment = ct.Reservoir(atms)
 
     # create atmosphere reactor
-    atmosphere = AerosolReactor(atms)
+    atmosphere = PlumeReactor(atms)
 
     # mass flow rate is definied by the residence time
     def mdot(t):

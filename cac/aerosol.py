@@ -3,7 +3,7 @@ import sys
 import click
 import cantera as ct
 import matplotlib.pyplot as plt
-from reactors import AerosolSolution, AerosolReactor
+from reactors import PlumeSolution, PlumeReactor
 
 @click.command()
 @click.argument('folder', nargs=1)
@@ -19,7 +19,7 @@ def run_combustor_atm_sim(folder, test, endtime):
 
     # Use reaction mechanism GRI-Mech 3.0. For 0-D simulations,
     # no transport model is necessary.
-    gas = AerosolSolution("gri30.yaml", name="gri30")
+    gas = PlumeSolution("gri30.yaml", name="gri30")
 
     # Create a Reservoir for the inlet, set to a methane/air mixture at a specified
     # equivalence ratio
@@ -37,7 +37,7 @@ def run_combustor_atm_sim(folder, test, endtime):
     combustor.volume = 1.0
 
     # create outlet atmosphere
-    atms = AerosolSolution(model, name="atmosphere")
+    atms = PlumeSolution(model, name="atmosphere")
     atms.TPX = 300, ct.one_atm, "O2:1.0, N2:3.76"
 
     # create outlet of atmosphere
@@ -45,7 +45,7 @@ def run_combustor_atm_sim(folder, test, endtime):
     entrainment = ct.Reservoir(atms)
 
     # create atmosphere reactor
-    atmosphere = AerosolReactor(atms)
+    atmosphere = PlumeReactor(atms)
 
     # mass flow rate is definied by the residence time
     def mdot(t):

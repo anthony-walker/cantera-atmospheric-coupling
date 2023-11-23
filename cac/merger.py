@@ -10,7 +10,7 @@ import pubchempy as pcp
 from rdkit import Chem
 import cantera as ct
 from cac.constants import DATA_DIR
-from cac.reactors import AerosolSolution
+from cac.reactors import PlumeSolution
 from cac.rates import *
 from ruamel.yaml.comments import CommentedMap
 
@@ -338,7 +338,7 @@ def update_duplicates_combustor_mechanism():
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         spec = ct.Species.list_from_file("merged.yaml")
-        spec_gas = AerosolSolution(thermo='ideal-gas', kinetics="gas", species=spec)
+        spec_gas = PlumeSolution(thermo='ideal-gas', kinetics="gas", species=spec)
     # update combustor reactions
     combustor_reactions = []
     for ck in cks:
@@ -358,7 +358,7 @@ def update_duplicates_combustor_mechanism():
     combustor_data["combustor-reactions"] = combustor_reactions
     cphase["reactions"] = ["combustor-reactions"]
     # update atmospheric reactions
-    atms_reactions = combustor_data[aks[0]]
+    atms_reactions = []
     for ak in aks:
         for cr in combustor_data.get(ak, []):
             duplicate = False
@@ -392,7 +392,7 @@ def test_rmatch():
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         spec = ct.Species.list_from_file("merged.yaml")
-        spec_gas = AerosolSolution(thermo='ideal-gas', kinetics="gas", species=spec)
+        spec_gas = PlumeSolution(thermo='ideal-gas', kinetics="gas", species=spec)
     r1 = {"equation": "H2 + HE <=> H + H + HE",
           "rate-constant": {"A": 4.577e+19, "b": -1.4, "Ea": 1.044e+05}}
     r2 = {"equation": "H2 + M <=> 2 H + M",

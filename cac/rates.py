@@ -61,7 +61,6 @@ class ComplexData(ct.ExtensibleRateData):
         else:
             return False
 
-
 @ct.extension(name="complex-rate", data=ComplexData)
 class ComplexRate(ct.ExtensibleRate):
     __slots__ = ("species_names", "function_names", "A", "b", "Ea", "pyfile", "ro2sumfile")
@@ -97,7 +96,7 @@ class ComplexRate(ct.ExtensibleRate):
         node["species-names"] = self.species_names
 
     def eval(self, data):
-        rate = self.A * data.thermo.T ** self.b * np.exp(-self.Ea / ct.gas_constant / data.thermo.T)
+        rate = self.A * (data.thermo.T ** self.b) * np.exp(-self.Ea / ct.gas_constant / data.thermo.T)
         # multiply by functions
         for f in self.function_names:
             fcn = mcm_complex_funcs[f]
@@ -115,7 +114,7 @@ class ComplexRate(ct.ExtensibleRate):
                 else:
                     built_args.append(data.thermo.concentrations[data.thermo.species_index(a)])
             rate *= fcn(*built_args)
-        # multiply by speciess
+        # multiply by species
         for sp in self.species_names:
             if sp == "RO2":
                 rate *= data.ro2_sum

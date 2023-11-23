@@ -2,7 +2,7 @@ import os
 import cantera as ct
 import numpy as np
 
-class AerosolSolution(ct.Solution):
+class PlumeSolution(ct.Solution):
     "Wrapper to allow assignment of custom attributes"
 
 class PlumeReactor(ct.ExtensibleIdealGasConstPressureMoleReactor):
@@ -36,7 +36,7 @@ class PlumeReactor(ct.ExtensibleIdealGasConstPressureMoleReactor):
         # calculate omega
         if (t > 0):
             self.omega_X = np.zeros(self.thermo.n_species)
-            self.omega_T = np.zeros(self.thermo.n_species)
+            self.omega_T = 0
             # TODO: ADD NEEDED DERIVATIVES HERE
         if (t > self.t1):
             self.omega_X = self.omega_X / (1 + self.Cv * self.omega_X * (t - self.t1))
@@ -48,7 +48,7 @@ class PlumeReactor(ct.ExtensibleIdealGasConstPressureMoleReactor):
             self.omega_T = self.omega_T / (1 + Cd * self.omega_T * (t - self.t2))
 
         # addition of value to energy equation for thermal entrainment
-        RHS[0] - omega_T * (self.T -  self.T_amb)
+        RHS[0] -= self.omega_T * (self.T -  self.T_amb)
         # addition of value for species equation entrainment
         # for i, oi in enumerate(self.omega_X):
         #     RHS[i] -= oi * (x_i)

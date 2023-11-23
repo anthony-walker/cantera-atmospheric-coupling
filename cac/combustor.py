@@ -7,10 +7,32 @@ import cantera as ct
 from scipy.optimize import fsolve
 import matplotlib.pyplot as plt
 from cac.constants import DATA_DIR
-from cac.reactors import AerosolSolution, AerosolReactor, AerosolConstPressureReactor
+from cac.reactors import PlumeSolution, PlumeReactor
+
+
+def get_debug_atmosphere():
+    spec = ct.Species.list_from_file(os.path.join(DATA_DIR, "atmosphere.yaml"))
+    spec_gas = PlumeSolution(thermo='ideal-gas', kinetics="gas", species=spec)
+    ys = """
+    - A: 7.23e+08
+      Ea: 0.0
+      b: 0.0
+      equation: SO3 + H2O => SA
+      pyfile: atmosphere_complex_rates.py
+      ro2file: atmosphere-ro2-sum.txt
+      species-names: H2O
+      type: complex-rate
+      """
+    R = ct.Reaction.list_from_yaml(ys, spec_gas)
+    for r in R:
+        spec_gas.add_reaction(r)
+    atmosphere = PlumeReactor(spec_gas)
+    return atmosphere
+
 
 def pressure(r):
     return r.T * ct.gas_constant * r.mass / r.thermo.mean_molecular_weight / r.volume
+
 
 def print_reactor_stats(net, r):
         print(f"Integrated to {net.time}..")
@@ -21,6 +43,23 @@ def print_reactor_stats(net, r):
         print(pressure(r))
         print()
 
+
+def new_network(r, precon):
+    # setup reactor network
+    net = ct.ReactorNet(r)
+    net.derivative_settings = {"skip-falloff": True,
+                            "skip-third-bodies": True,
+                            "skip-coverage-dependence": True,
+                            "skip-electrochemistry": True,
+                            "skip-flow-devices": True,
+                            "skip-walls": True}
+    net.max_steps = 100000
+    # setup preconditioner
+    if precon:
+        net.preconditioner = ct.AdaptivePreconditioner()
+    return net
+
+
 @click.command()
 @click.option('--equiv_ratio', default=1.0, help='Equivalence ratio for the fuel')
 @click.option('--test', default=False, help='Simply just test integration without recording')
@@ -28,17 +67,9 @@ def print_reactor_stats(net, r):
 @click.option('--precon/--no-precon', default=True, help='Add preconditioning to the simulation')
 @click.option('--endtime', default=1.0, help='Run the simulation to the set end time')
 @click.option('--nsteps', default=10, help='The number of steps to take between records')
-@click.option("--farnesene", default=0.05, help="Farnesene blend percentage")
+@click.option("--farnesane", default=0.1, help="Farnesene blend percentage")
 @click.option("--sulfur", default=0.001, help="Sulfur amount in mole fraction")
-def run_combustor_atm_sim(equiv_ratio, test, steadystate, precon, endtime, nsteps, farnesene, sulfur):
-    """ a real jet-A of intended average composition,
-        POSF 4658
-
-    Args:
-        folder (_type_): _description_
-        test (_type_): _description_
-        endtime (_type_): _description_
-    """
+def run_combustor_atm_sim(equiv_ratio, test, steadystate, precon, endtime, nsteps, farnesane, sulfur):
     # append appropriate directories
     sys.path.append(DATA_DIR)
     # creation of combustor portion of simulation
@@ -51,22 +82,24 @@ def run_combustor_atm_sim(equiv_ratio, test, steadystate, precon, endtime, nstep
     # add H2S
     if sulfur > 0:
         X_fuel.update({"H2S":sulfur})
-    # adjust fuels for farnesene blend
-    X_fuel = {k:v * (1-farnesene) for k,v in X_fuel.items()}
-    # add farnesene blend
+    # adjust fuels for farnesane blend
+    X_fuel = {k:v * (1-farnesane) for k,v in X_fuel.items()}
+    # add farnesane blend
     Xfarne = 1 - numpy.sum([v for k,v in X_fuel.items()])
     if Xfarne > 0:
         X_fuel.update({"iC15H32": Xfarne})
     X_fuel = ", ".join([f"{k}:{v}" for k, v in X_fuel.items()])
     X_air = "H2O: 0.04, O2:0.2095, N2:0.7808"
     # combustor geometrical parameters
-    radius = 0.15
-    height = 0.28
+    plenum_radius = 0.035
+    plenum_length = 0.1
+    chamber_radius = 0.045
+    chamber_length = 0.3
     # residence time in combustor
-    ctres = 0.0063
+    residence_time = 0.1  # starting residence time
     # design parameters
     EPR = 25 # engine pressure ratio
-    EGT = 800 # K, exhaust gas temperature
+    EGT = 800 # K, exhaust gas temperatures
     p_atm = 0.2 * ct.one_atm
     T_atm = 240 # K
     fuel.TPX = T_atm, p_atm, X_air
@@ -76,25 +109,70 @@ def run_combustor_atm_sim(equiv_ratio, test, steadystate, precon, endtime, nstep
     # set input fuel conditions
     fuel.TP = T1, p1
     fuel.set_equivalence_ratio(equiv_ratio, X_fuel, X_air)
+    # inlet fuel tank
+    fuel_tank = ct.Reservoir(fuel)
+    # creating braggs combustor with a WSR and PFR
+    fuel.equilibrate("HP")
+    wsr = ct.IdealGasConstPressureMoleReactor(fuel)
+    wsr.volume = numpy.pi * plenum_radius * plenum_radius * plenum_length
+    # outlet exhaust reservoir
+    combustion_chamber = ct.Reservoir(fuel)
+    def mflow(t):
+        return wsr.mass / residence_time
+    # connect to reservoirs and get steady state operation
+    ft_to_wsr = ct.MassFlowController(fuel_tank, wsr, mdot=mflow)
+    wsr_to_cc = ct.PressureController(fuel_tank, combustion_chamber, primary=ft_to_wsr, K=0.01)
+    net = new_network([wsr], precon)
+    # advance to steady state
+    states = ct.SolutionArray(fuel, extra=['tres'])
+    last_good_rt = residence_time
+    while wsr.T > 900:
+        net.initial_time = 0.0  # reset the integrator
+        try:
+            net.advance_to_steady_state(residual_threshold=1e-2)
+            print('tres = {:.2e}, T = {:.1f}'.format(residence_time, wsr.T))
+            states.append(wsr.thermo.state, tres=residence_time)
+            residence_time *= 0.9  # decrease the residence time for the next iteration
+        except:
+            last_known_rt = residence_time
+            print('Failure: tres = {:.2e}; T = {:.1f}'.format(residence_time, wsr.T))
+            residence_time *= 0.99  # decrease the residence time for the next iteration
+    # Plot results
+    f, ax1 = plt.subplots(1, 1)
+    ax1.plot(states.tres, states.heat_release_rate, '.-', color='C0')
+    ax2 = ax1.twinx()
+    ax2.plot(states.tres[:-1], states.T[:-1], '.-', color='C1')
+    ax1.set_xlabel('residence time [s]')
+    ax1.set_ylabel('heat release rate [W/m$^3$]', color='C0')
+    ax2.set_ylabel('temperature [K]', color='C1')
+    f.tight_layout()
+    plt.savefig(os.path.join(DATA_DIR, "combustor", f"heat-release-rate-{equiv_ratio}-{farnesane}-{sulfur}.pdf"))
+    # get a state a couple before the last
+    fuel.TDY = states[-2].TDY
+    residence = states[-2].tres
+    # create the combustor that acts as a plug flow reactor
     combustor = ct.IdealGasConstPressureMoleReactor(fuel)
-    combustor.volume = numpy.pi * radius * radius * height
-    # create a wall for heat transfer
-    spark = ct.Wall(ct.Reservoir(fuel), combustor, Q=6.975e6)
-    # setup reactor network
-    net = ct.ReactorNet([combustor,])
-    net.derivative_settings = {"skip-falloff": True,
-                            "skip-third-bodies": True,
-                            "skip-coverage-dependence": True,
-                            "skip-electrochemistry": True,
-                            "skip-flow-devices": True,
-                            "skip-walls": True}
-    net.max_steps = 100000
-    # setup preconditioner
-    if precon:
-        net.preconditioner = ct.AdaptivePreconditioner()
-    # advance to residence time
-    net.advance(ctres)
-    # assign state post combustor
+    combustor.volume = numpy.pi * chamber_radius * chamber_radius * chamber_length
+    net = new_network([combustor], precon)
+    # plug flow reactor states
+    n_steps_pfr = 2000
+    t_total = residence_time
+    dt = t_total / n_steps_pfr
+    mdot0 = combustor.mass / residence_time
+    combustor_area = numpy.pi * chamber_radius * chamber_radius
+    # define time, space, and other information vectors
+    t1 = (numpy.arange(n_steps_pfr) + 1) * dt
+    z1 = numpy.zeros_like(t1)
+    u1 = numpy.zeros_like(t1)
+    combustor_states = ct.SolutionArray(combustor.thermo)
+    for n1, t_i in enumerate(t1):
+        # perform time integration
+        net.advance(t_i)
+        # compute velocity and transform into space
+        u1[n1] = mdot0 / combustor_area / combustor.thermo.density
+        z1[n1] = z1[n1 - 1] + u1[n1] * dt
+        combustor_states.append(combustor.thermo.state)
+    combustor_states.save(os.path.join(DATA_DIR, "combustor", f"combustor-pfr-states-{equiv_ratio}-{farnesane}-{sulfur}.csv"), overwrite=True)
     T2, p2 = combustor.thermo.TP
     print(T2, p2)
     # use nozzle end conditions to back calculate state 3 and calculate T4
@@ -125,37 +203,26 @@ def run_combustor_atm_sim(equiv_ratio, test, steadystate, precon, endtime, nstep
     print(M3, T3, p3)
     T4 = T3 * (1 + gmone / 2 * (M3 ** 2)) / (1 + gmone / 2 * (M4 ** 2))
     print(T4, p4)
-    fuel.TPY = T4, p4, combustor.Y
-
-    # # creating reservoir and atmosphere from
-    # # create atmosphere model
-    atms = AerosolSolution(fuel_model, name="gas", transport_model=None)
+    # create atmosphere model
+    exhaust = ct.Reservoir(fuel)
+    atms = PlumeSolution(os.path.join(DATA_DIR, "atmosphere.yaml"), name="atmosphere", transport_model=None)
     atms.TPX = 300, ct.one_atm, X_air
     far_field = ct.Reservoir(atms)
-    def entrainment(t):
-        pass
+
     # create atmosphere reactor
-    atms.TPY = T4, p4, combustor.Y
-    atmosphere = AerosolConstPressureReactor(atms)
-    atmosphere.volume = combustor.mass / fuel.density
+    # atms.TPY = T4, p4, combustor.Y
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        atmosphere = PlumeReactor(atms)
+    atmosphere.volume = combustor.volume
     # create inlet reservoir for atmosphere
     exhaust = ct.Reservoir(atms)
     # setup mass flow from reservoir to atmosphere
     gc = 1 # 1 in SI system
     mdot = p4 * A4 * M4 * numpy.sqrt(gamma * gc / ct.gas_constant * T4)
     exhaust_mfc = ct.MassFlowController(exhaust, atmosphere, mdot=mdot)
-    entrainment_mfc = ct.MassFlowController(exhaust, atmosphere, mdot=mdot)
     # setup reactor network
-    net = ct.ReactorNet([atmosphere])
-    net.derivative_settings = {"skip-falloff": True,
-                            "skip-third-bodies": True,
-                            "skip-coverage-dependence": True,
-                            "skip-electrochemistry": True,
-                            "skip-flow-devices": True,
-                            "skip-walls": True}
-    # setup preconditioner
-    if precon:
-        net.preconditioner = ct.AdaptivePreconditioner()
+    net = new_network([atmosphere], precon)
     net.step()
     # # Run a loop over decreasing residence times, until the reactor is extinguished,
     # # saving the state after each iteration.
