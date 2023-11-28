@@ -18,11 +18,17 @@ def all_mechanisms():
     simple = os.path.join(DATA_DIR, "creck", "jetfuel.yaml")
     print_mech_stats(simple, "gas")
 
-    simple = os.path.join(DATA_DIR, "farnesene", "farnesene-313-2147.yaml")
+    simple = os.path.join(DATA_DIR, "farnesane", "farnesane.yaml")
     print_mech_stats(simple, "gas")
 
     sc = os.path.join(DATA_DIR, "scombustor.yaml")
     print_mech_stats(sc, "gas")
+
+    sc = os.path.join(DATA_DIR, "combustor.yaml")
+    print_mech_stats(sc, "combustor")
+
+    sc = os.path.join(DATA_DIR, "combustor.yaml")
+    print_mech_stats(sc, "atmosphere")
 
 
 def print_mech_stats(fname, phasename):

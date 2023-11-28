@@ -155,7 +155,7 @@ def run_combustor_atm_sim(equiv_ratio, test, steadystate, precon, endtime, nstep
     combustor.volume = numpy.pi * chamber_radius * chamber_radius * chamber_length
     net = new_network([combustor], precon)
     # plug flow reactor states
-    n_steps_pfr = 2000
+    n_steps_pfr = 1000
     t_total = residence_time
     dt = t_total / n_steps_pfr
     mdot0 = combustor.mass / residence_time
@@ -205,16 +205,17 @@ def run_combustor_atm_sim(equiv_ratio, test, steadystate, precon, endtime, nstep
     print(T4, p4)
     # create atmosphere model
     exhaust = ct.Reservoir(fuel)
-    atms = PlumeSolution(os.path.join(DATA_DIR, "atmosphere.yaml"), name="atmosphere", transport_model=None)
-    atms.TPX = 300, ct.one_atm, X_air
-    far_field = ct.Reservoir(atms)
-
-    # create atmosphere reactor
-    # atms.TPY = T4, p4, combustor.Y
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        atmosphere = PlumeReactor(atms)
+        atms = PlumeSolution(fuel_model, name="atmosphere", transport_model=None)
+    atms.TPX = T_atm, p_atm, X_air
+    air_state = atms.TPX
+    far_field = ct.Reservoir(atms)
+    # create atmosphere reactor
+    atms.TPY = T4, p4, combustor.Y
+    atmosphere = PlumeReactor(atms)
     atmosphere.volume = combustor.volume
+    atmosphere.TX_air = [air_state[0],] + [x for x in air_state[2]]
     # create inlet reservoir for atmosphere
     exhaust = ct.Reservoir(atms)
     # setup mass flow from reservoir to atmosphere
@@ -223,10 +224,10 @@ def run_combustor_atm_sim(equiv_ratio, test, steadystate, precon, endtime, nstep
     exhaust_mfc = ct.MassFlowController(exhaust, atmosphere, mdot=mdot)
     # setup reactor network
     net = new_network([atmosphere], precon)
-    net.step()
-    # # Run a loop over decreasing residence times, until the reactor is extinguished,
-    # # saving the state after each iteration.
-    # atms_states = ct.SolutionArray(atms)
+    while atmosphere.T > T_atm:
+        print(atmosphere.T)
+        net.step()
+    atms_states = ct.SolutionArray(atms)
     # times = []
     # # adding the initial conditions
     # atms_states.append(atmosphere.thermo.state)
