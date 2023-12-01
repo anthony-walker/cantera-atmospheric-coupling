@@ -51,7 +51,7 @@ def get_pure_arrhenius(arrhen_string):
     A_coeff = 1
     res = re.search(r"[-]?\d+([.]\d*)?([e][+-]\d+)?", arrhen_string)
     if res:
-        A_coeff = float(res.group(0)) # * (ct.avogadro / 1000)
+        A_coeff = float(res.group(0)) * (ct.avogadro / 1000)
         res = re.findall(r"([*]\d+([.]\d*)?([e][+-]\d+)?)", arrhen_string)
         for r in res:
             A_coeff *= float(r[0][1:])
@@ -72,7 +72,6 @@ def get_pure_arrhenius(arrhen_string):
     ymlout["rate-constant"]["Ea"] = f"{Ea_coeff}"
     return ymlout
 
-
 def get_complex_rate(rate_exp, species_names, func_names):
     """ A function that can deal with a combined rate and produce the yaml
 
@@ -90,59 +89,6 @@ def get_complex_rate(rate_exp, species_names, func_names):
         comp_data["function-names"] = func_names
     return comp_data
 
-
-def get_temp_squared_rate(rate_exp):
-    rate_exp = re.sub(r"[*]TEMP[*][*]2", "", rate_exp)
-    arrhen_data = get_pure_arrhenius(rate_exp)
-    rate_data = {"type": "T-squared-rate"}
-    rate_data.update(arrhen_data["rate-constant"])
-    return rate_data
-
-def get_temp_cubed_rate(rate_exp):
-    """ Get data for rates that match the pattern TEMP^2
-
-    Args:
-        rate_exp (str): Rate expression containing TEMP^2
-    """
-    res = re.search(r"[*]exp[(]\d+([.]\d*)?([e][+-]\d+)?[/]TEMP[*][*]3[)]", rate_exp)
-    cubic_part = res.group(0)
-    arrhen_data = get_pure_arrhenius(rate_exp.replace(cubic_part, ""))
-    rate_data = {"type": "T-cubed-rate"}
-    rate_data.update(arrhen_data["rate-constant"])
-    return rate_data
-
-def get_half_power_rate(rate_exp):
-    """ Get rate data for rates that match the (*)^0.5 pattern
-
-    Args:
-        rate_exp (str): (*)^0.5 pattern
-    """
-    res = re.search(r"[(].*[)][*][*]0.5", rate_exp)
-    power_exp = res.group(0)
-    internal_arrhen = power_exp[1:-5]
-    # get names
-    all_names = re.findall(r"(?:[A-Z]+[0-9]*)+", internal_arrhen)
-    all_names = list(filter(lambda x: x != "TEMP", all_names))
-    species_names = list(filter(lambda x: x not in complex_rate_fcns, all_names))
-    func_names = list(filter(lambda x: x in complex_rate_fcns, all_names))
-    # get rate
-    int_comp_arr = internal_arrhen
-    int_comp_arr = re.sub("TEMP", "!!!!", int_comp_arr)
-    for sp in all_names:
-        int_comp_arr = re.sub(sp + r"[*]?", "", int_comp_arr)
-    int_comp_arr = re.sub("!!!!", "TEMP", int_comp_arr)
-    comp_data = get_complex_rate(int_comp_arr, species_names, func_names)
-    external_exp = rate_exp.replace("*"+power_exp, "")
-    remainder = external_exp.split("*")
-    consts = list(filter(lambda r: re.fullmatch("\d+([.]\d*)?(e[-+]\d+)?", r), remainder))
-    species = list(filter(lambda x: x not in consts, remainder))
-    C = str(np.prod(list(map(lambda x: float(x), consts))))
-    # add to data
-    comp_data["type"] = "half-power-rate"
-    comp_data["C"] = C
-    if species:
-        comp_data["species-names"] = species
-    return comp_data
 
 def rate_sorter(rate_exp):
     rate_exp = rate_exp.strip()

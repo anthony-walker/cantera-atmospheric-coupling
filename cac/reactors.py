@@ -37,7 +37,7 @@ class PlumeReactor(ct.ExtensibleIdealGasConstPressureMoleReactor):
         nlog = np.log10
         # logy = (nlog(x) - nlog(x1)) * (nlog(y2) - nlog(y1)) / (nlog(x2) - nlog(x1)) + nlog(y1)
         logy = nlog(x/x1) * nlog(y2/y1) / nlog(x2/x1) + nlog(y1)
-        return 10 ** logy
+        return logy
 
     def after_eval(self, t, LHS, RHS):
         # updating zenith angle after eval
@@ -52,7 +52,7 @@ class PlumeReactor(ct.ExtensibleIdealGasConstPressureMoleReactor):
                     omega_ent = self.erates[0]
                     break
                 elif t >= self.times[i] and t < self.times[i+1]:
-                    omega_ent = self.log_rate_interpolation(t, self.times[i], self.rates[i], self.times[i+1], self.rates[i+1])
+                    omega_ent = self.log_rate_interpolation(t, self.times[i], self.erates[i], self.times[i+1], self.erates[i+1])
                     break
                 elif t > self.times[-1]:
                     omega_ent = 1 / t

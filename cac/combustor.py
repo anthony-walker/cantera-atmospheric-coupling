@@ -181,10 +181,12 @@ def run_combustor_atm_sim(equiv_ratio, test, steadystate, precon, endtime, nstep
     T2, p2 = combustor.thermo.TP
     # get total moles for volume calculation
     moles = combustor.get_state()[1:]
-    max_mole_value = numpy.amax(moles)
-    decimals = int(numpy.ceil(numpy.abs(numpy.log10(max_mole_value))))
-    tolerance = float(f"1e-{decimals+16}")
-    moles = [m if m >= tolerance else 0 for m in moles]
+    clean = True
+    if clean:
+        max_mole_value = numpy.amax(moles)
+        decimals = int(numpy.ceil(numpy.abs(numpy.log10(max_mole_value))))
+        tolerance = float(f"1e-{decimals+16}")
+        moles = [m if m >= tolerance else 0 for m in moles]
     Ntotal = numpy.sum(moles)
     # print state at 2
     print(T2, p2, combustor.volume)
@@ -233,17 +235,15 @@ def run_combustor_atm_sim(equiv_ratio, test, steadystate, precon, endtime, nstep
     atmosphere = PlumeReactor(atms)
     atmosphere.volume = v4
     atmosphere.TX_air = [air_state[0],] + [x for x in air_state[2]]
-    # create inlet reservoir for atmosphere
-    exhaust = ct.Reservoir(atms)
     # setup mass flow from reservoir to atmosphere
     gc = 1 # 1 in SI system
     mdot = p4 * A4 * M4 * numpy.sqrt(gamma * gc / ct.gas_constant * T4)
-    exhaust_mfc = ct.MassFlowController(exhaust, atmosphere, mdot=mdot)
     # setup reactor network
     net = new_network([atmosphere], precon)
     while atmosphere.T > T_atm:
         print(atmosphere.T)
         net.step()
+    print(net.time, atmosphere.T)
     # atms_states = ct.SolutionArray(atms)
     # times = []
     # # adding the initial conditions
