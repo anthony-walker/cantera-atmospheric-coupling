@@ -2,6 +2,8 @@ import os
 import re
 import warnings
 import requests
+import string
+import random
 import ruamel.yaml
 from rdkit import Chem
 import pubchempy as pcp
@@ -24,6 +26,11 @@ with open(os.path.join(DATA_DIR, "functional-groups.yaml")) as f:
     functional_groups = yaml.load(f)["smiles-groups"]
 functional_group_list = sorted(functional_groups.items(), key=lambda x: len(x[0]), reverse=True)
 
+def generate_random_string(length=10):
+    characters = string.ascii_letters + string.digits
+    return ''.join(random.choice(characters) for _ in range(length))
+
+
 def print_functional_group_formulas():
     with open(os.path.join(DATA_DIR, "functional-groups.yaml")) as f:
         fct_gs = yaml.load(f)["functional-groups"]
@@ -40,22 +47,29 @@ def smiles_to_semi_structural(smiles):
             groups.append(notation)
             temp_smiles = temp_smiles.replace(group_smiles, "")
     if temp_smiles:
-        raise Exception("Semi-structural formula not completed.")
+        return generate_random_string(length=20)
     condensed = "".join(groups)
     return condensed
-
-
-def inchi_to_formula(inchi_string):
-    mol = Chem.MolFromInchi(inchi_string)
-    if not mol:
-        raise ValueError("Invalid INCHI string.")
-    return rdMolDescriptors.CalcMolFormula(mol)
-
 
 def inchi_to_composition(inchi_string):
     mol = Chem.MolFromInchi(inchi_string)
     if not mol:
         raise ValueError("Invalid INCHI string.")
+    # Initialize a dictionary to hold atom counts
+    composition = {}
+    # Iterate over atoms and count each type
+    for atom in mol.GetAtoms():
+        atom_symbol = atom.GetSymbol()
+        composition[atom_symbol] = composition.get(atom_symbol, 0) + 1
+        if atom.GetTotalNumHs() > 0:
+            composition["H"] = composition.get("H", 0) + atom.GetTotalNumHs()
+    return composition
+
+
+def smiles_to_composition(smiles_string):
+    mol = Chem.MolFromSmiles(smiles_string)
+    if not mol:
+        raise ValueError("Invalid SMILES string.")
     # Initialize a dictionary to hold atom counts
     composition = {}
     # Iterate over atoms and count each type
@@ -104,66 +118,92 @@ def get_not_found_species(specie):
         construct_data["thermo"] = {"model":"constant-cp"}
         response = requests.get(MCM_SPECIES_URL.format(specie))
         if response.status_code == 200:
+            inchi = ""
+            smiles = ""
+            molecule = None
+            # try to locate from smiles
             # get smiles string
             res = re.search(r'strong[\>]Smiles: [^\<]*', response.text)
-            smiles = res.group(0)[15:]
-            # get inchi
-            res = re.search(r'strong[\>]InChI: InChI=[^\<]*', response.text)
-            inchi = res.group(0)[14:]
-            # try to get canonical smiles from inchi
+            # try to get smiles from group
             try:
-                cmp = pcp.get_compounds(inchi, "inchi")[0]
-                smiles = cmp.canonical_smiles
-                molecule_name = smiles_to_semi_structural(smiles)
-                # try to construct semi-structural formula
-                if species_data.get(molecule_name, {}):
-                    sm_data = species_data[molecule_name]
-                    test_comp = inchi_to_composition(inchi)
-                    if test_comp == sm_data.get("composition", {}):
-                        print(f"Found with SMILES {specie}...")
-                        construct_data.update(sm_data)
-                        construct_data["name"] = specie
-                        construct_data["alias"] = molecule_name
-                        note_str = ((construct_data.get("note", " ") + note_str).strip()
-                                        + "\n")
-                        note_str += f"It was found using the SMILES representation: {molecule_name}."
-                        found = True
-                    else:
-                        raise Exception("Species composition does not match")
-            except Exception as e:
-                # print(e)
+                smiles = res.group(0)[15:].strip()
+                cmp = pcp.get_compounds(smiles, "smiles")[0]
+                molecule = Chem.MolFromSmiles(smiles)
+                ffstr = "SMILES"
+            except:
                 pass
-            # try to locate with the inchi string if it wasn't found
-            if not found:
-                try:
-                    molecule_name = inchi_to_formula(inchi).upper()
-                    if species_data.get(molecule_name, {}):
-                        print(f"Found with INCHI {specie}...")
-                        construct_data.update(species_data[molecule_name])
-                        construct_data["name"] = specie
-                        construct_data["alias"] = molecule_name
-                        note_str = ((construct_data.get("note", " ") + note_str).strip()
-                                        + "\n")
-                        note_str += f"It was found using the InCHI representation: {molecule_name}."
-                        found = True
-                except Exception as e:
-                    # print(e)
-                    pass
+            # try to get smiles from inchi
+            res = re.search(r'strong[\>]InChI: InChI=[^\<]*', response.text)
+            try:
+                inchi = res.group(0)[14:]
+                cmp = pcp.get_compounds(inchi, "inchi")[0]
+                if not smiles:
+                    smiles = cmp.canonical_smiles
+                if molecule is None:
+                    molecule = Chem.MolFromInchi(inchi)
+                    ffstr = "INCHI"
+            except:
+                pass
+            # get molecule name
+            if molecule is not None:
+                molecule_name = rdMolDescriptors.CalcMolFormula(molecule)
+            else:
+                molecule_name = generate_random_string(length=20)
+            # get semi-structural name
+            if smiles:
+                semi_struct_name = smiles_to_semi_structural(smiles)
+            else:
+                semi_struct_name = generate_random_string(length=20)
+            # check for the molecule name otherwise try the semi-structural
+            if species_data.get(molecule_name, {}):
+                sm_data = species_data[molecule_name]
+                test_comp = smiles_to_composition(smiles)
+            elif species_data.get(semi_struct_name, {}):
+                ffstr = "SEMI-STRUCTURAL"
+                molecule_name = semi_struct_name
+                sm_data = species_data[semi_struct_name]
+                test_comp = smiles_to_composition(smiles)
+            else:
+                sm_data = {}
+                test_comp = {}
+            # check the composition
+            if sm_data:
+                if test_comp == sm_data.get("composition", {}):
+                    print(f"Found with {ffstr} {specie}...")
+                    construct_data.update(sm_data)
+                    construct_data["name"] = specie
+                    construct_data["alias"] = molecule_name
+                    note_str = ((construct_data.get("note", " ") + note_str).strip()
+                                    + "\n")
+                    note_str += f"It was found using the {ffstr} representation: {molecule_name}."
+                    found = True
             # add smiles and inchi string to notes
             note_str += f"SMILES: {smiles}\n"
             note_str += f"InCHI: {inchi}\n"
             # try to construct composition if it doesn't have one
             if not construct_data.get("composition", {}):
+                comp = {}
                 try:
-                    construct_data["composition"] = inchi_to_composition(inchi)
-                except Exception as e:
-                    print(f"Exception encountered for {specie}...")
-                    note_str += f"Composition not constructed as an exception was encountered: {str(e)}."
+                    comp = inchi_to_composition(inchi)
+                except:
+                    pass
+                if not comp:
+                    try:
+                        comp = smiles_to_composition(smiles)
+                    except:
+                        pass
+                if not comp:
+                    note_str += f"Composition not constructed as an exception was encountered: {specie}."
+                    formula = input(f"Composition not found for {specie}, please enter formula:")
+                # set composition
+                construct_data["composition"] = comp
             construct_data["note"] = note_str
             if not found:
                 print(f"Constructed as well as possible {specie}...")
-            construct_data["smiles"] = smiles
-            construct_data["inchi"] = inchi
+            if smiles:
+                construct_data["smiles"] = smiles
+            if inchi:
+                construct_data["inchi"] = inchi
         return construct_data
 
 

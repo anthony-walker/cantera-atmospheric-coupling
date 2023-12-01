@@ -51,7 +51,7 @@ def get_pure_arrhenius(arrhen_string):
     A_coeff = 1
     res = re.search(r"[-]?\d+([.]\d*)?([e][+-]\d+)?", arrhen_string)
     if res:
-        A_coeff = float(res.group(0)) * (ct.avogadro / 1000)
+        A_coeff = float(res.group(0)) # * (ct.avogadro / 1000)
         res = re.findall(r"([*]\d+([.]\d*)?([e][+-]\d+)?)", arrhen_string)
         for r in res:
             A_coeff *= float(r[0][1:])
@@ -68,7 +68,7 @@ def get_pure_arrhenius(arrhen_string):
     if res:
         res = re.search(r"[-]?\d+([.]\d*)?([e][+-]\d+)?", res.group(0))
         if res:
-            Ea_coeff = float(res.group(0)) * 1.987202
+            Ea_coeff = float(res.group(0)) * 1.987202  # convert to cal per mole
     ymlout["rate-constant"]["Ea"] = f"{Ea_coeff}"
     return ymlout
 
@@ -221,6 +221,7 @@ def get_list_of_rate_data(prefix, dirname):
         f.write(mcm_complex_content)
     # go through all returns and add files
     for i, rate in enumerate(returns):
+        rate["units"] = {"length":"cm", "quantity":"molec", "activation-energy":"cal/mol"}
         if rate.get("type", "") == "complex-rate":
             rate["pyfile"] = f"{pyprefix}_complex_rates.py"
             rate["ro2file"] = f"{prefix}-ro2-sum.txt"

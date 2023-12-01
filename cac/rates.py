@@ -47,15 +47,13 @@ class ZenithAngleRate(ct.ExtensibleRate):
 
 
 class ComplexData(ct.ExtensibleRateData):
-    __slots__ = ("ro2_sum", "thermo")
+    __slots__ = ("thermo")
 
     def __init__(self):
-        self.ro2_sum = None
         self.thermo = None
 
     def update(self, gas):
-        if self.ro2_sum != gas.ro2_sum or self.thermo != gas:
-            self.ro2_sum = gas.ro2_sum
+        if self.thermo != gas:
             self.thermo = gas
             return True
         else:
@@ -63,7 +61,7 @@ class ComplexData(ct.ExtensibleRateData):
 
 @ct.extension(name="complex-rate", data=ComplexData)
 class ComplexRate(ct.ExtensibleRate):
-    __slots__ = ("species_names", "function_names", "A", "b", "Ea", "pyfile", "ro2sumfile")
+    __slots__ = ("species_names", "function_names", "A", "b", "Ea", "pyfile", "ro2_species")
 
     def set_parameters(self, node, units):
         self.A = float(node.get("A", 1))
@@ -75,6 +73,13 @@ class ComplexRate(ct.ExtensibleRate):
         self.species_names = node.get("species-names", [])
         if not isinstance(self.species_names, list):
             self.species_names = [self.species_names]
+        # get ro2_species
+        ro2_sumfile = node.get("ro2file", "")
+        prefix = ro2_sumfile.split("-")[0]
+        ro2_sumfile = os.path.join(DATA_DIR, prefix, ro2_sumfile)
+        with open(ro2_sumfile, "r") as f:
+            content = f.read()
+            self.ro2_species = [sp.strip() for sp in content.split("\n")[:-1]]
         # this accesses a global module and assigns functions
         global mcm_complex_rates
         global mcm_complex_funcs
@@ -97,6 +102,8 @@ class ComplexRate(ct.ExtensibleRate):
 
     def eval(self, data):
         rate = self.A * (data.thermo.T ** self.b) * np.exp(-self.Ea / ct.gas_constant / data.thermo.T)
+        # set ro2 sum to 0
+        ro2_sum = 0
         # multiply by functions
         for f in self.function_names:
             fcn = mcm_complex_funcs[f]
@@ -110,14 +117,19 @@ class ComplexRate(ct.ExtensibleRate):
                     M = data.thermo.concentrations[data.thermo.species_index("N2")]
                     built_args.append(M)
                 elif "RO2" == a:
-                    built_args.append(data.ro2_sum)
+                    for sp in self.ro2_species:
+                        ro2_sum += data.thermo.concentrations[data.thermo.species_index(sp)]
+                    built_args.append(ro2_sum)
                 else:
                     built_args.append(data.thermo.concentrations[data.thermo.species_index(a)])
             rate *= fcn(*built_args)
         # multiply by species
         for sp in self.species_names:
             if sp == "RO2":
-                rate *= data.ro2_sum
+                if ro2_sum == 0:
+                    for sp in self.ro2_species:
+                        ro2_sum += data.thermo.concentrations[data.thermo.species_index(sp)]
+                rate *= ro2_sum
             elif sp == "M":
                 M = data.thermo.concentrations[data.thermo.species_index("O2")]
                 M = data.thermo.concentrations[data.thermo.species_index("N2")]
@@ -194,15 +206,13 @@ class CubedTempRate(ct.ExtensibleRate):
 
 
 class HalfPowerData(ct.ExtensibleRateData):
-    __slots__ = ("ro2_sum", "thermo")
+    __slots__ = ("thermo")
 
     def __init__(self):
-        self.ro2_sum = None
         self.thermo = None
 
     def update(self, gas):
-        if self.ro2_sum != gas.ro2_sum or self.thermo != gas:
-            self.ro2_sum = gas.ro2_sum
+        if self.thermo != gas:
             self.thermo = gas
             return True
         else:

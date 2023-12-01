@@ -12,10 +12,10 @@ phases:
 - elements: [H, O, C, N, Ar, He, S]
   kinetics: gas
   name: gas
-  species: [H, H2, HE, O, OH, OH*, H2O, N2, O2, HO2, H2O2, AR, C, CH, CH2, CH2(S),
-    CH3, CH4, CO, HCO, CH2O, HCOH, CH3O, CH2OH, CH3OH, CO2, HOCO, OCHO, HOCHO, CH3OO,
-    CH2OOH, HOCH2O, CH3OOH, C2, C2H, C2H2, H2CC, C2H3, C2H4, C2H5, C2H6, C2O, HCCO,
-    HCCOH, CH2CO, CHCHO, CHCHOH, cC2H3O, CH3CO, CH2CHO, CH3CHO, cC2H4O, CH2CHOH, CH3CH2O,
+  species: [H, H2, HE, O, OH, OH*, H2O, N2, O2, HO2, H2O2, AR, C, CH, CH2, CH2a, CH3,
+    CH4, CO, HCO, CH2O, HCOH, CH3O, CH2OH, CH3OH, CO2, HOCO, OCHO, HOCHO, CH3OO, CH2OOH,
+    HOCH2O, CH3OOH, C2, C2H, C2H2, H2CC, C2H3, C2H4, C2H5, C2H6, C2O, HCCO, HCCOH,
+    CH2CO, CHCHO, CHCHOH, cC2H3O, CH3CO, CH2CHO, CH3CHO, cC2H4O, CH2CHOH, CH3CH2O,
     CH3CHOH, CH2CH2OH, CH3CH2OH, OCHCO, OCHCHO, CH2CHOO, CH3C(O)O, CH2CHOOH, CH3CH2OO,
     CH3CHOOH, CH2CH2OOH, CH3CH2OOH, CH3C(O)OO, CH3C(O)OOH, HOCH2CH2OO, SO, SO2, S,
     O3, SO(S), S2, S2O, SH, H2S, HSS, HSSH, SO3, HSO, HOS, HSOH, HOSO, HSO2, H2SO,
@@ -1427,7 +1427,7 @@ reactions:
   rate-constant: {A: 203000.0, Ea: 51714.0, b: 2.7}
 - equation: CH4 + CH2 <=> CH3 + CH3
   rate-constant: {A: 4300000000000.0, Ea: 10030.0, b: 0.0}
-- equation: CH4 + CH2(S) <=> CH3 + CH3
+- equation: CH4 + CH2a <=> CH3 + CH3
   rate-constant: {A: 43000000000000.0, Ea: 0.0, b: 0.0}
 - equation: CH4 + CH <=> C2H4 + H
   rate-constant: {A: 30000000000000.0, Ea: -400.0, b: 0.0}
@@ -1439,7 +1439,7 @@ reactions:
   type: three-body
 - equation: CH2 + H2 <=> CH3 + H
   rate-constant: {A: 440000.0, Ea: 7350.0, b: 2.4}
-- equation: CH2(S) + H2 <=> CH3 + H
+- equation: CH2a + H2 <=> CH3 + H
   rate-constant: {A: 72000000000000.0, Ea: 0.0, b: 0.0}
 - equation: CH3 + O <=> CH2O + H
   rate-constant: {A: 69000000000000.0, Ea: 0.0, b: 0.0}
@@ -1456,7 +1456,7 @@ reactions:
   - {A: 1.4e+27, Ea: 3685.0, P: 13.157895 atm, b: -4.33275}
   - {A: 1.3e+22, Ea: 2451.0, P: 131.578947 atm, b: -2.66369}
   type: pressure-dependent-Arrhenius
-- equation: CH3 + OH <=> CH2(S) + H2O
+- equation: CH3 + OH <=> CH2a + H2O
   rate-constants:
   - {A: 110000000000000.0, Ea: -496.0, P: 0.001316 atm, b: -0.45845}
   - {A: 220000000000000.0, Ea: -220.0, P: 0.013158 atm, b: -0.53832}
@@ -1554,7 +1554,7 @@ reactions:
   note: Baulch DL Bowman CT Cobos CJ Cox RA Just Th Kerr JA Pilling MJ Stocker D Troe
     J Tsang W Walker RW Warnatz J JPCRD 34:757-1397 2005
   rate-constant: {A: 1200000000000000.0, Ea: 153.0, b: -0.3432}
-- equation: CH3 + CH2(S) <=> C2H4 + H
+- equation: CH3 + CH2a <=> C2H4 + H
   note: "Jasper AW Klippenstein SJ Harding LB JPCA 111:8689-8707 2007\nGLA/MIL98 NBS86"
   rate-constant: {A: 20000000000000.0, Ea: 0.0, b: 0.0}
 - equation: CH3 + CH <=> C2H3 + H
@@ -1614,32 +1614,32 @@ reactions:
 - equation: CH2 + C <=> C2H + H
   note: "Glarborg P Alzueta MU Dam-Johansen K Miller JA CF 115:1 1998\nJAM est"
   rate-constant: {A: 50000000000000.0, Ea: 0.0, b: 0.0}
-- equation: CH2(S) + N2 <=> CH2 + N2
+- equation: CH2a + N2 <=> CH2 + N2
   note: "Glarborg P Alzueta MU Dam-Johansen K Miller JA CF 115:1 1998\nJAM est"
   rate-constant: {A: 13000000000000.0, Ea: 430.0, b: 0.0}
-- equation: CH2(S) + AR <=> CH2 + AR
+- equation: CH2a + AR <=> CH2 + AR
   note: Hayes F Lawrance WD Staker WS King KD JPC 100:11314 1996 (N2)
   rate-constant: {A: 15000000000000.0, Ea: 884.0, b: 0.0}
-- equation: CH2(S) + H <=> CH2 + H
+- equation: CH2a + H <=> CH2 + H
   note: Hayes F Lawrance WD Staker WS King KD JPC 100:11314 1996
   rate-constant: {A: 200000000000000.0, Ea: 0.0, b: 0.0}
-- equation: CH2(S) + H <=> CH + H2
+- equation: CH2a + H <=> CH + H2
   note: JAM est
   rate-constant: {A: 30000000000000.0, Ea: 0.0, b: 0.0}
-- equation: CH2(S) + O <=> CO + 2 H
+- equation: CH2a + O <=> CO + 2 H
   note: Tsang W Hampson RF JPCRD 15:1087 1986
   rate-constant: {A: 30000000000000.0, Ea: 0.0, b: 0.0}
-- equation: CH2(S) + OH <=> CH2O + H
+- equation: CH2a + OH <=> CH2O + H
   note: Tsang W Hampson RF JPCRD 15:1087 1986
   rate-constant: {A: 30000000000000.0, Ea: 0.0, b: 0.0}
-- equation: CH2(S) + O2 <=> CH2 + O2
+- equation: CH2a + O2 <=> CH2 + O2
   note: "Tsang W Hampson RF JPCRD 15:1087 1986\nISC=100%"
   rate-constant: {A: 31000000000000.0, Ea: 0.0, b: 0.0}
-- equation: CH2(S) + H2O <=> CH2 + H2O
+- equation: CH2a + H2O <=> CH2 + H2O
   note: Baulch DL Bowman CT Cobos CJ Cox RA Just Th Kerr JA Pilling MJ Stocker D Troe
     J Tsang W Walker RW Warnatz J JPCRD 34:757-1397 2005
   rate-constant: {A: 30000000000000.0, Ea: 0.0, b: 0.0}
-- equation: CH2(S) + CO2 <=> CH2O + CO
+- equation: CH2a + CO2 <=> CH2O + CO
   note: "Hack W Wagner HGg Wilms A BBPC 92:620-627 1988\nCarstensen HH Wagner HGg
     BBPC 99:1539 1995"
   rate-constant: {A: 11000000000000.0, Ea: 0.0, b: 0.0}
@@ -1708,7 +1708,7 @@ reactions:
   note: JAM est
   rate-constant: {A: 20000000000000.0, Ea: 0.0, b: 0.0}
 - Troe: {A: 0.9922, T1: 47310.0, T2: 47110.0, T3: 943.0}
-  equation: CH3OH (+M) <=> CH2(S) + H2O (+M)
+  equation: CH3OH (+M) <=> CH2a + H2O (+M)
   high-P-rate-constant: {A: 3.1e+18, Ea: 91712.0, b: -1.017}
   low-P-rate-constant: {A: 5.4e+23, Ea: 99596.0, b: -8.3446}
   note: "Husain D Kirsch LJ Trans Faraday Soc 67:2025 1971\n*****************************************************************************\n\
@@ -1879,10 +1879,10 @@ reactions:
   note: 'Hashemi et al., High-Pressure Oxidation of Natural Gas: Methane, Combust.
     Flame 2016'
   rate-constant: {A: 2.19e-07, Ea: 3896.3, b: 5.58}
-- equation: CH3OH + CH2(S) <=> CH2OH + CH3
+- equation: CH3OH + CH2a <=> CH2OH + CH3
   note: Shi, Ran, Qin, Qi, Zhang, Comput. Theor. Chem. 1074 (2015) 73-82
   rate-constant: {A: 0.000354, Ea: 3600.4, b: 4.19}
-- equation: CH3OH + CH2(S) <=> CH3O + CH3
+- equation: CH3OH + CH2a <=> CH3O + CH3
   note: Shi, Ran, Qin, Qi, Zhang, Comput. Theor. Chem. 1074 (2015) 73-82
   rate-constant: {A: 0.000136, Ea: 5626.0, b: 4.26}
 - duplicate: true
@@ -2076,7 +2076,7 @@ reactions:
 - equation: C2H6 + CH3 <=> C2H5 + CH4
   note: A. S. Sharipov, A. M. Starik, J. Phys. Chem. A 116 (2012) 84448454.
   rate-constant: {A: 35.0, Ea: 10384.0, b: 3.44}
-- equation: C2H6 + CH2(S) <=> C2H5 + CH3
+- equation: C2H6 + CH2a <=> C2H5 + CH3
   note: S.L. Peukert, N.J. Labbe, R. Sivaramakrishnan, J.V. Michael, J. Phys. Chem.
     A 117 (2013) 1022810238 (500 - 2000 K)
   rate-constant: {A: 120000000000000.0, Ea: 0.0, b: 0.0}
@@ -2174,7 +2174,7 @@ reactions:
   low-P-rate-constant: {A: 2.1e+24, Ea: 0.0, b: -1.3}
   note: " Baulch DL Bowman CT Cobos CJ Cox RA Just Th Kerr JA Pilling MJ Stocker D
     Troe J Tsang W Walker RW Warnatz J JPCRD 34:757-1397 2005\n ------------- C2H4
-    ...\nC2H4+H=CH3+CH2\t! see the reverse\nC2H4+H=CH3+CH2(S)\t! see the reverse"
+    ...\nC2H4+H=CH3+CH2\t! see the reverse\nC2H4+H=CH3+CH2a\t! see the reverse"
   type: falloff
 - Troe: {A: 0.735, T1: 1035.0, T2: 5417.0, T3: 180.0}
   efficiencies: {AR: 0.7, H2O: 6.0}
@@ -2332,7 +2332,7 @@ reactions:
   equation: C2H4 + CH3 <=> C2H3 + CH4
   rate-constant: {A: 8.13e-05, Ea: 8835.8, b: 4.417}
 - duplicate: true
-  equation: C2H4 + CH2(S) <=> C2H3 + CH3
+  equation: C2H4 + CH2a <=> C2H3 + CH3
   note: Miller and Klippenstein, J. Phys. Chem. A, 2013, 117 (13), pp 27182727
   rate-constants:
   - {A: 1.77e+19, Ea: 6787.0, P: 0.01 atm, b: -1.95}
@@ -2342,7 +2342,7 @@ reactions:
   - {A: 7.36e+29, Ea: 23849.0, P: 100.0 atm, b: -4.28}
   type: pressure-dependent-Arrhenius
 - duplicate: true
-  equation: C2H4 + CH2(S) <=> C2H3 + CH3
+  equation: C2H4 + CH2a <=> C2H3 + CH3
   rate-constants:
   - {A: 4300000000000.0, Ea: -110.0, P: 0.01 atm, b: 0.19}
   - {A: 226000000000.0, Ea: 48.0, P: 0.1 atm, b: 0.54}
@@ -2927,17 +2927,17 @@ reactions:
   rate-constant: {A: 1.069e+26, Ea: 73959.1, b: -3.525}
 - equation: C2H2 + O2 <=> H + CO + H + CO
   rate-constant: {A: 1.218e+32, Ea: 93010.6, b: -4.869}
-- equation: C2H2 + CH2(S) <=> C2H2 + CH2
+- equation: C2H2 + CH2a <=> C2H2 + CH2
   note: HAC/WAG89
   rate-constant: {A: 40000000000000.0, Ea: 0.0, b: 0.0}
 - equation: H2CC + H <=> C2H2 + H
-  note: "Hack W Koch M Wagener R Wagner HGg BBPC 93:165 1989\nC2H2+CH2(S)=CHCH2CH\
-    \                     7.06E15        -0.662      37.7\nPolino et al., J. Phys.
-    Chem. A 2013, 117, 12677-12692 (dx.doi.org/10.1021/jp406246y)\nwaiting for CHCH2CH\n\
-    C2H2+CH2(S)=CH3CCH       See C3 Subset\nC2H2+CH2(S)=total                    \
-    \   3.97E15        -0.571      -4.85\nPolino et al., J. Phys. Chem. A 2013, 117,
-    12677-12692 (dx.doi.org/10.1021/jp406246y)\n------------- H2CC ...\nH2CC=C2H2\
-    \    see the reverse: C2H2(+M)=H2CC(+M)\n          LAS/LAW00"
+  note: "Hack W Koch M Wagener R Wagner HGg BBPC 93:165 1989\nC2H2+CH2a=CHCH2CH  \
+    \                   7.06E15        -0.662      37.7\nPolino et al., J. Phys. Chem.
+    A 2013, 117, 12677-12692 (dx.doi.org/10.1021/jp406246y)\nwaiting for CHCH2CH\n\
+    C2H2+CH2a=CH3CCH       See C3 Subset\nC2H2+CH2a=total                       3.97E15\
+    \        -0.571      -4.85\nPolino et al., J. Phys. Chem. A 2013, 117, 12677-12692
+    (dx.doi.org/10.1021/jp406246y)\n------------- H2CC ...\nH2CC=C2H2    see the reverse:
+    C2H2(+M)=H2CC(+M)\n          LAS/LAW00"
   rate-constant: {A: 100000000000000.0, Ea: 0.0, b: 0.0}
 - equation: H2CC + OH <=> CH2CO + H
   note: "Laskin A Wang H Law CK IJCK 32:589 2000\n          LAS/LAW00"
@@ -3801,7 +3801,7 @@ reactions:
     Baulch DL Bowman CT Cobos CJ Cox RA Just Th Kerr JA Pilling MJ Stocker D Troe
     J Tsang W Walker RW Warnatz J JPCRD 34:757-1397 2005"
   rate-constant: {A: 10000000.0, Ea: 3000.0, b: 2.0}
-- equation: CH2CO + CH2(S) <=> C2H4 + CO
+- equation: CH2CO + CH2a <=> C2H4 + CO
   note: JAM est
   rate-constant: {A: 160000000000000.0, Ea: 0.0, b: 0.0}
 - equation: HCCOH + H <=> HCCO + H2
@@ -3820,7 +3820,7 @@ reactions:
   low-P-rate-constant: {A: 2.7e+28, Ea: 1936.0, b: -3.74}
   note: "JAM est\n------------- HCCO ..."
   type: falloff
-- equation: HCCO + H <=> CH2(S) + CO
+- equation: HCCO + H <=> CH2a + CO
   note: GRI2.11
   rate-constant: {A: 150000000000000.0, Ea: 0.0, b: 0.0}
 - equation: HCCO + O <=> CO + CO + H
@@ -4570,10 +4570,10 @@ reactions:
   rate-constant: {A: 40400000000000.0, Ea: 0.0, b: 0.0}
 species:
 - composition: {H: 1}
-  inchi: InChI=1S/H2/h1H
+  inchi: InChI=1S/p+1
   name: H
   note: '!    1.008   !     H1        !'
-  smiles: '[HH]'
+  smiles: '[H+]'
   thermo:
     data:
     - [2.5, 0.0, 0.0, 0.0, 0.0, 25473.66, -0.44668285]
@@ -4617,10 +4617,10 @@ species:
       \ Max Lst Sq\nError Cp 0.0%"
     temperature-ranges: [200.0, 6000.0]
 - composition: {O: 1}
-  inchi: InChI=1S/O2/c1-2
+  inchi: InChI=1S/O
   name: O
   note: '!   15.999   !         O1    !'
-  smiles: O=O
+  smiles: '[O]'
   thermo:
     data:
     - [3.1682671, -0.00327931884, 6.64306396e-06, -6.12806624e-09, 2.11265971e-12,
@@ -4658,8 +4658,10 @@ species:
       \  REF=ATcT B}   Max Lst Sq Error\n\tCp @ 1200 K 0.28%"
     temperature-ranges: [200.0, 1000.0, 6000.0]
 - composition: {H: 1, O: 1}
+  inchi: InChI=1S/H2O/h1H2/p+1
   name: OH*
   note: '!   17.007   !     H1  O1    !'
+  smiles: '[OH+]'
   thermo:
     data:
     - [3.637266, 0.000185091, -1.6761646e-06, 2.387202e-09, -8.431442e-13, 50021.3,
@@ -4694,10 +4696,10 @@ species:
       Hemisphere\n1984.   {HF298=-241.822+/-0.03 kJ  REF=ATcT A}."
     temperature-ranges: [200.0, 1000.0, 6000.0]
 - composition: {N: 2}
-  inchi: InChI=1S/C10H12O2.O.Zn/c1-3-4-8-5-6-9(11)10(7-8)12-2;;/h3,5-7,11H,1,4H2,2H3;;
+  inchi: InChI=1S/N2/c1-2
   name: N2
   note: '!   28.013   !             N2!'
-  smiles: COC1=C(C=CC(=C1)CC=C)O.O=[Zn]
+  smiles: N#N
   thermo:
     data:
     - [3.53100528, -0.000123660988, -5.02999433e-07, 2.43530612e-09, -1.40881235e-12,
@@ -4736,8 +4738,10 @@ species:
       K 0.31%"
     temperature-ranges: [200.0, 1000.0, 6000.0]
 - composition: {H: 1, O: 2}
+  inchi: InChI=1S/HO2/c1-2/h1H
   name: HO2
   note: '!   33.007   !     H1  O2    !'
+  smiles: O[O]
   thermo:
     data:
     - [4.30179807, -0.00474912097, 2.11582905e-05, -2.42763914e-08, 9.29225225e-12,
@@ -4824,8 +4828,10 @@ species:
       ! Accessed April 2016"
     temperature-ranges: [200.0, 1000.0, 3000.0]
 - composition: {C: 1, H: 1}
+  inchi: InChI=1S/CH/h1H/q+1
   name: CH
   note: '!   13.019   ! C1  H1        !'
+  smiles: '[CH+]'
   thermo:
     data:
     - [3.4715858, 0.000404745085, -1.89387555e-06, 3.33209599e-09, -1.51271339e-12,
@@ -4875,8 +4881,10 @@ species:
       2016"
     temperature-ranges: [200.0, 1000.0, 3000.0]
 - composition: {C: 1, H: 2}
-  name: CH2(S)
+  inchi: InChI=1S/CH2/h1H2/q+1
+  name: CH2a
   note: '!   14.027   ! C1  H2        !'
+  smiles: '[CH2+]'
   thermo:
     data:
     - [4.19194506, -0.00230793137, 8.05090105e-06, -6.60122583e-09, 1.95637604e-12,
@@ -4936,10 +4944,10 @@ species:
       RRHO method rather\nthan the NRRAO2.  Max Lst Sq Error Cp @ 6000. K 0.62%."
     temperature-ranges: [200.0, 1000.0, 6000.0]
 - composition: {C: 1, O: 1}
-  inchi: InChI=1S/Co
+  inchi: InChI=1S/CO/c1-2
   name: CO
   note: '!   28.011   ! C1      O1    !'
-  smiles: '[Co]'
+  smiles: '[C-]#[O+] '
   thermo:
     data:
     - [3.5795335, -0.00061035369, 1.0168143e-06, 9.0700586e-10, -9.0442449e-13, -14344.086,
@@ -4963,8 +4971,10 @@ species:
       Lst Sq Error Cp @ 1300 K 0.12%."
     temperature-ranges: [200.0, 1000.0, 6000.0]
 - composition: {C: 1, H: 1, O: 1}
+  inchi: InChI=1S/CHO/c1-2/h1H/q+1
   name: HCO
   note: '!   29.019   ! C1  H1  O1    !'
+  smiles: C#[O+]
   thermo:
     data:
     - [4.2375461, -0.00332075257, 1.40030264e-05, -1.34239995e-08, 4.37416208e-12,
@@ -5004,10 +5014,10 @@ species:
       T 5/11H  2.C  1.O  1.   0.G   200.000  6000.000  B  30.02598 1"
     temperature-ranges: [200.0, 1000.0, 6000.0]
 - composition: {C: 1, H: 2, O: 1}
-  inchi: InChI=1S/CH2O/c1-2/h1H2
+  inchi: InChI=1S/CH2O/c1-2/h1H2/i1D2
   name: HCOH
   note: 19710-56-6 !   30.026   ! C1  H2  O1    !
-  smiles: C=O
+  smiles: '[2H]C(=O)[2H]'
   thermo:
     data:
     - [4.65733258, -0.00953742306, 4.04679152e-05, -4.45317569e-08, 1.64761516e-11,
@@ -5126,8 +5136,10 @@ species:
       \  Max Lst Sq Error Cp\n@ 1400 K 0.4%"
     temperature-ranges: [200.0, 1000.0, 6000.0]
 - composition: {C: 1, H: 1, O: 2}
+  inchi: InChI=1S/CH2O2/c2-1-3/h1H,(H,2,3)/p-1
   name: HOCO
   note: '!   45.018   ! C1  H1  O2    !'
+  smiles: C(=O)[O-]
   thermo:
     data:
     - [2.82191157, 0.00966218175, -2.78560177e-06, -4.12692493e-09, 2.61472072e-12,
@@ -5155,8 +5167,10 @@ species:
       (polyfit RAS/GLA08a)"
     temperature-ranges: [200.0, 998.402, 3000.0]
 - composition: {C: 1, H: 1, O: 2}
+  inchi: InChI=1S/CO2/c2-1-3/p+1
   name: OCHO
   note: '!   45.018   ! C1  H1  O2    !'
+  smiles: C(=[OH+])=O
   thermo:
     data:
     - [3.62860375, 0.00812496033, -1.41560718e-06, -3.27951824e-09, 1.615539e-12,
@@ -5169,8 +5183,10 @@ species:
       fitted to litt data"
     temperature-ranges: [298.15, 1000.0, 3000.0]
 - composition: {C: 1, H: 2, O: 2}
+  inchi: InChI=1S/CH2O2/c2-1-3/h1H,(H,2,3)
   name: HOCHO
   note: 64-18-6    !   46.026   ! C1  H2  O2    !
+  smiles: C(=O)O
   thermo:
     data:
     - [3.8983616, -0.0035587795, 3.5520538e-05, -4.3849959e-08, 1.7107769e-11, -46778.5744,
@@ -5187,8 +5203,10 @@ species:
       @6000 K 0.47%\nThe polynomials were adjusted by B Ruscic."
     temperature-ranges: [200.0, 1000.0, 6000.0]
 - composition: {C: 1, H: 3, O: 2}
+  inchi: InChI=1S/CH3O2/c2-1-3/h2H,1H2/q-1
   name: CH3OO
   note: 2143-58-0  !   47.034   ! C1  H3  O2    !
+  smiles: C(O)[O-]
   thermo:
     data:
     - [2.93065328, 0.00868504133, 8.80315108e-06, -1.39560866e-08, 5.02939926e-12,
@@ -5211,8 +5229,10 @@ species:
       \  H. Hashemi, et al., High-Pressure Oxidation of Natural Gas: Methane, 2016"
     temperature-ranges: [300.0, 1000.0, 3000.0]
 - composition: {C: 1, H: 3, O: 2}
+  inchi: InChI=1S/CH4O2/c1-3-2/h2H,1H3/p-1
   name: CH2OOH
   note: '!   47.034   ! C1  H3  O2    !'
+  smiles: CO[O-]
   thermo:
     data:
     - [5.83126679, -0.00351771199, 4.54550577e-05, -5.6690332e-08, 2.2163307e-11,
@@ -5229,8 +5249,10 @@ species:
       [JAN/ROS04]\nCp(T) scaled Cp[CH3OO](T) to Cp298 = 14.89 cal/mol/K [JAN/ROS04]"
     temperature-ranges: [200.0, 1000.0, 2500.0]
 - composition: {C: 1, H: 3, O: 2}
+  inchi: InChI=1S/CH3O2/c1-3-2/h1H3
   name: HOCH2O
   note: '!   47.034   ! C1  H3  O2    !'
+  smiles: CO[O]
   thermo:
     data:
     - [-1.97308533, 0.0426372227, -5.84444247e-05, 4.12218747e-08, -1.13584932e-11,
@@ -5254,11 +5276,10 @@ species:
     model: NASA7
     temperature-ranges: [300.0, 1000.0, 3000.0]
 - composition: {C: 2}
-  inchi:
-    InChI=1S/C21H24BrFN2O2/c1-14-18(22)13-25(12-15-8-10-17(23)11-9-15)21(27)19(14)24-20(26)16-6-4-2-3-5-7-16/h8-11,13,16H,2-7,12H2,1H3,(H,24,26)
+  inchi: InChI=1S/C2/c1-2
   name: C2
   note: 12070-15-4 !   24.022   ! C2            !
-  smiles: CC1=C(C(=O)N(C=C1Br)CC2=CC=C(C=C2)F)NC(=O)C3CCCCCC3
+  smiles: '[C-]#[C+]'
   thermo:
     data:
     - [3.69386038, -0.00184767427, 5.23712984e-06, -3.83965401e-09, 8.61135711e-13,
@@ -5277,8 +5298,10 @@ species:
       Sq Error Cp @ 1300 K 0.32%."
     temperature-ranges: [200.0, 1000.0, 6000.0]
 - composition: {C: 2, H: 1}
+  inchi: InChI=1S/C2H/c1-2/h1H/q-1
   name: C2H
   note: '!    25.03   ! C2  H1        !'
+  smiles: C#[C-]
   thermo:
     data:
     - [2.89867676, 0.0132988489, -2.80733327e-05, 2.89484755e-08, -1.07502351e-11,
@@ -5326,8 +5349,10 @@ species:
       \  0.   0.G   200.000  6000.000  A  26.03728 1"
     temperature-ranges: [200.0, 1000.0, 6000.0]
 - composition: {C: 2, H: 2}
-  name: H2CC
   note: 2143-69-3  !   26.038   ! C2  H2        !
+  inchi: InChI=1S/C2H2/c1-2/h1-2H/i1D
+  name: H2CC
+  smiles: '[2H]C#C'
   thermo:
     data:
     - [3.28154941, 0.0069764265, -2.38527914e-06, -1.21077631e-09, 9.82041734e-13,
@@ -5436,8 +5461,10 @@ species:
       427   {HF298=-83.77 +/-0.16 kJ  REF=ATcT C}  MAX LST SQ ERROR Cp @ 6000K 0.63%."
     temperature-ranges: [200.0, 1000.0, 6000.0]
 - composition: {C: 2, O: 1}
+  inchi: InChI=1S/C2O/c1-2-3-1
   name: C2O
   note: 12071-23-7 !   40.022   ! C2      O1    !
+  smiles: C1#CO1
   thermo:
     data:
     - [2.86278214, 0.0119701204, -1.80851222e-05, 1.5277773e-08, -5.20063163e-12,
@@ -5489,8 +5516,10 @@ species:
       (1983),4810}   MAX LST SQ ERROR Cp @ 1300 K 0.31%"
     temperature-ranges: [200.0, 1000.0, 6000.0]
 - composition: {C: 2, H: 2, O: 1}
+  inchi: InChI=1S/C2H2O/c1-2-3/h1H2/i1D2
   name: HCCOH
   note: 32038-79-2 !   42.038   ! C2  H2  O1    !
+  smiles: '[2H]C(=C=O)[2H]'
   thermo:
     data:
     - [2.05541154, 0.0252003372, -3.80821654e-05, 3.09890632e-08, -9.89799902e-12,
@@ -5531,8 +5560,10 @@ species:
       \  g 4/02C  2.H  2.O  1.   0.G   200.000  6000.000  B  42.03668 1"
     temperature-ranges: [200.0, 1000.0, 6000.0]
 - composition: {C: 2, H: 2, O: 1}
+  inchi: InChI=1S/C2H2O/c1-2-3-1/h1-2H
   name: CHCHO
   note: '!   42.038   ! C2  H2  O1    !'
+  smiles: C1=CO1
   thermo:
     data:
     - [2.06863692, 0.0187233234, -1.21318942e-05, -3.33726595e-10, 2.32881768e-12,
@@ -5545,8 +5576,10 @@ species:
       Accessed April 2016"
     temperature-ranges: [200.0, 1000.0, 3000.0]
 - composition: {C: 2, H: 3, O: 1}
+  inchi: ''
   name: CHCHOH
   note: '!   43.046   ! C2  H3  O1    !'
+  smiles: ''
   thermo:
     data:
     - [-1.99180555, 0.0473233467, -6.66058794e-05, 4.68997052e-08, -1.30686109e-11,
@@ -5558,8 +5591,10 @@ species:
       at High Pressure, Int. J. Chem. Kin., 2016
     temperature-ranges: [298.0, 1000.0, 6000.0]
 - composition: {C: 2, H: 3, O: 1}
+  inchi: InChI=1S/C2H3O/c1-2-3/h1H3/q+1
   name: cC2H3O
   note: 31586-84-2 !   43.046   ! C2  H3  O1    !
+  smiles: C[C+]=O
   thermo:
     data:
     - [3.58349017, -0.00602275805, 6.32426867e-05, -8.18540707e-08, 3.30444505e-11,
@@ -5598,10 +5633,10 @@ species:
       Cp @ 6000 K 0.62%"
     temperature-ranges: [200.0, 1000.0, 6000.0]
 - composition: {C: 2, H: 3, O: 1}
-  inchi: InChI=1S/C2H4O/c1-2-3/h2H,1H3
+  inchi: InChI=1S/C2H3O/c1-2-3/h2H,1H2
   name: CH2CHO
   note: 6912-06-7  !   43.046   ! C2  H3  O1    !
-  smiles: CC=O
+  smiles: '[CH2]C=O'
   thermo:
     data:
     - [2.66873956, 0.00962329538, 1.60617438e-05, -2.8768182e-08, 1.25030066e-11,
@@ -5621,10 +5656,10 @@ species:
       1"
     temperature-ranges: [200.0, 1000.0, 6000.0]
 - composition: {C: 2, H: 4, O: 1}
-  inchi: InChI=1S/C2H4O/c1-2-3/h2H,1H3
+  inchi: InChI=1S/C2H4O/c1-2-3-1/h1-2H2
   name: CH3CHO
   note: 75-07-0    !   44.054   ! C2  H4  O1    !
-  smiles: CC=O
+  smiles: C1CO1
   thermo:
     data:
     - [4.7294595, -0.0031932858, 4.7534921e-05, -5.7458611e-08, 2.1931112e-11, -21572.878,
@@ -5643,8 +5678,10 @@ species:
       Sq Error Cp @ 6000 K 0.59%."
     temperature-ranges: [200.0, 1000.0, 6000.0]
 - composition: {C: 2, H: 4, O: 1}
+  inchi: InChI=1S/C2H4O/c1-2-3/h2H,1H3
   name: cC2H4O
   note: 75-21-8    !   44.054   ! C2  H4  O1    !
+  smiles: CC=O
   thermo:
     data:
     - [3.7590532, -0.009441218, 8.0309721e-05, -1.0080788e-07, 4.0039921e-11, -7560.8143,
@@ -5662,8 +5699,10 @@ species:
       Lst\nSq Error Cp @ 200 K ***1.17%*** @ 6000 K  0.59%."
     temperature-ranges: [200.0, 1000.0, 6000.0]
 - composition: {C: 2, H: 4, O: 1}
+  inchi: InChI=1S/C2H4O/c1-2-3/h2-3H,1H2
   name: CH2CHOH
   note: 557-75-5   !   44.054   ! C2  H4  O1    !
+  smiles: C=CO
   thermo:
     data:
     - [2.28758479, 0.0197013262, 1.96382662e-06, -1.94389758e-08, 1.02616778e-11,
@@ -5784,8 +5823,10 @@ species:
       JPCRD 15 (1986),1369.  {HF298=-234.56+/-0.2 kJ  REF=ATcT A}"
     temperature-ranges: [200.0, 1000.0, 6000.0]
 - composition: {C: 2, H: 1, O: 2}
+  inchi: InChI=1S/C2H2O2/c3-1-2-4/h1,3H/p-1
   name: OCHCO
   note: '!   57.029   ! C2  H1  O2    !'
+  smiles: C(=C=O)[O-]
   thermo:
     data:
     - [3.3940561, 0.014362856, -8.8413766e-06, 1.6096129e-09, 3.2038938e-13, -8684.1442,
@@ -5803,8 +5844,10 @@ species:
       \            4\n Dooley et al., Int. J. Chem. Kinet. 42 (2010) 527549"
     temperature-ranges: [350.0, 1000.0, 2900.0]
 - composition: {C: 2, H: 2, O: 2}
+  inchi: InChI=1S/C2H2O2/c3-1-2-4/h1-2H
   name: OCHCHO
   note: 107-22-2   !   58.037   ! C2  H2  O2    !
+  smiles: C(=O)C=O
   thermo:
     data:
     - [4.68412461, 0.000478012819, 4.26390768e-05, -5.79018239e-08, 2.31669328e-11,
@@ -5827,8 +5870,10 @@ species:
       \  2.H  2.O  2.   0.G   200.000  6000.000  B  58.03608 1"
     temperature-ranges: [200.0, 1000.0, 6000.0]
 - composition: {C: 2, H: 3, O: 2}
+  inchi: InChI=1S/C2H4O2/c1-2(3)4/h1H3,(H,3,4)/p-1
   name: CH2CHOO
   note: '!   59.045   ! C2  H3  O2    !'
+  smiles: CC(=O)[O-]
   thermo:
     data:
     - [1.4146113, 0.029754629, -2.5839387e-05, 1.1222085e-08, -1.8678097e-12, 11371.249,
@@ -5841,8 +5886,10 @@ species:
       http://garfield.chem.elte.hu/burcat/burcat.html.\n Accessed April 2016"
     temperature-ranges: [300.0, 1000.0, 2000.0]
 - composition: {C: 2, H: 3, O: 2}
+  inchi: InChI=1S/C2H2O2/c3-1-2-4/h1-2H/p+1
   name: CH3C(O)O
   note: '!   59.045   ! C2  H3  O2    !'
+  smiles: C(=[OH+])C=O
   thermo:
     data:
     - [1.3001617, 0.0237699204, -1.23328477e-05, 5.87354833e-11, 1.44736765e-12, -24433.7929,
@@ -5854,8 +5901,10 @@ species:
       2015; PM"
     temperature-ranges: [298.0, 1000.0, 3000.0]
 - composition: {C: 2, H: 4, O: 2}
+  inchi: InChI=1S/C2H4O2/c1-2(3)4/h1H3,(H,3,4)
   name: CH2CHOOH
   note: '!   60.053   ! C2  H4  O2    !'
+  smiles: CC(=O)O
   thermo:
     data:
     - [2.7982099, 0.027437708, -2.0346847e-05, 7.621273e-09, -1.1267055e-12, -6315.5298,
@@ -5867,8 +5916,10 @@ species:
       JIM/GLA08"
     temperature-ranges: [300.0, 1000.0, 2000.0]
 - composition: {C: 2, H: 5, O: 2}
+  inchi: InChI=1S/C2H5O2/c3-1-2-4/h1,3-4H,2H2
   name: CH3CH2OO
   note: '!   61.061   ! C2  H5  O2    !'
+  smiles: C([CH]O)O
   thermo:
     data:
     - [4.50099327, 0.00687965342, 4.74143971e-05, -6.92287127e-08, 2.87395324e-11,
@@ -5894,8 +5945,10 @@ species:
       1"
     temperature-ranges: [200.0, 1000.0, 6000.0]
 - composition: {C: 2, H: 5, O: 2}
+  inchi: InChI=1S/C2H5O2/c1-2(3)4/h2-3H,1H3/q-1
   name: CH3CHOOH
   note: '!   61.061   ! C2  H5  O2    !'
+  smiles: CC(O)[O-]
   thermo:
     data:
     - [6.2685379, 0.000111351157, 6.15943537e-05, -7.95035384e-08, 3.1233345e-11,
@@ -5910,8 +5963,10 @@ species:
       Cp[CH3CH2OO](T) to Cp298 = 19.70 cal/mol/K [JAN/ROS04]"
     temperature-ranges: [200.0, 999.993, 2500.0]
 - composition: {C: 2, H: 5, O: 2}
+  inchi: InChI=1S/C2H4O2/c1-2(3)4/h1H3,(H,3,4)/p+1
   name: CH2CH2OOH
   note: 126898-98-4!   61.061   ! C2  H5  O2    !
+  smiles: CC(=[OH+])O
   thermo:
     data:
     - [5.07456388, 0.0132389561, 2.53758646e-05, -4.38089546e-08, 1.8906154e-11, 3710.63204,
@@ -5928,8 +5983,10 @@ species:
       hydroper  T 4/15C  2.H  5.O  2.   0.G   200.000  6000.000  B  61.05990 1"
     temperature-ranges: [200.0, 1000.0, 6000.0]
 - composition: {C: 2, H: 6, O: 2}
+  inchi: InChI=1S/C2H6O2/c3-1-2-4/h3-4H,1-2H2
   name: CH3CH2OOH
   note: 3031-74-1 !   62.069   ! C2  H6  O2    !
+  smiles: C(CO)O
   thermo:
     data:
     - [4.14672004, 0.00978668137, 4.91492257e-05, -7.42532076e-08, 3.11169441e-11,
@@ -5976,8 +6033,10 @@ species:
     note: "1508\n Bozzelli 2015; PM"
     temperature-ranges: [298.0, 1000.0, 3000.0]
 - composition: {C: 2, H: 5, O: 3}
+  inchi: InChI=1S/C2H5O3/c1-2(3)5-4/h2-3H,1H3
   name: HOCH2CH2OO
   note: 40135-01-1 !    77.06   ! C2  H5  O3    !
+  smiles: CC(O)O[O]
   thermo:
     data:
     - [0.5564182, 0.041251869, -3.1064687e-05, 1.229296e-08, -1.9969071e-12, -22047.39,
@@ -6050,7 +6109,9 @@ species:
       & Fabian J. Mol Struct 780/1,(2006),80}"
     temperature-ranges: [200.0, 1000.0, 6000.0]
 - composition: {O: 1, S: 1}
+  inchi: InChI=1S/OS/c1-2/q+1
   name: SO(S)
+  smiles: O=[S+]
   thermo:
     data:
     - [3.080401, 0.001803106, 6.705022e-07, -2.069005e-09, 8.514657e-13, 9825.10273,
@@ -6087,7 +6148,9 @@ species:
     note: ZHOHAY13
     temperature-ranges: [300.0, 1000.0, 5000.0]
 - composition: {H: 1, S: 1}
+  inchi: InChI=1S/H2S/h1H2/p-1
   name: SH
+  smiles: '[SH-]'
   thermo:
     data:
     - [4.133327, -0.0003787893, -2.777854e-06, 5.370112e-09, -2.394006e-12, 16027.6973,
@@ -6112,10 +6175,9 @@ species:
       A 104 (2000) 43394342.\n -4.92  49.18"
     temperature-ranges: [200.0, 1000.0, 6000.0]
 - composition: {H: 1, S: 2}
-  inchi:
-    InChI=1S/C16H21N9O7S/c17-8(1-7-2-19-4-20-7)15(28)24-33(29,30)31-3-9-11(26)12(27)16(32-9)25-6-23-10-13(18)21-5-22-14(10)25/h2,4-6,8-9,11-12,16,26-27H,1,3,17H2,(H,19,20)(H,24,28)(H2,18,21,22)/t8-,9+,11+,12+,16+/m0/s1
+  inchi: InChI=1S/H2S2/c1-2/h1-2H/p-1
   name: HSS
-  smiles: C1=C(NC=N1)CC(C(=O)NS(=O)(=O)OCC2C(C(C(O2)N3C=NC4=C(N=CN=C43)N)O)O)N
+  smiles: S[S-]
   thermo:
     data:
     - [2.81672268, 0.0103969679, -1.55535096e-05, 1.24197562e-08, -3.90834999e-12,
@@ -6141,7 +6203,9 @@ species:
       \  61.61"
     temperature-ranges: [300.0, 1000.0, 2000.0]
 - composition: {O: 3, S: 1}
+  inchi: InChI=1S/H2O3S/c1-4(2)3/h(H2,1,2,3)/p-2
   name: SO3
+  smiles: '[O-]S(=O)[O-]'
   thermo:
     data:
     - [2.37461122, 0.0159543297, -1.26322543e-05, 2.81827264e-09, 6.23371547e-13,
@@ -6152,7 +6216,9 @@ species:
     note: "tpis89\n -94.61  61.30"
     temperature-ranges: [200.0, 1000.0, 6000.0]
 - composition: {H: 1, O: 1, S: 1}
+  inchi: InChI=1S/H2OS/c1-2/h1-2H/p-1
   name: HSO
+  smiles: O[S-]
   thermo:
     data:
     - [4.13565093, -0.00369243127, 2.05169784e-05, -2.40530656e-08, 9.1708427e-12,
@@ -6163,7 +6229,9 @@ species:
     note: "T04/07\n Zhou: G3\n -5.20  57.75"
     temperature-ranges: [200.0, 1000.0, 6000.0]
 - composition: {H: 1, O: 1, S: 1}
+  inchi: InChI=1S/OS/c1-2/p+1
   name: HOS
+  smiles: O=[SH+]
   thermo:
     data:
     - [3.69440567, 0.000394327613, 1.10155102e-05, -1.63102588e-08, 7.03352877e-12,
@@ -6185,7 +6253,9 @@ species:
     note: -28.52  58.66
     temperature-ranges: [300.0, 5000.0]
 - composition: {H: 1, O: 2, S: 1}
+  inchi: InChI=1S/H2O2S/c1-3-2/h1-2H/p-1
   name: HOSO
+  smiles: OS[O-]
   thermo:
     data:
     - [1.6184697, 0.021164061, -2.6690482e-05, 1.6272216e-08, -3.7779005e-12, -30255.641,
@@ -6194,7 +6264,9 @@ species:
     note: "DAGGLA03 GOUMAR99\n GBR1509\n -57.70  67.47"
     temperature-ranges: [300.0, 1500.0]
 - composition: {H: 1, O: 2, S: 1}
+  inchi: InChI=1S/H2O2S/c1-3-2/h3H,(H,1,2)/p-1/i3D
   name: HSO2
+  smiles: '[2H]S(=O)[O-]'
   thermo:
     data:
     - [1.5627374, 0.020691389, -2.3112073e-05, 1.2670203e-08, -2.7274176e-12, -18214.824,
@@ -6203,7 +6275,9 @@ species:
     note: "DAG/GLA03 GOU/MAR99\n-33.80  63.00"
     temperature-ranges: [300.0, 2000.0]
 - composition: {H: 2, O: 1, S: 1}
+  inchi: InChI=1S/H2OS/c1-2/h2H2/i2D2
   name: H2SO
+  smiles: '[2H]S(=O)[2H]'
   thermo:
     data:
     - [1.9580519, 0.0097265201, 6.841317e-07, -6.234372e-09, 2.4166577e-12, -6677.0889,
@@ -6212,7 +6286,9 @@ species:
     note: "ALZ/GLA01   BOZ/R\n GBR 1509\n -11.26/57.26"
     temperature-ranges: [300.0, 1500.0]
 - composition: {H: 2, O: 2, S: 1}
+  inchi: InChI=1S/H2O2S/c1-3-2/h1-2H
   name: HOSHO
+  smiles: OSO
   thermo:
     data:
     - [1.1903822, 0.025644735, -2.6622842e-05, 1.3479665e-08, -2.6474629e-12, -33744.886,
@@ -6233,7 +6309,9 @@ species:
     note: "GBR 1509\n-88.67  70.73"
     temperature-ranges: [300.0, 2000.0]
 - composition: {H: 1, O: 1, S: 2}
+  inchi: InChI=1S/HOS2/c1-3-2/h3H/q-1/i3D
   name: HSSO
+  smiles: '[2H][S-](=O)=S'
   thermo:
     data:
     - [2.70484711, 0.0232126968, -3.77894894e-05, 3.04178811e-08, -9.47692405e-12,
@@ -6246,7 +6324,9 @@ species:
       \  68.60"
     temperature-ranges: [300.0, 1000.0, 2000.0]
 - composition: {H: 2, O: 3, S: 1}
+  inchi: InChI=1S/H2O3S/c1-4(2)3/h(H2,1,2,3)
   name: VDW1
+  smiles: OS(=O)O
   thermo:
     data:
     - [8.1317912, 0.00832444914, -2.04192137e-06, -2.9515381e-09, 1.7821715e-12, -68828.7103,
@@ -6257,7 +6337,9 @@ species:
     note: "Zhou - Leeds University\n-131.26  82.88"
     temperature-ranges: [300.0, 1000.0, 5000.0]
 - composition: {H: 1, O: 2, S: 2}
+  inchi: InChI=1S/H2O2S2/c1-3-4-2/h1-2H/p-1
   name: HSSO2
+  smiles: OSS[O-]
   thermo:
     data:
     - [3.49856646, 0.0250749289, -3.40614452e-05, 2.4053148e-08, -6.85626593e-12,
@@ -6269,7 +6351,9 @@ species:
       Pople, J. Chem. Phys. 109 (1998) 77647776. ??\n-40.89  73.61"
     temperature-ranges: [300.0, 1000.0, 2000.0]
 - composition: {O: 2, S: 2}
+  inchi: InChI=1S/H2O2S2/c1-4(2)3/h(H2,1,2,3)/p-2
   name: SSO2
+  smiles: '[O-]S(=S)[O-]'
   thermo:
     data:
     - [2.91749466, 0.0189316285, -2.22225931e-05, 1.24562472e-08, -2.69874647e-12,
@@ -6283,7 +6367,9 @@ species:
       pw PM 1511"
     temperature-ranges: [298.0, 1000.0, 3000.0]
 - composition: {H: 1, O: 2, S: 1}
+  inchi: InChI=1S/H2O2S/c1-2-3/h1,3H/p-1
   name: HSOO
+  smiles: OO[S-]
   thermo:
     data:
     - [3.04640372, 0.0152114268, -1.84762707e-05, 1.13862234e-08, -2.72421836e-12,
@@ -6309,10 +6395,9 @@ species:
       34.59  66.02"
     temperature-ranges: [200.0, 1000.0, 6000.0]
 - composition: {S: 4}
-  inchi:
-    InChI=1S/C15H17N3O4S/c1-10-7-11(2)9-13(8-10)18-15(19)17-12-3-5-14(6-4-12)22-23(16,20)21/h3-9H,1-2H3,(H2,16,20,21)(H2,17,18,19)
+  inchi: InChI=1S/S4/c1-2-4-3-1
   name: S4
-  smiles: CC1=CC(=CC(=C1)NC(=O)NC2=CC=C(C=C2)OS(=O)(=O)N)C
+  smiles: S1SSS1
   thermo:
     data:
     - [1.62124479, 0.0369694158, -6.92243749e-05, 6.03240791e-08, -1.99529262e-11,
@@ -6364,7 +6449,9 @@ species:
     note: "tpis89\n Zhou - Burcat\n 26.73  96.74"
     temperature-ranges: [200.0, 1000.0, 6000.0]
 - composition: {S: 8}
+  inchi: InChI=1S/S8/c1-2-4-6-8-7-5-3-1
   name: S8
+  smiles: S1SSSSSSS1
   thermo:
     data:
     - [4.13158109, 0.0943298552, -0.000205775943, 2.05747851e-07, -7.51844045e-11,
@@ -6375,7 +6462,9 @@ species:
     note: "tpis89\n Zhou - Burcat\n 24.20 103.35"
     temperature-ranges: [200.0, 1000.0, 6000.0]
 - composition: {O: 2, S: 2}
+  inchi: InChI=1S/2OS/c2*1-2
   name: OSSO
+  smiles: O=S.O=S
   thermo:
     data:
     - [4.27684328, 0.0171764292, -2.30032367e-05, 1.50850596e-08, -3.93335889e-12,
@@ -6387,7 +6476,9 @@ species:
       Pople, J. Chem. Phys. 109 (1998) 77647776. ??\n-28.15  71.33"
     temperature-ranges: [300.0, 1000.0, 2000.0]
 - composition: {H: 2, O: 1, S: 3}
+  inchi: InChI=1S/H2O.S3/c;1-2-3-1/h1H2;
   name: H2S3O
+  smiles: O.S1SS1
   thermo:
     data:
     - [3.67805059, 0.040719139, -6.67990246e-05, 5.28547092e-08, -1.60811288e-11,
@@ -6398,7 +6489,9 @@ species:
     note: "Zhou - Burcat\n-17.86  80.56"
     temperature-ranges: [300.0, 1000.0, 5000.0]
 - composition: {H: 2, O: 1, S: 3}
+  inchi: InChI=1S/H2OS3/c1-4(2)3/h(H2,1,2,3)
   name: HSSSOH
+  smiles: OS(=S)S
   thermo:
     data:
     - [2.93988478, 0.0405695638, -6.59918573e-05, 5.33283075e-08, -1.67311298e-11,
@@ -6411,7 +6504,9 @@ species:
       \  82.12"
     temperature-ranges: [300.0, 1000.0, 5000.0]
 - composition: {H: 2, O: 2, S: 2}
+  inchi: InChI=1S/H2O2S2/c1-3-4-2/h1-2H
   name: H2S2O2
+  smiles: OSSO
   thermo:
     data:
     - [0.828112013, 0.0474477762, -6.95648159e-05, 4.87812487e-08, -1.32222441e-11,
@@ -6449,7 +6544,9 @@ species:
     note: Radical      T11/08
     temperature-ranges: [200.0, 1000.0, 6000.0]
 - composition: {C: 1, H: 3, S: 1}
+  inchi: InChI=1S/CH4S/c1-2/h2H,1H3/p-1
   name: CH2SH
+  smiles: C[S-]
   thermo:
     data:
     - [3.76502431, 0.00718268533, 4.29207685e-06, -1.01537669e-08, 4.53517374e-12,
@@ -6476,7 +6573,9 @@ species:
     model: NASA7
     temperature-ranges: [300.0, 2000.0]
 - composition: {C: 1, H: 1, S: 1}
+  inchi: InChI=1S/CHS/c1-2/h1H
   name: CHS
+  smiles: '[CH]=S'
   thermo:
     data:
     - [3.51963223, 0.0020854496, 6.12130414e-06, -9.93060979e-09, 4.40938577e-12,
@@ -6487,7 +6586,9 @@ species:
     note: "T05/97\n Burcat 2006"
     temperature-ranges: [200.0, 1000.0, 6000.0]
 - composition: {C: 2, H: 6, S: 1}
+  inchi: InChI=1S/C2H6S/c1-3-2/h1-2H3
   name: C2H6S
+  smiles: CSC
   thermo:
     data:
     - [3.5430691, 0.0180088842, 3.44054064e-06, -1.437344e-08, 6.54366209e-12, -6439.57635,
@@ -6495,7 +6596,9 @@ species:
     model: NASA7
     temperature-ranges: [300.0, 2000.0]
 - composition: {C: 2, H: 6, S: 1}
+  inchi: InChI=1S/C2H6S/c1-2-3/h3H,2H2,1H3
   name: C2H6S(1)
+  smiles: CCS
   thermo:
     data:
     - [4.99715179, 0.00570327864, 3.32666851e-05, -4.28900849e-08, 1.62517198e-11,
@@ -6503,7 +6606,9 @@ species:
     model: NASA7
     temperature-ranges: [300.0, 2000.0]
 - composition: {C: 2, H: 5, S: 1}
+  inchi: InChI=1S/C2H4S/c1-2-3/h2H,1H3/p+1
   name: C2H5S
+  smiles: CC=[SH+]
   thermo:
     data:
     - [2.795162, 0.0246384962, -1.51175319e-05, 1.7013026e-09, 1.64060449e-12, 15382.9318,
@@ -6511,7 +6616,9 @@ species:
     model: NASA7
     temperature-ranges: [300.0, 2000.0]
 - composition: {C: 2, H: 5, S: 1}
+  inchi: InChI=1S/C2H4S/c1-2-3/h2-3H,1H2/p+1
   name: C2H5S(1)
+  smiles: C=C[SH2+]
   thermo:
     data:
     - [5.27083512, 0.00631667773, 2.40960966e-05, -3.29052296e-08, 1.2771438e-11,
@@ -6519,7 +6626,9 @@ species:
     model: NASA7
     temperature-ranges: [300.0, 2000.0]
 - composition: {C: 2, H: 5, S: 1}
+  inchi: InChI=1S/C2H6S/c1-2-3/h3H,2H2,1H3/p-1
   name: C2H5S(2)
+  smiles: CC[S-]
   thermo:
     data:
     - [6.58767302, 0.000322579018, 3.52303452e-05, -4.21351374e-08, 1.56477857e-11,
@@ -6527,7 +6636,9 @@ species:
     model: NASA7
     temperature-ranges: [300.0, 2000.0]
 - composition: {C: 2, H: 5, S: 1}
+  inchi: InChI=1S/C2H5S/c1-3-2/h1H2,2H3/q+1
   name: C2H5S(3)
+  smiles: CS[CH2+]
   thermo:
     data:
     - [2.96473868, 0.00819219008, 3.16985872e-05, -4.53690374e-08, 1.81271402e-11,
@@ -6535,7 +6646,9 @@ species:
     model: NASA7
     temperature-ranges: [300.0, 2000.0]
 - composition: {C: 2, H: 4, S: 1}
+  inchi: InChI=1S/C2H4S/c1-2-3-1/h1-2H2
   name: C2H4S
+  smiles: C1CS1
   thermo:
     data:
     - [1.39360773, 0.0270632189, -2.2661388e-05, 9.47364684e-09, -1.2276323e-12, 8157.09758,
@@ -6543,7 +6656,9 @@ species:
     model: NASA7
     temperature-ranges: [300.0, 2000.0]
 - composition: {C: 1, H: 4, S: 2}
+  inchi: InChI=1S/CH4S2/c2-1-3/h2-3H,1H2
   name: CH3SSH
+  smiles: C(S)S
   thermo:
     data:
     - [3.45000658, 0.0217174498, -1.53887364e-05, 4.6609513e-09, -7.35054971e-14,
@@ -6551,7 +6666,9 @@ species:
     model: NASA7
     temperature-ranges: [300.0, 2000.0]
 - composition: {C: 1, H: 3, S: 2}
+  inchi: InChI=1S/CH3S2/c2-1-3/h1-3H
   name: CH3S2
+  smiles: '[CH](S)S'
   thermo:
     data:
     - [2.70209948, 0.0283470618, -3.3946809e-05, 2.07356939e-08, -4.9765631e-12, 19307.1933,
@@ -6559,7 +6676,9 @@ species:
     model: NASA7
     temperature-ranges: [300.0, 2000.0]
 - composition: {C: 1, H: 3, S: 2}
+  inchi: InChI=1S/CH3S2/c1-3-2/h1H3
   name: CH3S2(1)
+  smiles: CS[S]
   thermo:
     data:
     - [3.38631997, 0.0144148783, -4.39411307e-06, -4.31135105e-09, 2.88652307e-12,
@@ -6567,7 +6686,9 @@ species:
     model: NASA7
     temperature-ranges: [300.0, 2000.0]
 - composition: {C: 1, H: 2, S: 2}
+  inchi: InChI=1S/CH2S2/c2-1-3/h1H,(H,2,3)
   name: CH2S2
+  smiles: C(=S)S
   thermo:
     data:
     - [0.0928227975, 0.0378289139, -5.94374921e-05, 4.69657189e-08, -1.44348174e-11,
@@ -6575,7 +6696,9 @@ species:
     model: NASA7
     temperature-ranges: [300.0, 2000.0]
 - composition: {C: 1, H: 1, S: 2}
+  inchi: InChI=1S/CH2S2/c2-1-3/h1H,(H,2,3)/p-1
   name: CHS2
+  smiles: C(=S)[S-]
   thermo:
     data:
     - [1.78227402, 0.0184266329, -2.01226669e-05, 1.05813349e-08, -2.03753253e-12,
@@ -6583,7 +6706,9 @@ species:
     model: NASA7
     temperature-ranges: [300.0, 2000.0]
 - composition: {C: 2, H: 6, S: 2}
+  inchi: InChI=1S/C2H6S2/c1-3-4-2/h1-2H3
   name: C2H6S2
+  smiles: CSSC
   thermo:
     data:
     - [3.93422696, 0.0268676551, -4.97220072e-06, -1.20006241e-08, 6.73998299e-12,
@@ -6591,7 +6716,9 @@ species:
     model: NASA7
     temperature-ranges: [300.0, 2000.0]
 - composition: {C: 2, H: 5, S: 2}
+  inchi: InChI=1S/C2H6S2/c3-1-2-4/h3-4H,1-2H2/p-1
   name: C2H5S2
+  smiles: C(C[S-])S
   thermo:
     data:
     - [4.20791029, 0.0274810542, -1.41427893e-05, -2.01576875e-09, 3.25970114e-12,
@@ -6599,7 +6726,9 @@ species:
     model: NASA7
     temperature-ranges: [300.0, 2000.0]
 - composition: {C: 2, H: 5, S: 2}
+  inchi: InChI=1S/C2H5S2/c1-2-4-3/h2-3H,1H3
   name: C2H5S2(1)
+  smiles: C[CH]SS
   thermo:
     data:
     - [5.52474819, 0.0214869555, -3.00854062e-06, -1.12456766e-08, 6.13604883e-12,
@@ -6607,7 +6736,9 @@ species:
     model: NASA7
     temperature-ranges: [300.0, 2000.0]
 - composition: {C: 2, H: 5, S: 2}
+  inchi: InChI=1S/C2H5S2/c1-4(2)3/h1H2,2H3/q-1
   name: C2H5S2(2)
+  smiles: C[S-](=C)=S
   thermo:
     data:
     - [3.87054035, 0.0195650836, 6.02242267e-06, -2.09729265e-08, 9.70001155e-12,
@@ -6615,7 +6746,9 @@ species:
     model: NASA7
     temperature-ranges: [300.0, 2000.0]
 - composition: {C: 2, H: 3, S: 2}
+  inchi: InChI=1S/C2H4S2/c1-2(3)4/h1H3,(H,3,4)/p-1
   name: C2H3S2
+  smiles: CC(=S)[S-]
   thermo:
     data:
     - [0.5425533, 0.0407015859, -4.29342945e-05, 2.02940495e-08, -2.93019531e-12,
@@ -6623,7 +6756,9 @@ species:
     model: NASA7
     temperature-ranges: [300.0, 2000.0]
 - composition: {C: 2, H: 3, S: 2}
+  inchi: InChI=1S/C2H3S2/c1-2(3)4/h1H3
   name: C2H3S2(2)
+  smiles: CC(=S)[S]
   thermo:
     data:
     - [2.68966753, 0.0258978589, -1.60282327e-05, 7.34530197e-11, 2.60908507e-12,
@@ -6644,9 +6779,9 @@ species:
     note: "g 6/95\n Burcat 2006"
     temperature-ranges: [200.0, 1000.0, 6000.0]
 - composition: {C: 1, O: 1, S: 1}
-  inchi: InChI=1S/C3H7NO5S/c4-2(3(5)6)1-10(7,8)9/h2H,1,4H2,(H,5,6)(H,7,8,9)/t2-/m0/s1
+  inchi: InChI=1S/COS/c2-1-3
   name: OCS
-  smiles: C(C(C(=O)O)N)S(=O)(=O)O
+  smiles: C(=O)=S
   thermo:
     data:
     - [1.77198991, 0.0171486966, -2.7308214e-05, 2.25553393e-08, -7.34373482e-12,
@@ -6657,9 +6792,9 @@ species:
     note: "g 5/01\n Burcat 2006"
     temperature-ranges: [200.0, 1000.0, 6000.0]
 - composition: {C: 1, S: 1}
-  inchi: InChI=1S/Cs
+  inchi: InChI=1S/CS/c1-2
   name: CS
-  smiles: '[Cs]'
+  smiles: '[C-]#[S+]'
   thermo:
     data:
     - [3.73124786, -0.00309803648, 1.24828276e-05, -1.41633372e-08, 5.33370965e-12,
@@ -6670,10 +6805,9 @@ species:
     note: "g11/01\n Burcat 2006"
     temperature-ranges: [200.0, 1000.0, 6000.0]
 - composition: {C: 1, S: 3}
-  inchi:
-    InChI=1S/C16H15ClN2O5/c1-23-13(20)7-12(16(22)24-2)19-15(21)10-8-18-11-6-4-3-5-9(11)14(10)17/h3-6,8,12H,7H2,1-2H3,(H,19,21)
+  inchi: InChI=1S/CH2S3/c2-1(3)4/h(H2,2,3,4)/p-2
   name: CS3
-  smiles: COC(=O)CC(C(=O)OC)NC(=O)C1=C(C2=CC=CC=C2N=C1)Cl
+  smiles: C(=S)([S-])[S-]
   thermo:
     data:
     - [3.22895232, 0.0218033829, -3.04820379e-05, 2.01631135e-08, -5.13831964e-12,
@@ -6684,7 +6818,9 @@ species:
     note: "1212\n Marshall 2011"
     temperature-ranges: [298.15, 1000.0, 3000.0]
 - composition: {C: 1, O: 1, S: 2}
+  inchi: InChI=1S/COS2/c2-4-1-3
   name: OCS2
+  smiles: C(=S)=S=O
   thermo:
     data:
     - [2.82159429, 0.0213606383, -2.95791354e-05, 1.99101868e-08, -5.20419029e-12,
@@ -6695,7 +6831,9 @@ species:
     note: "1210\n MC Lin, pw"
     temperature-ranges: [298.15, 1000.0, 3000.0]
 - composition: {C: 1, H: 1, O: 1, S: 2}
+  inchi: InChI=1S/CH2OS2/c2-1(3)4/h(H2,2,3,4)/p-1
   name: HOCS2
+  smiles: C(=O)(S)[S-]
   thermo:
     data:
     - [3.51963223, 0.0020854496, 6.12130414e-06, -9.93060979e-09, 4.40938577e-12,

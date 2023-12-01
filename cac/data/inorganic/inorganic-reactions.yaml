@@ -1,0 +1,530 @@
+aerosol-reactions:
+- equation: HNO3 => NA
+  rate-constant:
+    A: '6.00e-06'
+    Ea: '0.0'
+    b: '0.0'
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- equation: N2O5 + H2O => NA + NA
+  rate-constant:
+    A: '4.00e-04'
+    Ea: '0.0'
+    b: '0.0'
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+atmosphere-reactions:
+- equation: H2 + OH + O2 => HO2 + H2O
+  rate-constant:
+    A: '7.70e-12'
+    Ea: '-4173.1242'
+    b: '0.0'
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- equation: H2O2 + OH => HO2 + H2O
+  rate-constant:
+    A: '2.90e-12'
+    Ea: '-317.95232'
+    b: '0.0'
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- equation: HO2 + NO => NO2 + OH
+  rate-constant:
+    A: '3.45e-12'
+    Ea: '536.54454'
+    b: '0.0'
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- equation: HO2 + NO3 => NO2 + OH + O2
+  rate-constant:
+    A: '4.00e-12'
+    Ea: '0.0'
+    b: '0.0'
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- equation: HO2 + OH => H2O + O2
+  rate-constant:
+    A: '4.80e-11'
+    Ea: '496.8005'
+    b: '0.0'
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- equation: HO2NO2 + OH => NO2 + H2O + O2
+  rate-constant:
+    A: '3.20e-13'
+    Ea: '1371.16938'
+    b: '0.0'
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- equation: HONO + OH => NO2 + H2O
+  rate-constant:
+    A: '2.50e-12'
+    Ea: '516.67252'
+    b: '0.0'
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- equation: NO + NO3 => NO2 + NO2
+  rate-constant:
+    A: '1.80e-11'
+    Ea: '218.59222'
+    b: '0.0'
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- equation: NO + O3 => NO2 + O2
+  rate-constant:
+    A: '1.40e-12'
+    Ea: '-2603.2346199999997'
+    b: '0.0'
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- equation: NO2 + NO3 => NO + NO2 + O2
+  rate-constant:
+    A: '4.50e-14'
+    Ea: '-2503.87452'
+    b: '0.0'
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- equation: NO2 + O => NO + O2
+  rate-constant:
+    A: '5.50e-12'
+    Ea: '373.593976'
+    b: '0.0'
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- equation: NO2 + O3 => NO3 + O2
+  rate-constant:
+    A: '1.40e-13'
+    Ea: '-4908.38894'
+    b: '0.0'
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- equation: NO3 + OH => HO2 + NO2
+  rate-constant:
+    A: '2.00e-11'
+    Ea: '0.0'
+    b: '0.0'
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- equation: O + O3 => 2.0 O2
+  rate-constant:
+    A: '8.00e-12'
+    Ea: '-4093.6361199999997'
+    b: '0.0'
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- equation: O3 + OH => HO2 + O2
+  rate-constant:
+    A: '1.70e-12'
+    Ea: '-1867.9698799999999'
+    b: '0.0'
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- A: '1.00e+00'
+  Ea: '0.0'
+  b: '0.0'
+  equation: CO + OH + O2 => HO2 + CO2
+  function-names:
+  - KMT05
+  pyfile: inorganic_complex_rates.py
+  ro2file: inorganic-ro2-sum.txt
+  type: complex-rate
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- A: '1.00e+00'
+  Ea: '0.0'
+  b: '0.0'
+  equation: HNO3 + OH => NO3 + H2O
+  function-names:
+  - KMT11
+  pyfile: inorganic_complex_rates.py
+  ro2file: inorganic-ro2-sum.txt
+  type: complex-rate
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- A: '1.90e-33'
+  Ea: '1947.45796'
+  b: '0.0'
+  duplicate: true
+  equation: HO2 + HO2 => H2O2 + O2
+  function-names:
+  - KMT06
+  pyfile: inorganic_complex_rates.py
+  ro2file: inorganic-ro2-sum.txt
+  species-names:
+  - M
+  type: complex-rate
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- A: '2.20e-13'
+  Ea: '1192.3211999999999'
+  b: '0.0'
+  duplicate: true
+  equation: HO2 + HO2 => H2O2 + O2
+  function-names:
+  - KMT06
+  pyfile: inorganic_complex_rates.py
+  ro2file: inorganic-ro2-sum.txt
+  type: complex-rate
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- A: '1.00e+00'
+  Ea: '0.0'
+  b: '0.0'
+  equation: HO2 + NO2 => HO2NO2
+  function-names:
+  - KMT09
+  pyfile: inorganic_complex_rates.py
+  ro2file: inorganic-ro2-sum.txt
+  type: complex-rate
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- A: '1.00e+00'
+  Ea: '0.0'
+  b: '0.0'
+  equation: HO2 + O3 => OH + 2.0 O2
+  function-names:
+  - KUNKNOWN12
+  pyfile: inorganic_complex_rates.py
+  ro2file: inorganic-ro2-sum.txt
+  type: complex-rate
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- A: '1.00e+00'
+  Ea: '0.0'
+  b: '0.0'
+  equation: HO2NO2 => HO2 + NO2
+  function-names:
+  - KMT10
+  pyfile: inorganic_complex_rates.py
+  ro2file: inorganic-ro2-sum.txt
+  type: complex-rate
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- A: '1.30e-12'
+  Ea: '-655.77666'
+  b: '0.0'
+  equation: HSO3 + O2 => HO2 + SO3
+  pyfile: inorganic_complex_rates.py
+  ro2file: inorganic-ro2-sum.txt
+  species-names:
+  - O2
+  type: complex-rate
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- A: '1.00e+00'
+  Ea: '0.0'
+  b: '0.0'
+  equation: N2O5 => NO2 + NO3
+  function-names:
+  - KMT04
+  pyfile: inorganic_complex_rates.py
+  ro2file: inorganic-ro2-sum.txt
+  type: complex-rate
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- A: '3.30e-39'
+  Ea: '1053.21706'
+  b: '0.0'
+  equation: NO + NO + O2 => NO2 + NO2
+  pyfile: inorganic_complex_rates.py
+  ro2file: inorganic-ro2-sum.txt
+  species-names:
+  - O2
+  type: complex-rate
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- A: '1.00e+00'
+  Ea: '0.0'
+  b: '0.0'
+  equation: NO + O => NO2
+  function-names:
+  - KMT01
+  pyfile: inorganic_complex_rates.py
+  ro2file: inorganic-ro2-sum.txt
+  type: complex-rate
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- A: '1.00e+00'
+  Ea: '0.0'
+  b: '0.0'
+  equation: NO + OH => HONO
+  function-names:
+  - KMT07
+  pyfile: inorganic_complex_rates.py
+  ro2file: inorganic-ro2-sum.txt
+  type: complex-rate
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- A: '1.00e+00'
+  Ea: '0.0'
+  b: '0.0'
+  equation: NO2 + NO3 => N2O5
+  function-names:
+  - KMT03
+  pyfile: inorganic_complex_rates.py
+  ro2file: inorganic-ro2-sum.txt
+  type: complex-rate
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- A: '1.00e+00'
+  Ea: '0.0'
+  b: '0.0'
+  equation: NO2 + O => NO3
+  function-names:
+  - KMT02
+  pyfile: inorganic_complex_rates.py
+  ro2file: inorganic-ro2-sum.txt
+  type: complex-rate
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- A: '1.00e+00'
+  Ea: '0.0'
+  b: '0.0'
+  equation: NO2 + OH => HNO3
+  function-names:
+  - KMT08
+  pyfile: inorganic_complex_rates.py
+  ro2file: inorganic-ro2-sum.txt
+  type: complex-rate
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- A: '4.00e-32'
+  Ea: '-1987.202'
+  b: '0.0'
+  equation: O + SO2 => SO3
+  pyfile: inorganic_complex_rates.py
+  ro2file: inorganic-ro2-sum.txt
+  species-names:
+  - M
+  type: complex-rate
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- A: '1.00e+00'
+  Ea: '0.0'
+  b: '0.0'
+  duplicate: true
+  equation: O + O2 => O3
+  function-names:
+  - KUNKNOWN38
+  pyfile: inorganic_complex_rates.py
+  ro2file: inorganic-ro2-sum.txt
+  type: complex-rate
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- A: '1.00e+00'
+  Ea: '0.0'
+  b: '0.0'
+  duplicate: true
+  equation: O + O2 => O3
+  function-names:
+  - KUNKNOWN39
+  pyfile: inorganic_complex_rates.py
+  ro2file: inorganic-ro2-sum.txt
+  type: complex-rate
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- A: '2.00e-11'
+  Ea: '258.33626'
+  b: '0.0'
+  duplicate: true
+  equation: O1D => O
+  pyfile: inorganic_complex_rates.py
+  ro2file: inorganic-ro2-sum.txt
+  species-names:
+  - N2
+  type: complex-rate
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- A: '3.20e-11'
+  Ea: '133.14253399999998'
+  b: '0.0'
+  duplicate: true
+  equation: O1D => O
+  pyfile: inorganic_complex_rates.py
+  ro2file: inorganic-ro2-sum.txt
+  species-names:
+  - O2
+  type: complex-rate
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- A: '2.14e-10'
+  Ea: '0.0'
+  b: '0.0'
+  equation: O1D + H2O => OH + OH
+  pyfile: inorganic_complex_rates.py
+  ro2file: inorganic-ro2-sum.txt
+  species-names:
+  - H2O
+  type: complex-rate
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- A: '1.00e+00'
+  Ea: '0.0'
+  b: '0.0'
+  equation: OH + SO2 => HSO3
+  function-names:
+  - KMT12
+  pyfile: inorganic_complex_rates.py
+  ro2file: inorganic-ro2-sum.txt
+  type: complex-rate
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+photolysis-reactions:
+- equation: H2O2 => OH + OH
+  l: '1.041e-05'
+  m: '0.723'
+  n: '0.279'
+  scalar: '1'
+  type: zenith-angle-rate
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- equation: HNO3 => NO2 + OH
+  l: '9.312e-07'
+  m: '1.230'
+  n: '0.307'
+  scalar: '1'
+  type: zenith-angle-rate
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- equation: HONO => NO + OH
+  l: '2.644e-03'
+  m: '0.261'
+  n: '0.288'
+  scalar: '1'
+  type: zenith-angle-rate
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- equation: NO2 => NO + O
+  l: '1.165e-02'
+  m: '0.244'
+  n: '0.267'
+  scalar: '1'
+  type: zenith-angle-rate
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- equation: NO3 => NO + O2
+  l: '2.485e-02'
+  m: '0.168'
+  n: '0.108'
+  scalar: '1'
+  type: zenith-angle-rate
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- equation: NO3 => NO2 + O
+  l: '1.747e-01'
+  m: '0.155'
+  n: '0.125'
+  scalar: '1'
+  type: zenith-angle-rate
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- equation: O3 => O + O2
+  l: '4.775e-04'
+  m: '0.298'
+  n: '0.080'
+  scalar: '1'
+  type: zenith-angle-rate
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec
+- equation: O3 => O1D + O2
+  l: '6.073e-05'
+  m: '1.743'
+  n: '0.474'
+  scalar: '1'
+  type: zenith-angle-rate
+  units:
+    activation-energy: cal/mol
+    length: cm
+    quantity: molec

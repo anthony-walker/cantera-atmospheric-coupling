@@ -6,23 +6,11 @@ from cac.constants import DATA_DIR
 
 
 def all_mechanisms():
-    simple = os.path.join(DATA_DIR, "simple", "simple.yaml")
-    print_mech_stats(simple, "atmosphere")
-
-    simple = os.path.join(DATA_DIR, "atmosphere", "atmosphere.yaml")
-    print_mech_stats(simple, "atmosphere")
-
     simple = os.path.join(DATA_DIR, "sulfur", "sulfur.yaml")
-    print_mech_stats(simple, "gas")
-
-    simple = os.path.join(DATA_DIR, "creck", "jetfuel.yaml")
     print_mech_stats(simple, "gas")
 
     simple = os.path.join(DATA_DIR, "farnesane", "farnesane.yaml")
     print_mech_stats(simple, "gas")
-
-    sc = os.path.join(DATA_DIR, "scombustor.yaml")
-    print_mech_stats(sc, "gas")
 
     sc = os.path.join(DATA_DIR, "combustor.yaml")
     print_mech_stats(sc, "combustor")

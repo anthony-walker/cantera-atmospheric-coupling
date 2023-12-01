@@ -11,16 +11,11 @@ class PlumeReactor(ct.ExtensibleIdealGasConstPressureMoleReactor):
 
     def __init__(self, label, *args, **kwargs):
         super(PlumeReactor, self).__init__(label, *args, **kwargs)
-        if os.path.isfile("aero-ro2-sum-test.txt"):
-            with open("aero-ro2-sum-test.txt") as f:
-                content = f.read()
-                self.ro2_species = [sp.strip() for sp in content.split("\n")[:-1]]
-        else:
-            self.ro2_species = []
         self.state_air = []
         self.times = []
         self.erates = []
         self.er_start = 0 # starting index for omega since time only moves forward
+        self.thermo.zenith_angle = 0
         # open entrainment rate data
         self.entrainment = True
         with open(os.path.join(DATA_DIR, "entrainment_rates.csv"), "r") as f:
@@ -44,12 +39,10 @@ class PlumeReactor(ct.ExtensibleIdealGasConstPressureMoleReactor):
         logy = nlog(x/x1) * nlog(y2/y1) / nlog(x2/x1) + nlog(y1)
         return 10 ** logy
 
-    def before_eval(self, t, LHS, RHS):
+    def after_eval(self, t, LHS, RHS):
+        # updating zenith angle after eval
         self.thermo.zenith_angle = np.clip(np.mod(2*np.pi*t / (24*60*60), 2*np.pi), 0, np.pi) - np.pi/2
-        # determine the RO2 sum
-        self.thermo.ro2_sum = 0
-        for sp in self.ro2_species:
-            self.thermo.ro2_sum += self.thermo.concentrations[self.thermo.species_index(sp)]
+        # entrainment model
         if self.entrainment:
             if len(self.state_air) == 0:
                 raise Exception("PlumeReactor: TX_air not set")
@@ -67,7 +60,6 @@ class PlumeReactor(ct.ExtensibleIdealGasConstPressureMoleReactor):
             T,P = self.thermo.TP
             Nt = P * self.volume / ct.gas_constant / T
             moles = self.state_air * Nt
-            print(omega_ent)
             # addition of value to energy equation for thermal entrainment
             RHS[0] -= omega_ent * (self.T - self.state_air[0])
             # addition of value for species equation entrainment

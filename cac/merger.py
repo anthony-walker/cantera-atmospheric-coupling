@@ -1,7 +1,9 @@
 import re
 import os
+import sys
 import copy
 import click
+import signal
 import datetime
 import warnings
 import ruamel.yaml
@@ -29,7 +31,11 @@ def spmatch(spone, sptwo):
     res1 = spone.get("smiles", "ONE") == sptwo.get("smiles", "TWO")
     res2 = spone.get("inchi", "ONE") == sptwo.get("inchi", "TWO")
     res3 = spone.get("name") == sptwo.get("name")
-    return res1 or res2 or res3
+    res4 = spone.get("name") == sptwo.get("alias", "TWO")
+    res5 = spone.get("alias", "ONE") == sptwo.get("name", "TWO")
+    res = res1 or res2 or res3 or res4 or res5
+    res = res and (spone["composition"] == sptwo["composition"])
+    return res
 
 
 def merge_all_mechanisms(*mechanisms):
@@ -56,6 +62,7 @@ def merge_all_mechanisms(*mechanisms):
             for sp1 in primary_species:
                 if spmatch(sp1, sp2) and sp1["name"] not in csp:
                     found = True
+                    print(f"{sp1['name']} and {sp2['name']} match")
                     # transfer any missing keys
                     for k in sp2.keys():
                         if k not in sp1.keys():
@@ -143,111 +150,135 @@ def semi_structural_to_smiles(semi_structural, functional_group_list):
     return smiles
 
 
+
 def update_mechanism_with_smiles_and_inchi(filename):
-    # open all data
-    yaml = ruamel.yaml.YAML(typ='safe', pure=True)
-    yaml.preserve_quotes = True
-    yaml.sort_keys = False
-    # get functional group data:
-    with open(os.path.join(DATA_DIR, "functional-groups.yaml"), "r") as f:
-        functional_groups = yaml.load(f)["smiles-groups"]
-    functional_group_list = sorted(functional_groups.items(), key=lambda x: len(x[1]), reverse=True)
-    with open(filename, "r") as f:
-        mech_data = yaml.load(f)
-    # get inchi and smiles data
-    species = mech_data["species"]
-    for sp in species:
-        name = sp["name"]
-        # check if they have smiles or inchi
-        smiles = sp.get("smiles", "")
-        inchi = sp.get("inchi", "")
+    try:
+        # open all data
+        yaml = ruamel.yaml.YAML(typ='safe', pure=True)
+        yaml.preserve_quotes = True
+        yaml.sort_keys = False
+        # get functional group data:
+        with open(os.path.join(DATA_DIR, "functional-groups.yaml"), "r") as f:
+            functional_groups = yaml.load(f)["smiles-groups"]
+        functional_group_list = sorted(functional_groups.items(), key=lambda x: len(x[1]), reverse=True)
+        with open(filename, "r") as f:
+            mech_data = yaml.load(f)
+        # closure to periodically write out
+        def write_out():
+            updated = os.path.join(os.path.dirname(filename), f"updated-{os.path.basename(filename)}")
+            with open(updated, "w") as f:
+                yaml.dump(mech_data, f)
+        # register signal handler
+        def crash_mech_handler(sig, frame):
+            write_out()
+            sys.exit(0)
 
-        if name.startswith("I"):
-            name = name.replace("I", "iso-")
-        elif name.startswith("N"):
-            name = name.replace("N", "n-")
-        elif name.startswith("T"):
-            name = name.replace("T", "t-")
-        # try to get compound by name from pubchem
-        print(f"******************{name}********************")
-
-        if smiles:
-            print(f"smiles exists {smiles}")
-        if inchi:
-            print(f"inchi exists {inchi}")
-        try:
-            if not smiles or not inchi:
-                compound = pcp.get_compounds(name, "name")[0]
-                if not smiles:
-                    print(f"Found {smiles} from name via pubchem...")
-                    smiles = compound.canonical_smiles
-                if not inchi:
-                    print(f"Found {inchi} from name via pubchem...")
-                    inchi = compound.inchi
-        except Exception as e:
-            pass
-        # # try to get smiles from semistructural
-        # try:
-        #     if not smiles:
-        #         rsm = semi_structural_to_smiles(name, functional_group_list)
-        #         mol = Chem.MolFromSmiles(rsm)
-        #         smiles = rsm
-        #         print(f"Found {smiles} from semi-structural name via rdkit...")
-        #     if not inchi:
-        #         inchi = Chem.MolToInchi(mol)
-        #         print(f"Found {inchi} from semi-structural name via rdkit...")
-        # except Exception as e:
-        #     pass
-        # try to get smiles and inchi from name next
-        try:
-            if not smiles or not inchi:
-                mol = Chem.MolFromMolBlock(name)
-                if not smiles:
-                    smiles = Chem.MolToSmiles(mol)
-                    print(f"Found {smiles} from name via rdkit...")
-                if not inchi:
-                    inchi = Chem.MolToInchi(mol)
-                    print(f"Found {inchi} from name via rdkit...")
-        except Exception as e:
-            pass
-        # # try to get smiles and inchi from composition if all else fails
-        # try:
-        #     if smiles and not inchi:
-        #         compound = pcp.get_compounds(smiles, "smiles")[0]
-        #     elif inchi and not smiles:
-        #         compound = pcp.get_compounds(inchi, "inchi")[0]
-        #     elif not smiles and not inchi:
-        #         print("Found with composition")
-        #         comp = sp["composition"]
-        #         formula = ""
-        #         for ele, ct in comp.items():
-        #             formula += f"{ele}{ct}" if ct > 1 else ele
-        #         compound = pcp.get_compounds(formula, "formula")[0]
-        #     else:
-        #         compound = None
-        #     # set smiles and inchi
-        #     if not smiles:
-        #         smiles = compound.canonical_smiles
-        #     if not inchi:
-        #         inchi = compound.inchi
-        # except Exception as e:
-        #     pass
-        # # add surface specification
-        # if "(S)" in name:
-        #     smiles = f"{smiles}-surface"
-        #     inchi = f"{inchi}-surface"
-        if not smiles:
-            print(f"Smiles not found for {name}, input a value:")
-        if not inchi:
-            print(f"INCHI not found for {name}, input a value:")
-        # add back to species
-        if smiles:
-            sp["smiles"] = smiles
-        if inchi:
-            sp["inchi"] = inchi
-    updated = os.path.join(os.path.dirname(filename), f"updated-{os.path.basename(filename)}")
-    with open(updated, "w") as f:
-        yaml.dump(mech_data, f)
+        signal.signal(signal.SIGINT, crash_mech_handler)
+        # get inchi and smiles data
+        species = mech_data["species"]
+        all_smiles = []
+        all_inchi = []
+        lsp = len(species)
+        for spi, sp in enumerate(species):
+            name = sp["name"]
+            updated = False
+            # check if they have smiles or inchi
+            smiles = ""
+            inchi = ""
+            if not sp.get("smiles", "") and not sp.get("inchi", ""):
+                searches = []
+                if re.match(r"(I-|i|iso|i-|iso-|IC)", name):
+                    searches.append("iso")
+                if re.match(r"(n|N-|n-|NC)", name):
+                    searches.append("n")
+                if re.match(r"(t|T-|t-|TC)", name):
+                    searches.append("tert")
+                if re.match(r"(sec-|s-|S-)", name):
+                    searches.append("sec")
+                if re.match(r"(cy-|cy)", name):
+                    searches.append("cyclo")
+                # elif name.startswith("T"):
+                #     name = name.replace("T", "t-")
+                # try to get compound by name from pubchem
+                print()
+                print(f"****************** {spi}/{lsp} {name} ********************")
+                print("Searches: ", searches)
+                print("Composition: ", sp["composition"])
+                print("Note: ", sp.get("note", ""))
+                keep = 1
+                sname = input("Input search name: ").strip()
+                if sname == "break":
+                    break
+                while keep:
+                    try:
+                        print(f"Searching for {sname}")
+                        cmps = pcp.get_compounds(sname, "formula")
+                        print(f"Found {len(cmps)} compounds")
+                        for ci, cmp in enumerate(cmps):
+                            fcomp = {}
+                            for a in cmp.atoms:
+                                fcomp[a.element] = fcomp.get(a.element, 0) + 1
+                            if fcomp == sp["composition"] and cmp.isomeric_smiles not in all_smiles and cmp.inchi not in all_inchi:
+                                print()
+                                print(f"****************** {spi}/{lsp} {name} ********************")
+                                print("Searches: ", searches)
+                                print("Composition: ", sp["composition"])
+                                print("Note: ", sp.get("note", ""))
+                                print(f"--------------Compound {ci}-------------------")
+                                print(cmp.molecular_formula)
+                                print(cmp.isomeric_smiles)
+                                print(cmp.inchi)
+                                print(cmp.iupac_name)
+                                print(cmp.synonyms)
+                                keep = int(input("Enter 0 to keep the entry: ").strip())
+                            if not keep:
+                                smiles = cmp.isomeric_smiles
+                                inchi = cmp.inchi
+                                break
+                            if keep == 2:
+                                keep = 1
+                                break
+                            elif keep == 3:
+                                inchi = input("Enter inchi: ").strip()
+                                smiles = input("Enter smiles: ").strip()
+                                keep = 0
+                                break
+                        if not cmps:
+                            raise Exception(f"{sname} not found.")
+                        elif keep:
+                            sname = input("Input a NEW search name: ").strip()
+                    except Exception as e:
+                        print(e)
+                        keep = 1
+                        sname = input("Search failed try again: ").strip()
+                        if sname == "skip":
+                            keep = 0
+                            smiles = ""
+                            inchi = ""
+                        elif sname == "manual":
+                            inchi = input("Enter inchi: ").strip()
+                            smiles = input("Enter smiles: ").strip()
+                            keep = 0
+                            break
+            else:
+                print(f"InChi and Smiles exists for {name}.")
+                print()
+            # add back to species
+            if smiles:
+                all_smiles.append(smiles)
+                sp["smiles"] = smiles
+                updated = True
+            if inchi:
+                all_inchi.append(inchi)
+                sp["inchi"] = inchi
+                updated = True
+            # write out after every entry to avoid loss during errors
+            if updated:
+                write_out()
+    except Exception as e:
+        print(e)
+        write_out()
+        sys.exit(0)
 
 def print_reaction_props(r):
     print(r.reaction_type)
@@ -263,7 +294,13 @@ def print_reaction_props(r):
         print(tb.efficiencies)
     print()
 
-def reactmatch(rone, rtwo, kin):
+def reactmatch(rone, rtwo, kin, verb=False):
+    if verb:
+        print("Testing: ")
+        print(rone["equation"])
+        print(rtwo["equation"])
+        print()
+
     ro1 = ct.Reaction.from_dict(rone, kin)
     ro2 = ct.Reaction.from_dict(rtwo, kin)
     # if both equations are thirdbody check more simply
@@ -327,10 +364,10 @@ def update_duplicates_combustor_mechanism():
     combustor_data = yaml.load(open("merged.yaml", "r"))
     cphase = combustor_data["phases"][0]
     cphase["name"] = "combustor"
-    cphase["reactions"] = ["farnesene-reactions", "sulfur-reactions"]
+    cphase["reactions"] = ["farnesane-reactions", "sulfur-reactions"]
     aphase = copy.deepcopy(cphase)
     aphase["name"] = "atmosphere"
-    aphase["reactions"] = ["atmosphere-reactions", "aerosol-reactions", "photolysis-reactions", "sulfur-reactions"]
+    aphase["reactions"] = ["atmosphere-reactions", "aerosol-reactions", "photolysis-reactions"]
     combustor_data["phases"].append(aphase)
     cks = [rk for rk in combustor_data["phases"][0]["reactions"]]
     aks = [rk for rk in combustor_data["phases"][1]["reactions"]]
@@ -358,25 +395,26 @@ def update_duplicates_combustor_mechanism():
     combustor_data["combustor-reactions"] = combustor_reactions
     cphase["reactions"] = ["combustor-reactions"]
     # update atmospheric reactions
-    atms_reactions = []
-    for ak in aks:
-        for cr in combustor_data.get(ak, []):
-            duplicate = False
-            known = False
-            for r in atms_reactions:
-                duplicate, known = reactmatch(r, cr, spec_gas)
-                if duplicate and known:
-                    r["duplicate"] = True
-                    cr["duplicate"] = True
-                    break
-                elif duplicate:
-                    break
-            if (not duplicate) or known:
-                atms_reactions.append(cr)
+    # atms_reactions = []
+    # for ak in aks:
+    #     for cr in combustor_data.get(ak, []):
+    #         duplicate = False
+    #         known = False
+    #         for r in atms_reactions:
+    #             duplicate, known = reactmatch(r, cr, spec_gas)
+    #             if duplicate and known:
+    #                 r["duplicate"] = True
+    #                 cr["duplicate"] = True
+    #                 break
+    #             elif duplicate:
+    #                 break
+    #         if (not duplicate) or known:
+    #             atms_reactions.append(cr)
+    atms_reactions = [ r for ak in aks for r in combustor_data.get(ak, [])]
     combustor_data["atmosphere-reactions"] = atms_reactions
     aphase["reactions"] = ["atmosphere-reactions"]
     # pop other reactions
-    for rtype in ["farnesene-reactions", "sulfur-reactions", "aerosol-reactions", "photolysis-reactions"]:
+    for rtype in ["farnesane-reactions", "sulfur-reactions", "aerosol-reactions", "photolysis-reactions"]:
         combustor_data.pop(rtype, "")
     # write to file
     with open("combustor.yaml", "w") as f:
@@ -393,10 +431,77 @@ def test_rmatch():
         warnings.simplefilter("ignore")
         spec = ct.Species.list_from_file("merged.yaml")
         spec_gas = PlumeSolution(thermo='ideal-gas', kinetics="gas", species=spec)
-    r1 = {"equation": "H2 + HE <=> H + H + HE",
+    r0 = {"equation": "H + O2 <=> O + OH",
           "rate-constant": {"A": 4.577e+19, "b": -1.4, "Ea": 1.044e+05}}
-    r2 = {"equation": "H2 + M <=> 2 H + M",
-          "type": "three-body",
-          "efficiencies": {"AR":1.5},
-          "rate-constant": {"A": 5.84e+18, "Ea": 52452.3, "b": -1.1}, "duplicate": True}
-    print(reactmatch(r1, r2, spec_gas))
+    r1 = {"equation": "C2H2 (+M) <=> C2H2 (+M)",
+          "rate-constant": {"A": 4.577e+19, "b": -1.4, "Ea": 1.044e+05}}
+    r2 = {"equation": "C2H4 + CH2a <=> C2H3 + CH3",
+          "type": "pressure-dependent-Arrhenius",
+          "rate-constants": [{"A":  1.77e+19, "a":  6787.0, "P":  "0.01 atm", "b":  -1.95}, {"A":  1.68e+19, "a":  4310.0, "P":  "0.1 atm", "b":  -1.8}, {"A":  4.16e+24, "a":  9759.0, "P":  "1.0 atm", "b":  -3.19}, {"A":  7.89e+24, "a":  13894.0, "P":  "10.0 atm", "b":  -3.08}, {"A":  7.36e+29, "a":  23849.0, "P":  "100.0 atm", "b":  -4.28}], "duplicate": True}
+    r3 = {"equation": "C2H4 + CH2a <=> C2H3 + CH3",
+          "type": "pressure-dependent-Arrhenius",
+          "rate-constants": [{"A":  4300000000000.0, "a":  -110.0, "P":  "0.01 atm", "b":  0.19}, {"A":  226000000000.0, "a":  48.0, "P":  "0.1 atm", "b":  0.54}, {"A":  4920000000.0, "a":  600.0, "P":  "1.0 atm", "b":  1.02}, {"A":  147000000.0, "a":  1228.0, "P":  "10.0 atm", "b":  1.33}, {"A":  81100000000.0, "a":  5507.0, "P":  "100.0 atm", "b":  0.55}], "duplicate": True}
+    r4 = {"equation": "C2H2 + OH <=> CHCHOH", "rate-constant": {"A": 4.577e+19, "b": -1.4, "Ea": 1.044e+05}}#"rate-constants":[{"A": 2.9e+64, "Ea": 10009.0, "P": "0.01 atm", "b": -18.57}, {"A": 2.6e+33, "Ea": 6392.0, "P": "0.01 atm", "b": -7.36}, {"A": 4.7e+59, "Ea": 9087.0, "P": "0.025 atm", "b": -16.87}, {"A": 4.4e+32, "Ea": 5933.0, "P": "0.025 atm", "b": -7.02}, {"A": 1.2e+28, "Ea": 3724.0, "P": "0.1 atm", "b": -5.56}, {"A": 6.4e+42, "Ea": 11737.0, "P": "0.1 atm", "b": -9.96}, {"A": 1.9e+44, "Ea": 6299.0, "P": "1.0 atm", "b": -11.38}, {"A": 3.5e+31, "Ea": 6635.0, "P": "1.0 atm", "b": -6.2}, {"A": 1.5e+24, "Ea": 3261.0, "P": "10.0 atm", "b": -4.06}, {"A": 4.5e+31, "Ea": 8761.0, "P": "10.0 atm", "b": -5.92}, {"A": 6.2e+20, "Ea": 2831.0, "P": "100.0 atm", "b": -2.8}, {"A": 1.6e+29, "Ea": 9734.0, "P": "100.0 atm", "b": -4.91}]}
+    print(reactmatch(r0, r4, spec_gas))
+    # print(reactmatch(r2, r3, spec_gas))
+
+def check_all_smiles_and_inchi_unique(filename):
+    yaml = ruamel.yaml.YAML()
+    yaml.default_flow_style=False
+    with open(filename, "r") as f:
+        mech_data = yaml.load(f)
+    species = mech_data["species"]
+    for i, sp0 in enumerate(species):
+        for j, sp1 in enumerate(species):
+            if i != j:
+                if sp0.get("smiles","ZERO") == sp1.get("smiles","ONE"):
+                    print(f"{sp0['name']}: {sp0['smiles']}")
+                    print(f"{sp1['name']}: {sp1['smiles']}")
+                    print(sp0["composition"], sp1["composition"])
+                    choice = int(input("Enter 0 or 1 for the first or second species: ").strip())
+                    if not choice:
+                        sp0["smiles"] = input(f"Enter new smiles for {sp0['name']}: ").strip()
+                    else:
+                        sp1["smiles"] = input(f"Enter new smiles for {sp1['name']}: ").strip()
+                    print()
+
+                if sp0.get("inchi","ZERO") == sp1.get("inchi","ONE"):
+                    print(f"{sp0['name']}: {sp0['inchi']}")
+                    print(f"{sp1['name']}: {sp1['inchi']}")
+                    print(sp0["composition"], sp1["composition"])
+                    choice = int(input("Enter 0 or 1 for the first or second species: ").strip())
+                    if not choice:
+                        sp0["inchi"] = input(f"Enter new inchi for {sp0['name']}: ").strip()
+                    else:
+                        sp1["inchi"] = input(f"Enter new inchi for {sp1['name']}: ").strip()
+                    print()
+    with open(f"checked-{filename}", "w") as f:
+        yaml.dump(mech_data, f)
+
+def update_atmospheric_mechanism_species(atmos_mech):
+    yaml = ruamel.yaml.YAML()
+    yaml.default_flow_style=False
+    with open(atmos_mech, "r") as f:
+        atmos_data = yaml.load(f)
+    species = atmos_data["species"]
+    nsp = []
+    sp = species.pop(0)
+    while species:
+        try:
+            print(sp["smiles"], sp["inchi"])
+            cmps = pcp.get_compounds(sp["inchi"], "inchi")
+            print(cmp.molecular_formula)
+            print(cmp.isomeric_smiles)
+            print(cmp.inchi)
+            print(cmp.iupac_name)
+            print(cmp.synonyms)
+            input()
+            # pop a new species only after getting through
+            sp = species.pop(0)
+        except Exception as e:
+            print(e)
+            nextsp = input("Try the next species? ")
+            if nextsp:
+                nsp.append(sp)
+                sp = species.pop(0)
+

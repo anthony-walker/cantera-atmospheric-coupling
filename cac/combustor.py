@@ -67,13 +67,13 @@ def new_network(r, precon):
 @click.option('--precon/--no-precon', default=True, help='Add preconditioning to the simulation')
 @click.option('--endtime', default=1.0, help='Run the simulation to the set end time')
 @click.option('--nsteps', default=10, help='The number of steps to take between records')
-@click.option("--farnesane", default=0.1, help="Farnesene blend percentage")
+@click.option("--farnesane", default=0.1, help="Farnesane blend percentage")
 @click.option("--sulfur", default=0.001, help="Sulfur amount in mole fraction")
 def run_combustor_atm_sim(equiv_ratio, test, steadystate, precon, endtime, nsteps, farnesane, sulfur):
     # append appropriate directories
     sys.path.append(DATA_DIR)
     # creation of combustor portion of simulation
-    fuel_model = os.path.join(DATA_DIR, f"combustor.yaml")
+    fuel_model = os.path.join(DATA_DIR, f"combustor-min.yaml")
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         fuel = ct.Solution(fuel_model, name="combustor", transport_model=None)
@@ -126,6 +126,7 @@ def run_combustor_atm_sim(equiv_ratio, test, steadystate, precon, endtime, nstep
     # advance to steady state
     states = ct.SolutionArray(fuel, extra=['tres'])
     last_good_rt = residence_time
+    failures = 0
     while wsr.T > 900:
         net.initial_time = 0.0  # reset the integrator
         try:
@@ -133,9 +134,13 @@ def run_combustor_atm_sim(equiv_ratio, test, steadystate, precon, endtime, nstep
             print('tres = {:.2e}, T = {:.1f}'.format(residence_time, wsr.T))
             states.append(wsr.thermo.state, tres=residence_time)
             residence_time *= 0.9  # decrease the residence time for the next iteration
+            failures = 0
         except:
+            failures += 1
             last_known_rt = residence_time
             print('Failure: tres = {:.2e}; T = {:.1f}'.format(residence_time, wsr.T))
+            if (failures > 10): # 10 consecutive failures
+                break
             residence_time *= 0.99  # decrease the residence time for the next iteration
     # Plot results
     f, ax1 = plt.subplots(1, 1)
@@ -174,7 +179,15 @@ def run_combustor_atm_sim(equiv_ratio, test, steadystate, precon, endtime, nstep
         combustor_states.append(combustor.thermo.state)
     combustor_states.save(os.path.join(DATA_DIR, "combustor", f"combustor-pfr-states-{equiv_ratio}-{farnesane}-{sulfur}.csv"), overwrite=True)
     T2, p2 = combustor.thermo.TP
-    print(T2, p2)
+    # get total moles for volume calculation
+    moles = combustor.get_state()[1:]
+    max_mole_value = numpy.amax(moles)
+    decimals = int(numpy.ceil(numpy.abs(numpy.log10(max_mole_value))))
+    tolerance = float(f"1e-{decimals+16}")
+    moles = [m if m >= tolerance else 0 for m in moles]
+    Ntotal = numpy.sum(moles)
+    # print state at 2
+    print(T2, p2, combustor.volume)
     # use nozzle end conditions to back calculate state 3 and calculate T4
     A3 = numpy.pi * (1.07 ** 2) / 4 # meters
     A4 = numpy.pi * (0.62 ** 2) / 4 # meters
@@ -200,9 +213,12 @@ def run_combustor_atm_sim(equiv_ratio, test, steadystate, precon, endtime, nstep
         fuel.TPY = T3, p3, combustor.Y
         gamma_old = gamma
         gamma = fuel.cp_mole / (fuel.cp_mole - ct.gas_constant)
-    print(M3, T3, p3)
+    # print state at 3
+    v3 = Ntotal * ct.gas_constant * T3 / p3
+    print(M3, T3, p3, v3)
     T4 = T3 * (1 + gmone / 2 * (M3 ** 2)) / (1 + gmone / 2 * (M4 ** 2))
-    print(T4, p4)
+    v4 = Ntotal * ct.gas_constant * T4 / p4
+    print(T4, p4, v4)
     # create atmosphere model
     exhaust = ct.Reservoir(fuel)
     with warnings.catch_warnings():
@@ -212,9 +228,10 @@ def run_combustor_atm_sim(equiv_ratio, test, steadystate, precon, endtime, nstep
     air_state = atms.TPX
     far_field = ct.Reservoir(atms)
     # create atmosphere reactor
-    atms.TPY = T4, p4, combustor.Y
+    X_moles = moles / Ntotal
+    atms.TPY = T4, p4, X_moles
     atmosphere = PlumeReactor(atms)
-    atmosphere.volume = combustor.volume
+    atmosphere.volume = v4
     atmosphere.TX_air = [air_state[0],] + [x for x in air_state[2]]
     # create inlet reservoir for atmosphere
     exhaust = ct.Reservoir(atms)
@@ -227,7 +244,7 @@ def run_combustor_atm_sim(equiv_ratio, test, steadystate, precon, endtime, nstep
     while atmosphere.T > T_atm:
         print(atmosphere.T)
         net.step()
-    atms_states = ct.SolutionArray(atms)
+    # atms_states = ct.SolutionArray(atms)
     # times = []
     # # adding the initial conditions
     # atms_states.append(atmosphere.thermo.state)
