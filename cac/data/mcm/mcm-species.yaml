@@ -4953,7 +4953,7 @@ BUT1ENE:
   note: '-thermBUT1ENE was not found in all-species-data and was constructed as well
     as possible using web requests and assuming ideal gas thermo.
 
-    It was found using the SEMI-STRUCTURAL representation: C4H8.SMILES: CCC=C
+    It was found using the INCHI representation: C4H8.SMILES: CCC=C
 
     InCHI: InChI=1S/C4H8/c1-3-4-2/h3H,1,4H2,2H3
 
@@ -20920,23 +20920,57 @@ C53OOH:
   thermo:
     model: constant-cp
 C54CHO:
-  composition:
+  alias: C6H12O
+  composition: &id001
     C: 6
     H: 12
     O: 1
+  critical-parameters: &id002
+    acentric-factor: 0.528
+    critical-compressibility: 0.279
+    critical-molar-volume: 0.3235
+    critical-pressure: 3730000.0
+    critical-temperature: 625.1
+  descriptive-name: cyclohexanol
+  equation-of-state: &id003
+    a:
+    - 77405800000000.0
+    - 0
+    b: 120.7244536
+    model: Redlich-Kwong
   inchi: InChI=1S/C6H12O/c1-3-4-6(2)5-7/h5-6H,3-4H2,1-2H3
+  molecular-weight: 100.16
   name: C54CHO
-  note: 'C54CHO was not found in all-species-data and was constructed as well as possible
-    using web requests and assuming ideal gas thermo.
+  note: '-thermC54CHO was not found in all-species-data and was constructed as well
+    as possible using web requests and assuming ideal gas thermo.
 
-    SMILES: CC(CCC)C=O
+    It was found using the SMILES representation: C6H12O.SMILES: CC(CCC)C=O
 
     InCHI: InChI=1S/C6H12O/c1-3-4-6(2)5-7/h5-6H,3-4H2,1-2H3
 
     '
   smiles: CC(CCC)C=O
-  thermo:
-    model: constant-cp
+  thermo: &id004
+    data:
+    - - -3.75894138
+      - 0.0846044396
+      - -6.18101303e-05
+      - 2.42424607e-08
+      - -4.01441141e-12
+      - -23221.6305
+      - 44.9636341
+    - - 19.9501923
+      - 0.0288253331
+      - -1.0021793e-05
+      - 1.57295064e-09
+      - -9.19508743e-14
+      - -31567.431
+      - -82.4846912
+    model: NASA7
+    temperature-ranges:
+    - 300.0
+    - 1388.0
+    - 5000.0
 C54CO:
   composition:
     C: 5
@@ -56019,23 +56053,24 @@ EIPEOOH:
   thermo:
     model: constant-cp
 EIPK:
-  composition:
-    C: 6
-    H: 12
-    O: 1
+  alias: C6H12O
+  composition: *id001
+  critical-parameters: *id002
+  descriptive-name: cyclohexanol
+  equation-of-state: *id003
   inchi: InChI=1S/C6H12O/c1-4-6(7)5(2)3/h5H,4H2,1-3H3
+  molecular-weight: 100.16
   name: EIPK
-  note: 'EIPK was not found in all-species-data and was constructed as well as possible
-    using web requests and assuming ideal gas thermo.
+  note: '-thermEIPK was not found in all-species-data and was constructed as well
+    as possible using web requests and assuming ideal gas thermo.
 
-    SMILES: CCC(=O)C(C)C
+    It was found using the SMILES representation: C6H12O.SMILES: CCC(=O)C(C)C
 
     InCHI: InChI=1S/C6H12O/c1-4-6(7)5(2)3/h5H,4H2,1-3H3
 
     '
   smiles: CCC(=O)C(C)C
-  thermo:
-    model: constant-cp
+  thermo: *id004
 EIPKAO:
   composition:
     C: 6
@@ -59454,23 +59489,49 @@ H1MC5NO3:
   thermo:
     model: constant-cp
 H1MC5O:
-  composition:
+  alias: C6H13O2
+  composition: &id005
     C: 6
     H: 13
     O: 2
+  equation-of-state: &id006
+    a:
+    - 125841000000000.0
+    - 0
+    b: 174.9095644
+    model: Redlich-Kwong
   inchi: InChI=1S/C6H13O2/c1-5(3-4-7)6(2)8/h5-7H,3-4H2,1-2H3
   name: H1MC5O
-  note: 'H1MC5O was not found in all-species-data and was constructed as well as possible
-    using web requests and assuming ideal gas thermo.
+  note: '-thermH1MC5O was not found in all-species-data and was constructed as well
+    as possible using web requests and assuming ideal gas thermo.
 
-    SMILES: OCCC(C)C(C)[O]
+    It was found using the SMILES representation: C6H13O2.SMILES: OCCC(C)C(C)[O]
 
     InCHI: InChI=1S/C6H13O2/c1-5(3-4-7)6(2)8/h5-7H,3-4H2,1-2H3
 
     '
   smiles: OCCC(C)C(C)[O]
-  thermo:
-    model: constant-cp
+  thermo: &id007
+    data:
+    - - 1.62964892
+      - 0.0768548886
+      - -5.17292235e-05
+      - 1.87119014e-08
+      - -2.87653697e-12
+      - -19076.8103
+      - 24.7112107
+    - - 22.1058203
+      - 0.0301631951
+      - -1.03356754e-05
+      - 1.60632978e-09
+      - -9.32550072e-14
+      - -26412.5536
+      - -85.8473243
+    model: NASA7
+    temperature-ranges:
+    - 300.0
+    - 1393.0
+    - 5000.0
 H1MC5O2:
   composition:
     C: 6
@@ -62053,23 +62114,24 @@ HEX2ONCOOH:
   thermo:
     model: constant-cp
 HEX2ONE:
-  composition:
-    C: 6
-    H: 12
-    O: 1
+  alias: C6H12O
+  composition: *id001
+  critical-parameters: *id002
+  descriptive-name: cyclohexanol
+  equation-of-state: *id003
   inchi: InChI=1S/C6H12O/c1-3-4-5-6(2)7/h3-5H2,1-2H3
+  molecular-weight: 100.16
   name: HEX2ONE
-  note: 'HEX2ONE was not found in all-species-data and was constructed as well as
-    possible using web requests and assuming ideal gas thermo.
+  note: '-thermHEX2ONE was not found in all-species-data and was constructed as well
+    as possible using web requests and assuming ideal gas thermo.
 
-    SMILES: CCCCC(=O)C
+    It was found using the SMILES representation: C6H12O.SMILES: CCCCC(=O)C
 
     InCHI: InChI=1S/C6H12O/c1-3-4-5-6(2)7/h3-5H2,1-2H3
 
     '
   smiles: CCCCC(=O)C
-  thermo:
-    model: constant-cp
+  thermo: *id004
 HEX3ONANO3:
   composition:
     C: 6
@@ -62379,23 +62441,24 @@ HEX3ONDOOH:
   thermo:
     model: constant-cp
 HEX3ONE:
-  composition:
-    C: 6
-    H: 12
-    O: 1
+  alias: C6H12O
+  composition: *id001
+  critical-parameters: *id002
+  descriptive-name: cyclohexanol
+  equation-of-state: *id003
   inchi: InChI=1S/C6H12O/c1-3-5-6(7)4-2/h3-5H2,1-2H3
+  molecular-weight: 100.16
   name: HEX3ONE
-  note: 'HEX3ONE was not found in all-species-data and was constructed as well as
-    possible using web requests and assuming ideal gas thermo.
+  note: '-thermHEX3ONE was not found in all-species-data and was constructed as well
+    as possible using web requests and assuming ideal gas thermo.
 
-    SMILES: CCCC(=O)CC
+    It was found using the SMILES representation: C6H12O.SMILES: CCCC(=O)CC
 
     InCHI: InChI=1S/C6H12O/c1-3-5-6(7)4-2/h3-5H2,1-2H3
 
     '
   smiles: CCCC(=O)CC
-  thermo:
-    model: constant-cp
+  thermo: *id004
 HEXANO3:
   composition:
     C: 6
@@ -62416,41 +62479,65 @@ HEXANO3:
   thermo:
     model: constant-cp
 HEXAO:
-  composition:
+  alias: C6H13O
+  composition: &id008
     C: 6
     H: 13
     O: 1
+  equation-of-state: &id009
+    a:
+    - 79415800000000.0
+    - 0
+    b: 128.48674
+    model: Redlich-Kwong
   inchi: InChI=1S/C6H13O/c1-2-3-4-5-6-7/h2-6H2,1H3
   name: HEXAO
-  note: 'HEXAO was not found in all-species-data and was constructed as well as possible
-    using web requests and assuming ideal gas thermo.
+  note: '-thermHEXAO was not found in all-species-data and was constructed as well
+    as possible using web requests and assuming ideal gas thermo.
 
-    SMILES: CCCCCC[O]
+    It was found using the SMILES representation: C6H13O.SMILES: CCCCCC[O]
 
     InCHI: InChI=1S/C6H13O/c1-2-3-4-5-6-7/h2-6H2,1H3
 
     '
   smiles: CCCCCC[O]
-  thermo:
-    model: constant-cp
+  thermo: &id010
+    data:
+    - - -1.49301672
+      - 0.0807750602
+      - -5.64119218e-05
+      - 2.0902168e-08
+      - -3.2405361e-12
+      - -16944.1107
+      - 38.3378935
+    - - 20.6212979
+      - 0.0293505832
+      - -1.0067552e-05
+      - 1.56583919e-09
+      - -9.09553875e-14
+      - -24715.0564
+      - -80.6250183
+    model: NASA7
+    temperature-ranges:
+    - 300.0
+    - 1394.0
+    - 5000.0
 HEXAO2:
-  composition:
-    C: 6
-    H: 13
-    O: 2
+  alias: C6H13O2
+  composition: *id005
+  equation-of-state: *id006
   inchi: InChI=1S/C6H13O2/c1-2-3-4-5-6-8-7/h2-6H2,1H3
   name: HEXAO2
-  note: 'HEXAO2 was not found in all-species-data and was constructed as well as possible
-    using web requests and assuming ideal gas thermo.
+  note: '-thermHEXAO2 was not found in all-species-data and was constructed as well
+    as possible using web requests and assuming ideal gas thermo.
 
-    SMILES: CCCCCCO[O]
+    It was found using the SMILES representation: C6H13O2.SMILES: CCCCCCO[O]
 
     InCHI: InChI=1S/C6H13O2/c1-2-3-4-5-6-8-7/h2-6H2,1H3
 
     '
   smiles: CCCCCCO[O]
-  thermo:
-    model: constant-cp
+  thermo: *id007
 HEXAOH:
   composition:
     C: 6
@@ -62507,41 +62594,37 @@ HEXBNO3:
   thermo:
     model: constant-cp
 HEXBO:
-  composition:
-    C: 6
-    H: 13
-    O: 1
+  alias: C6H13O
+  composition: *id008
+  equation-of-state: *id009
   inchi: InChI=1S/C6H13O/c1-3-4-5-6(2)7/h6H,3-5H2,1-2H3
   name: HEXBO
-  note: 'HEXBO was not found in all-species-data and was constructed as well as possible
-    using web requests and assuming ideal gas thermo.
+  note: '-thermHEXBO was not found in all-species-data and was constructed as well
+    as possible using web requests and assuming ideal gas thermo.
 
-    SMILES: CCCCC(C)[O]
+    It was found using the SMILES representation: C6H13O.SMILES: CCCCC(C)[O]
 
     InCHI: InChI=1S/C6H13O/c1-3-4-5-6(2)7/h6H,3-5H2,1-2H3
 
     '
   smiles: CCCCC(C)[O]
-  thermo:
-    model: constant-cp
+  thermo: *id010
 HEXBO2:
-  composition:
-    C: 6
-    H: 13
-    O: 2
+  alias: C6H13O2
+  composition: *id005
+  equation-of-state: *id006
   inchi: InChI=1S/C6H13O2/c1-3-4-5-6(2)8-7/h6H,3-5H2,1-2H3
   name: HEXBO2
-  note: 'HEXBO2 was not found in all-species-data and was constructed as well as possible
-    using web requests and assuming ideal gas thermo.
+  note: '-thermHEXBO2 was not found in all-species-data and was constructed as well
+    as possible using web requests and assuming ideal gas thermo.
 
-    SMILES: CC(CCCC)O[O]
+    It was found using the SMILES representation: C6H13O2.SMILES: CC(CCCC)O[O]
 
     InCHI: InChI=1S/C6H13O2/c1-3-4-5-6(2)8-7/h6H,3-5H2,1-2H3
 
     '
   smiles: CC(CCCC)O[O]
-  thermo:
-    model: constant-cp
+  thermo: *id007
 HEXBOH:
   composition:
     C: 6
@@ -62598,41 +62681,37 @@ HEXCNO3:
   thermo:
     model: constant-cp
 HEXCO:
-  composition:
-    C: 6
-    H: 13
-    O: 1
+  alias: C6H13O
+  composition: *id008
+  equation-of-state: *id009
   inchi: InChI=1S/C6H13O/c1-3-5-6(7)4-2/h6H,3-5H2,1-2H3
   name: HEXCO
-  note: 'HEXCO was not found in all-species-data and was constructed as well as possible
-    using web requests and assuming ideal gas thermo.
+  note: '-thermHEXCO was not found in all-species-data and was constructed as well
+    as possible using web requests and assuming ideal gas thermo.
 
-    SMILES: CCCC([O])CC
+    It was found using the SMILES representation: C6H13O.SMILES: CCCC([O])CC
 
     InCHI: InChI=1S/C6H13O/c1-3-5-6(7)4-2/h6H,3-5H2,1-2H3
 
     '
   smiles: CCCC([O])CC
-  thermo:
-    model: constant-cp
+  thermo: *id010
 HEXCO2:
-  composition:
-    C: 6
-    H: 13
-    O: 2
+  alias: C6H13O2
+  composition: *id005
+  equation-of-state: *id006
   inchi: InChI=1S/C6H13O2/c1-3-5-6(4-2)8-7/h6H,3-5H2,1-2H3
   name: HEXCO2
-  note: 'HEXCO2 was not found in all-species-data and was constructed as well as possible
-    using web requests and assuming ideal gas thermo.
+  note: '-thermHEXCO2 was not found in all-species-data and was constructed as well
+    as possible using web requests and assuming ideal gas thermo.
 
-    SMILES: CCCC(CC)O[O]
+    It was found using the SMILES representation: C6H13O2.SMILES: CCCC(CC)O[O]
 
     InCHI: InChI=1S/C6H13O2/c1-3-5-6(4-2)8-7/h6H,3-5H2,1-2H3
 
     '
   smiles: CCCC(CC)O[O]
-  thermo:
-    model: constant-cp
+  thermo: *id007
 HEXCOH:
   composition:
     C: 6
@@ -64740,23 +64819,49 @@ HO1C3NO3:
   thermo:
     model: constant-cp
 HO1C3O:
+  alias: C3H7O2
   composition:
     C: 3
     H: 7
     O: 2
+  equation-of-state:
+    a:
+    - 37964200000000.0
+    - 0
+    b: 87.72079562
+    model: Redlich-Kwong
   inchi: InChI=1S/C3H7O2/c4-2-1-3-5/h4H,1-3H2
   name: HO1C3O
   note: 'HO1C3O was not found in all-species-data and was constructed as well as possible
     using web requests and assuming ideal gas thermo.
 
-    SMILES: OCCC[O]
+    It was found using the SMILES representation: C3H7O2.SMILES: OCCC[O]
 
     InCHI: InChI=1S/C3H7O2/c4-2-1-3-5/h4H,1-3H2
 
     '
   smiles: OCCC[O]
   thermo:
-    model: constant-cp
+    data:
+    - - 2.25116181
+      - 0.0404764261
+      - -2.70779685e-05
+      - 9.87383732e-09
+      - -1.5439198e-12
+      - -10402.7797
+      - 16.7736536
+    - - 12.705905
+      - 0.0165446528
+      - -5.64857588e-06
+      - 8.75666817e-10
+      - -5.07449775e-14
+      - -14151.3305
+      - -39.662932
+    model: NASA7
+    temperature-ranges:
+    - 300.0
+    - 1394.0
+    - 5000.0
 HO1C3O2:
   composition:
     C: 3
@@ -64813,23 +64918,49 @@ HO1C4NO3:
   thermo:
     model: constant-cp
 HO1C4O:
-  composition:
+  alias: C4H9O2
+  composition: &id011
     C: 4
     H: 9
     O: 2
+  equation-of-state: &id012
+    a:
+    - 68529500000000.0
+    - 0
+    b: 94.20200585
+    model: Redlich-Kwong
   inchi: InChI=1S/C4H9O2/c5-3-1-2-4-6/h5H,1-4H2
   name: HO1C4O
-  note: 'HO1C4O was not found in all-species-data and was constructed as well as possible
-    using web requests and assuming ideal gas thermo.
+  note: '-thermHO1C4O was not found in all-species-data and was constructed as well
+    as possible using web requests and assuming ideal gas thermo.
 
-    SMILES: OCCCC[O]
+    It was found using the SMILES representation: C4H9O2.SMILES: OCCCC[O]
 
     InCHI: InChI=1S/C4H9O2/c5-3-1-2-4-6/h5H,1-4H2
 
     '
   smiles: OCCCC[O]
-  thermo:
-    model: constant-cp
+  thermo: &id013
+    data:
+    - - 2.12203459
+      - 0.0522170099
+      - -3.45361525e-05
+      - 1.22590593e-08
+      - -1.85024171e-12
+      - -13305.9163
+      - 19.750235
+    - - 15.9125079
+      - 0.021017075
+      - -7.18695542e-06
+      - 1.11540718e-09
+      - -6.46906625e-14
+      - -18270.3158
+      - -54.7955211
+    model: NASA7
+    temperature-ranges:
+    - 300.0
+    - 1393.0
+    - 5000.0
 HO1C4O2:
   composition:
     C: 4
@@ -64959,23 +65090,21 @@ HO1C6NO3:
   thermo:
     model: constant-cp
 HO1C6O:
-  composition:
-    C: 6
-    H: 13
-    O: 2
+  alias: C6H13O2
+  composition: *id005
+  equation-of-state: *id006
   inchi: InChI=1S/C6H13O2/c1-2-6(8)4-3-5-7/h6-7H,2-5H2,1H3
   name: HO1C6O
-  note: 'HO1C6O was not found in all-species-data and was constructed as well as possible
-    using web requests and assuming ideal gas thermo.
+  note: '-thermHO1C6O was not found in all-species-data and was constructed as well
+    as possible using web requests and assuming ideal gas thermo.
 
-    SMILES: OCCCC([O])CC
+    It was found using the SMILES representation: C6H13O2.SMILES: OCCCC([O])CC
 
     InCHI: InChI=1S/C6H13O2/c1-2-6(8)4-3-5-7/h6-7H,2-5H2,1H3
 
     '
   smiles: OCCCC([O])CC
-  thermo:
-    model: constant-cp
+  thermo: *id007
 HO1C6O2:
   composition:
     C: 6
@@ -65176,23 +65305,21 @@ HO1MC5NO3:
   thermo:
     model: constant-cp
 HO1MC5O:
-  composition:
-    C: 6
-    H: 13
-    O: 2
+  alias: C6H13O2
+  composition: *id005
+  equation-of-state: *id006
   inchi: InChI=1S/C6H13O2/c1-5(4-7)3-6(2)8/h5-7H,3-4H2,1-2H3
   name: HO1MC5O
-  note: 'HO1MC5O was not found in all-species-data and was constructed as well as
-    possible using web requests and assuming ideal gas thermo.
+  note: '-thermHO1MC5O was not found in all-species-data and was constructed as well
+    as possible using web requests and assuming ideal gas thermo.
 
-    SMILES: OCC(C)CC(C)[O]
+    It was found using the SMILES representation: C6H13O2.SMILES: OCC(C)CC(C)[O]
 
     InCHI: InChI=1S/C6H13O2/c1-5(4-7)3-6(2)8/h5-7H,3-4H2,1-2H3
 
     '
   smiles: OCC(C)CC(C)[O]
-  thermo:
-    model: constant-cp
+  thermo: *id007
 HO1MC5O2:
   composition:
     C: 6
@@ -65687,23 +65814,21 @@ HO2C4NO3:
   thermo:
     model: constant-cp
 HO2C4O:
-  composition:
-    C: 4
-    H: 9
-    O: 2
+  alias: C4H9O2
+  composition: *id011
+  equation-of-state: *id012
   inchi: InChI=1S/C4H9O2/c1-4(6)2-3-5/h4,6H,2-3H2,1H3
   name: HO2C4O
-  note: 'HO2C4O was not found in all-species-data and was constructed as well as possible
-    using web requests and assuming ideal gas thermo.
+  note: '-thermHO2C4O was not found in all-species-data and was constructed as well
+    as possible using web requests and assuming ideal gas thermo.
 
-    SMILES: [O]CCC(C)O
+    It was found using the SMILES representation: C4H9O2.SMILES: [O]CCC(C)O
 
     InCHI: InChI=1S/C4H9O2/c1-4(6)2-3-5/h4,6H,2-3H2,1H3
 
     '
   smiles: '[O]CCC(C)O'
-  thermo:
-    model: constant-cp
+  thermo: *id013
 HO2C4O2:
   composition:
     C: 4
@@ -66014,23 +66139,21 @@ HO2C6NO3:
   thermo:
     model: constant-cp
 HO2C6O:
-  composition:
-    C: 6
-    H: 13
-    O: 2
+  alias: C6H13O2
+  composition: *id005
+  equation-of-state: *id006
   inchi: InChI=1S/C6H13O2/c1-5(7)3-4-6(2)8/h5-7H,3-4H2,1-2H3
   name: HO2C6O
-  note: 'HO2C6O was not found in all-species-data and was constructed as well as possible
-    using web requests and assuming ideal gas thermo.
+  note: '-thermHO2C6O was not found in all-species-data and was constructed as well
+    as possible using web requests and assuming ideal gas thermo.
 
-    SMILES: CC(O)CCC(C)[O]
+    It was found using the SMILES representation: C6H13O2.SMILES: CC(O)CCC(C)[O]
 
     InCHI: InChI=1S/C6H13O2/c1-5(7)3-4-6(2)8/h5-7H,3-4H2,1-2H3
 
     '
   smiles: CC(O)CCC(C)[O]
-  thermo:
-    model: constant-cp
+  thermo: *id007
 HO2C6O2:
   composition:
     C: 6
@@ -66322,23 +66445,21 @@ HO2M2C5NO3:
   thermo:
     model: constant-cp
 HO2M2C5O:
-  composition:
-    C: 6
-    H: 13
-    O: 2
+  alias: C6H13O2
+  composition: *id005
+  equation-of-state: *id006
   inchi: InChI=1S/C6H13O2/c1-6(2,8)4-3-5-7/h8H,3-5H2,1-2H3
   name: HO2M2C5O
-  note: 'HO2M2C5O was not found in all-species-data and was constructed as well as
-    possible using web requests and assuming ideal gas thermo.
+  note: '-thermHO2M2C5O was not found in all-species-data and was constructed as well
+    as possible using web requests and assuming ideal gas thermo.
 
-    SMILES: [O]CCCC(C)(C)O
+    It was found using the INCHI representation: C6H13O2.SMILES: [O]CCCC(C)(C)O
 
     InCHI: InChI=1S/C6H13O2/c1-6(2,8)4-3-5-7/h8H,3-5H2,1-2H3
 
     '
   smiles: '[O]CCCC(C)(C)O'
-  thermo:
-    model: constant-cp
+  thermo: *id007
 HO2M2C5O2:
   composition:
     C: 6
@@ -66413,23 +66534,21 @@ HO2MC5NO3:
   thermo:
     model: constant-cp
 HO2MC5O:
-  composition:
-    C: 6
-    H: 13
-    O: 2
+  alias: C6H13O2
+  composition: *id005
+  equation-of-state: *id006
   inchi: InChI=1S/C6H13O2/c1-5(4-7)3-6(2)8/h5-6,8H,3-4H2,1-2H3
   name: HO2MC5O
-  note: 'HO2MC5O was not found in all-species-data and was constructed as well as
-    possible using web requests and assuming ideal gas thermo.
+  note: '-thermHO2MC5O was not found in all-species-data and was constructed as well
+    as possible using web requests and assuming ideal gas thermo.
 
-    SMILES: [O]CC(C)CC(C)O
+    It was found using the SMILES representation: C6H13O2.SMILES: [O]CC(C)CC(C)O
 
     InCHI: InChI=1S/C6H13O2/c1-5(4-7)3-6(2)8/h5-6,8H,3-4H2,1-2H3
 
     '
   smiles: '[O]CC(C)CC(C)O'
-  thermo:
-    model: constant-cp
+  thermo: *id007
 HO2MC5O2:
   composition:
     C: 6
@@ -67178,23 +67297,21 @@ HO3C6NO3:
   thermo:
     model: constant-cp
 HO3C6O:
-  composition:
-    C: 6
-    H: 13
-    O: 2
+  alias: C6H13O2
+  composition: *id005
+  equation-of-state: *id006
   inchi: InChI=1S/C6H13O2/c1-2-6(8)4-3-5-7/h6,8H,2-5H2,1H3
   name: HO3C6O
-  note: 'HO3C6O was not found in all-species-data and was constructed as well as possible
-    using web requests and assuming ideal gas thermo.
+  note: '-thermHO3C6O was not found in all-species-data and was constructed as well
+    as possible using web requests and assuming ideal gas thermo.
 
-    SMILES: [O]CCCC(O)CC
+    It was found using the SMILES representation: C6H13O2.SMILES: [O]CCCC(O)CC
 
     InCHI: InChI=1S/C6H13O2/c1-2-6(8)4-3-5-7/h6,8H,2-5H2,1H3
 
     '
   smiles: '[O]CCCC(O)CC'
-  thermo:
-    model: constant-cp
+  thermo: *id007
 HO3C6O2:
   composition:
     C: 6
@@ -76776,22 +76893,50 @@ M2HEXBOOH:
   thermo:
     model: constant-cp
 M2PE:
+  alias: C6H14
   composition:
     C: 6
     H: 14
+  critical-parameters:
+    acentric-factor: 0.299
+    critical-compressibility: 0.264
+    critical-molar-volume: 0.3684
+    critical-pressure: 3020000.0
+    critical-temperature: 507.9
+  descriptive-name: hexane
   inchi: InChI=1S/C6H14/c1-4-5-6(2)3/h6H,4-5H2,1-3H3
+  molecular-weight: 86.177
   name: M2PE
   note: 'M2PE was not found in all-species-data and was constructed as well as possible
     using web requests and assuming ideal gas thermo.
 
-    SMILES: CCCC(C)C
+    It was found using the SMILES representation: C6H14.SMILES: CCCC(C)C
 
     InCHI: InChI=1S/C6H14/c1-4-5-6(2)3/h6H,4-5H2,1-3H3
 
     '
   smiles: CCCC(C)C
   thermo:
-    model: constant-cp
+    data:
+    - - -0.44697708
+      - 0.066306598
+      - -2.2811577e-05
+      - -1.0950117e-08
+      - 7.7763932e-12
+      - -24345.83
+      - 27.13312
+    - - 9.7638464
+      - 0.043217782
+      - -1.5517728e-05
+      - 2.5733407e-09
+      - -1.6292076e-13
+      - -27236.531
+      - -26.48185
+    model: NASA7
+    temperature-ranges:
+    - 300.0
+    - 1000.0
+    - 5000.0
 M2PEANO3:
   composition:
     C: 6
@@ -76812,41 +76957,37 @@ M2PEANO3:
   thermo:
     model: constant-cp
 M2PEAO:
-  composition:
-    C: 6
-    H: 13
-    O: 1
+  alias: C6H13O
+  composition: *id008
+  equation-of-state: *id009
   inchi: InChI=1S/C6H13O/c1-3-4-6(2)5-7/h6H,3-5H2,1-2H3
   name: M2PEAO
-  note: 'M2PEAO was not found in all-species-data and was constructed as well as possible
-    using web requests and assuming ideal gas thermo.
+  note: '-thermM2PEAO was not found in all-species-data and was constructed as well
+    as possible using web requests and assuming ideal gas thermo.
 
-    SMILES: CCCC(C)C[O]
+    It was found using the SMILES representation: C6H13O.SMILES: CCCC(C)C[O]
 
     InCHI: InChI=1S/C6H13O/c1-3-4-6(2)5-7/h6H,3-5H2,1-2H3
 
     '
   smiles: CCCC(C)C[O]
-  thermo:
-    model: constant-cp
+  thermo: *id010
 M2PEAO2:
-  composition:
-    C: 6
-    H: 13
-    O: 2
+  alias: C6H13O2
+  composition: *id005
+  equation-of-state: *id006
   inchi: InChI=1S/C6H13O2/c1-3-4-6(2)5-8-7/h6H,3-5H2,1-2H3
   name: M2PEAO2
-  note: 'M2PEAO2 was not found in all-species-data and was constructed as well as
-    possible using web requests and assuming ideal gas thermo.
+  note: '-thermM2PEAO2 was not found in all-species-data and was constructed as well
+    as possible using web requests and assuming ideal gas thermo.
 
-    SMILES: CCCC(C)CO[O]
+    It was found using the SMILES representation: C6H13O2.SMILES: CCCC(C)CO[O]
 
     InCHI: InChI=1S/C6H13O2/c1-3-4-6(2)5-8-7/h6H,3-5H2,1-2H3
 
     '
   smiles: CCCC(C)CO[O]
-  thermo:
-    model: constant-cp
+  thermo: *id007
 M2PEAOH:
   composition:
     C: 6
@@ -76903,41 +77044,37 @@ M2PEBNO3:
   thermo:
     model: constant-cp
 M2PEBO:
-  composition:
-    C: 6
-    H: 13
-    O: 1
+  alias: C6H13O
+  composition: *id008
+  equation-of-state: *id009
   inchi: InChI=1S/C6H13O/c1-5(2)4-6(3)7/h5-6H,4H2,1-3H3
   name: M2PEBO
-  note: 'M2PEBO was not found in all-species-data and was constructed as well as possible
-    using web requests and assuming ideal gas thermo.
+  note: '-thermM2PEBO was not found in all-species-data and was constructed as well
+    as possible using web requests and assuming ideal gas thermo.
 
-    SMILES: CC(C)CC(C)[O]
+    It was found using the SMILES representation: C6H13O.SMILES: CC(C)CC(C)[O]
 
     InCHI: InChI=1S/C6H13O/c1-5(2)4-6(3)7/h5-6H,4H2,1-3H3
 
     '
   smiles: CC(C)CC(C)[O]
-  thermo:
-    model: constant-cp
+  thermo: *id010
 M2PEBO2:
-  composition:
-    C: 6
-    H: 13
-    O: 2
+  alias: C6H13O2
+  composition: *id005
+  equation-of-state: *id006
   inchi: InChI=1S/C6H13O2/c1-5(2)4-6(3)8-7/h5-6H,4H2,1-3H3
   name: M2PEBO2
-  note: 'M2PEBO2 was not found in all-species-data and was constructed as well as
-    possible using web requests and assuming ideal gas thermo.
+  note: '-thermM2PEBO2 was not found in all-species-data and was constructed as well
+    as possible using web requests and assuming ideal gas thermo.
 
-    SMILES: [O]OC(C)CC(C)C
+    It was found using the SMILES representation: C6H13O2.SMILES: [O]OC(C)CC(C)C
 
     InCHI: InChI=1S/C6H13O2/c1-5(2)4-6(3)8-7/h5-6H,4H2,1-3H3
 
     '
   smiles: '[O]OC(C)CC(C)C'
-  thermo:
-    model: constant-cp
+  thermo: *id007
 M2PEBOH:
   composition:
     C: 6
@@ -76994,41 +77131,37 @@ M2PECNO3:
   thermo:
     model: constant-cp
 M2PECO:
-  composition:
-    C: 6
-    H: 13
-    O: 1
+  alias: C6H13O
+  composition: *id008
+  equation-of-state: *id009
   inchi: InChI=1S/C6H13O/c1-4-6(7)5(2)3/h5-6H,4H2,1-3H3
   name: M2PECO
-  note: 'M2PECO was not found in all-species-data and was constructed as well as possible
-    using web requests and assuming ideal gas thermo.
+  note: '-thermM2PECO was not found in all-species-data and was constructed as well
+    as possible using web requests and assuming ideal gas thermo.
 
-    SMILES: CCC([O])C(C)C
+    It was found using the SMILES representation: C6H13O.SMILES: CCC([O])C(C)C
 
     InCHI: InChI=1S/C6H13O/c1-4-6(7)5(2)3/h5-6H,4H2,1-3H3
 
     '
   smiles: CCC([O])C(C)C
-  thermo:
-    model: constant-cp
+  thermo: *id010
 M2PECO2:
-  composition:
-    C: 6
-    H: 13
-    O: 2
+  alias: C6H13O2
+  composition: *id005
+  equation-of-state: *id006
   inchi: InChI=1S/C6H13O2/c1-4-6(8-7)5(2)3/h5-6H,4H2,1-3H3
   name: M2PECO2
-  note: 'M2PECO2 was not found in all-species-data and was constructed as well as
-    possible using web requests and assuming ideal gas thermo.
+  note: '-thermM2PECO2 was not found in all-species-data and was constructed as well
+    as possible using web requests and assuming ideal gas thermo.
 
-    SMILES: CCC(O[O])C(C)C
+    It was found using the SMILES representation: C6H13O2.SMILES: CCC(O[O])C(C)C
 
     InCHI: InChI=1S/C6H13O2/c1-4-6(8-7)5(2)3/h5-6H,4H2,1-3H3
 
     '
   smiles: CCC(O[O])C(C)C
-  thermo:
-    model: constant-cp
+  thermo: *id007
 M2PECOH:
   composition:
     C: 6
@@ -77085,41 +77218,37 @@ M2PEDNO3:
   thermo:
     model: constant-cp
 M2PEDO:
-  composition:
-    C: 6
-    H: 13
-    O: 1
+  alias: C6H13O
+  composition: *id008
+  equation-of-state: *id009
   inchi: InChI=1S/C6H13O/c1-4-5-6(2,3)7/h4-5H2,1-3H3
   name: M2PEDO
-  note: 'M2PEDO was not found in all-species-data and was constructed as well as possible
-    using web requests and assuming ideal gas thermo.
+  note: '-thermM2PEDO was not found in all-species-data and was constructed as well
+    as possible using web requests and assuming ideal gas thermo.
 
-    SMILES: CCCC(C)(C)[O]
+    It was found using the SMILES representation: C6H13O.SMILES: CCCC(C)(C)[O]
 
     InCHI: InChI=1S/C6H13O/c1-4-5-6(2,3)7/h4-5H2,1-3H3
 
     '
   smiles: CCCC(C)(C)[O]
-  thermo:
-    model: constant-cp
+  thermo: *id010
 M2PEDO2:
-  composition:
-    C: 6
-    H: 13
-    O: 2
+  alias: C6H13O2
+  composition: *id005
+  equation-of-state: *id006
   inchi: InChI=1S/C6H13O2/c1-4-5-6(2,3)8-7/h4-5H2,1-3H3
   name: M2PEDO2
-  note: 'M2PEDO2 was not found in all-species-data and was constructed as well as
-    possible using web requests and assuming ideal gas thermo.
+  note: '-thermM2PEDO2 was not found in all-species-data and was constructed as well
+    as possible using web requests and assuming ideal gas thermo.
 
-    SMILES: CCCC(C)(C)O[O]
+    It was found using the SMILES representation: C6H13O2.SMILES: CCCC(C)(C)O[O]
 
     InCHI: InChI=1S/C6H13O2/c1-4-5-6(2,3)8-7/h4-5H2,1-3H3
 
     '
   smiles: CCCC(C)(C)O[O]
-  thermo:
-    model: constant-cp
+  thermo: *id007
 M2PEDOH:
   composition:
     C: 6
@@ -77845,41 +77974,37 @@ M3PEANO3:
   thermo:
     model: constant-cp
 M3PEAO:
-  composition:
-    C: 6
-    H: 13
-    O: 1
+  alias: C6H13O
+  composition: *id008
+  equation-of-state: *id009
   inchi: InChI=1S/C6H13O/c1-3-6(2)4-5-7/h6H,3-5H2,1-2H3
   name: M3PEAO
-  note: 'M3PEAO was not found in all-species-data and was constructed as well as possible
-    using web requests and assuming ideal gas thermo.
+  note: '-thermM3PEAO was not found in all-species-data and was constructed as well
+    as possible using web requests and assuming ideal gas thermo.
 
-    SMILES: [O]CCC(C)CC
+    It was found using the INCHI representation: C6H13O.SMILES: [O]CCC(C)CC
 
     InCHI: InChI=1S/C6H13O/c1-3-6(2)4-5-7/h6H,3-5H2,1-2H3
 
     '
   smiles: '[O]CCC(C)CC'
-  thermo:
-    model: constant-cp
+  thermo: *id010
 M3PEAO2:
-  composition:
-    C: 6
-    H: 13
-    O: 2
+  alias: C6H13O2
+  composition: *id005
+  equation-of-state: *id006
   inchi: InChI=1S/C6H13O2/c1-3-6(2)4-5-8-7/h6H,3-5H2,1-2H3
   name: M3PEAO2
-  note: 'M3PEAO2 was not found in all-species-data and was constructed as well as
-    possible using web requests and assuming ideal gas thermo.
+  note: '-thermM3PEAO2 was not found in all-species-data and was constructed as well
+    as possible using web requests and assuming ideal gas thermo.
 
-    SMILES: CC(CCO[O])CC
+    It was found using the INCHI representation: C6H13O2.SMILES: CC(CCO[O])CC
 
     InCHI: InChI=1S/C6H13O2/c1-3-6(2)4-5-8-7/h6H,3-5H2,1-2H3
 
     '
   smiles: CC(CCO[O])CC
-  thermo:
-    model: constant-cp
+  thermo: *id007
 M3PEAOH:
   composition:
     C: 6
@@ -77954,23 +78079,21 @@ M3PEBO:
   thermo:
     model: constant-cp
 M3PEBO2:
-  composition:
-    C: 6
-    H: 13
-    O: 2
+  alias: C6H13O2
+  composition: *id005
+  equation-of-state: *id006
   inchi: InChI=1S/C6H13O2/c1-4-5(2)6(3)8-7/h5-6H,4H2,1-3H3
   name: M3PEBO2
-  note: 'M3PEBO2 was not found in all-species-data and was constructed as well as
-    possible using web requests and assuming ideal gas thermo.
+  note: '-thermM3PEBO2 was not found in all-species-data and was constructed as well
+    as possible using web requests and assuming ideal gas thermo.
 
-    SMILES: CCC(C)C(C)O[O]
+    It was found using the INCHI representation: C6H13O2.SMILES: CCC(C)C(C)O[O]
 
     InCHI: InChI=1S/C6H13O2/c1-4-5(2)6(3)8-7/h5-6H,4H2,1-3H3
 
     '
   smiles: CCC(C)C(C)O[O]
-  thermo:
-    model: constant-cp
+  thermo: *id007
 M3PEBOH:
   composition:
     C: 6
@@ -78045,23 +78168,21 @@ M3PECO:
   thermo:
     model: constant-cp
 M3PECO2:
-  composition:
-    C: 6
-    H: 13
-    O: 2
+  alias: C6H13O2
+  composition: *id005
+  equation-of-state: *id006
   inchi: InChI=1S/C6H13O2/c1-4-6(3,5-2)8-7/h4-5H2,1-3H3
   name: M3PECO2
-  note: 'M3PECO2 was not found in all-species-data and was constructed as well as
-    possible using web requests and assuming ideal gas thermo.
+  note: '-thermM3PECO2 was not found in all-species-data and was constructed as well
+    as possible using web requests and assuming ideal gas thermo.
 
-    SMILES: CCC(C)(CC)O[O]
+    It was found using the INCHI representation: C6H13O2.SMILES: CCC(C)(CC)O[O]
 
     InCHI: InChI=1S/C6H13O2/c1-4-6(3,5-2)8-7/h4-5H2,1-3H3
 
     '
   smiles: CCC(C)(CC)O[O]
-  thermo:
-    model: constant-cp
+  thermo: *id007
 M3PECOH:
   composition:
     C: 6
@@ -81669,23 +81790,24 @@ MGLYOX:
   thermo:
     model: constant-cp
 MIBK:
-  composition:
-    C: 6
-    H: 12
-    O: 1
+  alias: C6H12O
+  composition: *id001
+  critical-parameters: *id002
+  descriptive-name: cyclohexanol
+  equation-of-state: *id003
   inchi: InChI=1S/C6H12O/c1-5(2)4-6(3)7/h5H,4H2,1-3H3
+  molecular-weight: 100.16
   name: MIBK
-  note: 'MIBK was not found in all-species-data and was constructed as well as possible
-    using web requests and assuming ideal gas thermo.
+  note: '-thermMIBK was not found in all-species-data and was constructed as well
+    as possible using web requests and assuming ideal gas thermo.
 
-    SMILES: CC(C)CC(=O)C
+    It was found using the SMILES representation: C6H12O.SMILES: CC(C)CC(=O)C
 
     InCHI: InChI=1S/C6H12O/c1-5(2)4-6(3)7/h5H,4H2,1-3H3
 
     '
   smiles: CC(C)CC(=O)C
-  thermo:
-    model: constant-cp
+  thermo: *id004
 MIBK3CO:
   composition:
     C: 6
@@ -88281,23 +88403,21 @@ NC4H9O:
   thermo:
     model: constant-cp
 NC4H9O2:
-  composition:
-    C: 4
-    H: 9
-    O: 2
+  alias: C4H9O2
+  composition: *id011
+  equation-of-state: *id012
   inchi: InChI=1S/C4H9O2/c1-2-3-4-6-5/h2-4H2,1H3
   name: NC4H9O2
-  note: 'NC4H9O2 was not found in all-species-data and was constructed as well as
-    possible using web requests and assuming ideal gas thermo.
+  note: '-thermNC4H9O2 was not found in all-species-data and was constructed as well
+    as possible using web requests and assuming ideal gas thermo.
 
-    SMILES: CCCCO[O]
+    It was found using the SMILES representation: C4H9O2.SMILES: CCCCO[O]
 
     InCHI: InChI=1S/C4H9O2/c1-2-3-4-6-5/h2-4H2,1H3
 
     '
   smiles: CCCCO[O]
-  thermo:
-    model: constant-cp
+  thermo: *id013
 NC4H9OOH:
   composition:
     C: 4

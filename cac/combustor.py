@@ -73,7 +73,7 @@ def run_combustor_atm_sim(equiv_ratio, test, steadystate, precon, endtime, nstep
     # append appropriate directories
     sys.path.append(DATA_DIR)
     # creation of combustor portion of simulation
-    fuel_model = os.path.join(DATA_DIR, f"combustor-test.yaml")
+    fuel_model = os.path.join(DATA_DIR, f"combustor-min.yaml")
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         fuel = ct.Solution(fuel_model, name="combustor", transport_model=None)
@@ -127,15 +127,19 @@ def run_combustor_atm_sim(equiv_ratio, test, steadystate, precon, endtime, nstep
     states = ct.SolutionArray(fuel, extra=['tres'])
     last_good_rt = residence_time
     failures = 0
-    while wsr.T > 900:
+    T_jump = 0
+    while T_jump < 100 or wsr.T > 1700:
         net.initial_time = 0.0  # reset the integrator
         try:
-            net.advance_to_steady_state(residual_threshold=1e-2)
+            T_f = wsr.T
+            net.advance_to_steady_state(residual_threshold=1e-1)
+            T_jump = T_f - wsr.T
             print('tres = {:.2e}, T = {:.1f}'.format(residence_time, wsr.T))
             states.append(wsr.thermo.state, tres=residence_time)
             residence_time *= 0.9  # decrease the residence time for the next iteration
             failures = 0
         except:
+            T_jump = T_f - wsr.T
             failures += 1
             last_known_rt = residence_time
             print('Failure: tres = {:.2e}; T = {:.1f}'.format(residence_time, wsr.T))
@@ -181,7 +185,7 @@ def run_combustor_atm_sim(equiv_ratio, test, steadystate, precon, endtime, nstep
     T2, p2 = combustor.thermo.TP
     # get total moles for volume calculation
     moles = combustor.get_state()[1:]
-    clean = False
+    clean = True
     if clean:
         max_mole_value = numpy.amax(moles)
         decimals = int(numpy.ceil(numpy.abs(numpy.log10(max_mole_value))))
@@ -233,7 +237,7 @@ def run_combustor_atm_sim(equiv_ratio, test, steadystate, precon, endtime, nstep
     # create atmosphere reactor
     X_moles = moles / Ntotal
     atms.TPY = T4, p4, X_moles
-    atmosphere = PlumeReactor(atms)
+    atmosphere = PlumeReactor(atms, energy="off")
     atmosphere.volume = v4
     atmosphere.TX_air = [air_state[0],] + [x for x in air_state[2]]
     atmosphere.enthalpy_air = air_enthalpy
@@ -243,10 +247,14 @@ def run_combustor_atm_sim(equiv_ratio, test, steadystate, precon, endtime, nstep
     mdot = p4 * A4 * M4 * numpy.sqrt(gamma * gc / ct.gas_constant * T4)
     # setup reactor network
     net = new_network([atmosphere], precon)
+    net.max_time_step = 1e-6
+    # net.advance_to_steady_state(residual_threshold=1e-6)
+    print(net.time)
     while atmosphere.T > T_atm:
-        print(atmosphere.T, atmosphere.volume)
+        print(net.time, atmosphere.T, atmosphere.volume)
+        # input()
         net.step()
-    print(net.time, atmosphere.T)
+    # print(net.time, atmosphere.T)
     # atms_states = ct.SolutionArray(atms)
     # times = []
     # # adding the initial conditions

@@ -80,16 +80,10 @@ class PlumeReactor(ct.ExtensibleIdealGasConstPressureMoleReactor):
                     omega_ent = 1 / t
             # find most from ideal gas law
             T,P = self.thermo.TP
-            Nt = P * self.volume / ct.gas_constant / T
+            Nt = P * self.volume / ct.gas_constant / self.T
             moles = self.state_air[1:] * Nt
             # addition of value to energy equation for thermal entrainment
-            RHS[0] -= omega_ent * (self.T - self.state_air[0])
-            numer = 0
-            denom = 0
-            for i, m in enumerate(moles):
-                numer += omega_ent * self.enthalpy_air[i] * m
-                denom += self.cp_air[i] * m
-            RHS[0] -= numer / denom
+            RHS[0] -= omega_ent * (self.T - self.state_air[0]) * self.mass * self.thermo.cp_mass
             # addition of value for species equation entrainment
             for i in range(len(moles)):
                 RHS[i+1] += omega_ent * moles[i]

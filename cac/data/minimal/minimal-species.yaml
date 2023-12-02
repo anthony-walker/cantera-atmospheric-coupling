@@ -235,7 +235,6 @@ ACO3H:
   thermo:
     model: constant-cp
 ACR:
-  alias: C3H4O
   composition:
     C: 3
     H: 4
@@ -245,41 +244,14 @@ ACR:
   note: 'ACR was not found in all-species-data and was constructed as well as possible
     using web requests and assuming ideal gas thermo.
 
-    It was found using the SMILES representation: C3H4O.SMILES: C=CC=O
+    SMILES: C=CC=O
 
     InCHI: InChI=1S/C3H4O/c1-2-3-4/h2-3H,1H2
 
     '
   smiles: C=CC=O
   thermo:
-    data:
-    - - 1.06398178
-      - 0.023261398
-      - 5.13401374e-07
-      - -1.40732428e-08
-      - 5.58361275e-12
-      - 6137.38394
-      - 19.5378809
-    - - 5.01946966
-      - 0.017206927
-      - -7.09385106e-06
-      - 1.30461583e-09
-      - -8.80522442e-14
-      - 5034.84625
-      - -1.63569909
-    model: NASA7
-    note: DIEVARTP.
-    temperature-ranges:
-    - 200.0
-    - 1000.0
-    - 5000.0
-  transport:
-    diameter: 4.854
-    geometry: nonlinear
-    model: gas
-    polarizability: 6.1
-    rotational-relaxation: 1.0
-    well-depth: 319.717
+    model: constant-cp
 ACRO2:
   composition:
     C: 3
@@ -354,52 +326,23 @@ ACRPAN:
   thermo:
     model: constant-cp
 ALLYLOH:
-  alias: C3H6O
   composition:
     C: 3
     H: 6
     O: 1
-  critical-parameters:
-    acentric-factor: 0.269
-    critical-compressibility: 0.229
-    critical-molar-volume: 0.186
-    critical-pressure: 4920000.0
-    critical-temperature: 482.2
-  descriptive-name: propylene-oxide
   inchi: InChI=1S/C3H6O/c1-2-3-4/h2,4H,1,3H2
-  molecular-weight: 58.08
   name: ALLYLOH
   note: 'ALLYLOH was not found in all-species-data and was constructed as well as
     possible using web requests and assuming ideal gas thermo.
 
-    It was found using the SMILES representation: C3H6O.SMILES: OCC=C
+    SMILES: OCC=C
 
     InCHI: InChI=1S/C3H6O/c1-2-3-4/h2,4H,1,3H2
 
     '
   smiles: OCC=C
   thermo:
-    data:
-    - - 3.56851051
-      - 0.00502717292
-      - 6.42315607e-05
-      - -8.90229548e-08
-      - 3.62423766e-11
-      - -12967.9205
-      - 9.88838229
-    - - 7.9455571
-      - 0.0174061678
-      - -6.25436463e-06
-      - 1.00975457e-09
-      - -6.04488953e-14
-      - -15286.7683
-      - -18.4184133
-    model: NASA7
-    note: L 6/90
-    temperature-ranges:
-    - 200.0
-    - 1000.0
-    - 6000.0
+    model: constant-cp
 AR:
   composition:
     Ar: 1
@@ -451,57 +394,22 @@ BENZAL:
   thermo:
     model: constant-cp
 BENZENE:
-  alias: C6H6
   composition:
     C: 6
     H: 6
-  critical-parameters:
-    acentric-factor: 0.212
-    critical-compressibility: 0.269
-    critical-molar-volume: 0.2578
-    critical-pressure: 4890000.0
-    critical-temperature: 562
-  descriptive-name: benzene
   inchi: InChI=1S/C6H6/c1-2-4-6-5-3-1/h1-6H
-  molecular-weight: 78.113
   name: BENZENE
-  note: 'D11/99BENZENE was not found in all-species-data and was constructed as well
-    as possible using web requests and assuming ideal gas thermo.
+  note: 'BENZENE was not found in all-species-data and was constructed as well as
+    possible using web requests and assuming ideal gas thermo.
 
-    It was found using the SMILES representation: C6H6.SMILES: c1ccccc1
+    SMILES: c1ccccc1
 
     InCHI: InChI=1S/C6H6/c1-2-4-6-5-3-1/h1-6H
 
     '
   smiles: c1ccccc1
   thermo:
-    data:
-    - - 0.504818632
-      - 0.0185020642
-      - 7.38345881e-05
-      - -1.18135741e-07
-      - 5.07210429e-11
-      - 8552.47913
-      - 21.6412893
-    - - 11.0809576
-      - 0.0207176746
-      - -7.52145991e-06
-      - 1.22320984e-09
-      - -7.36091279e-14
-      - 4306.41035
-      - -40.041331
-    model: NASA7
-    note: G6/01
-    temperature-ranges:
-    - 200.0
-    - 1000.0
-    - 6000.0
-  transport:
-    diameter: 5.29
-    geometry: nonlinear
-    model: gas
-    polarizability: 10.32
-    well-depth: 464.8
+    model: constant-cp
 BIACET:
   composition:
     C: 4
@@ -673,7 +581,7 @@ BUT1ENE:
   note: '-thermBUT1ENE was not found in all-species-data and was constructed as well
     as possible using web requests and assuming ideal gas thermo.
 
-    It was found using the INCHI representation: C4H8.SMILES: CCC=C
+    It was found using the SEMI-STRUCTURAL representation: C4H8.SMILES: CCC=C
 
     InCHI: InChI=1S/C4H8/c1-3-4-2/h3H,1,4H2,2H3
 
@@ -719,49 +627,23 @@ BUT2OL:
   thermo:
     model: constant-cp
 BUT2OLAO:
-  alias: C4H9O2
-  composition: &id004
+  composition:
     C: 4
     H: 9
     O: 2
-  equation-of-state: &id005
-    a:
-    - 68529500000000.0
-    - 0
-    b: 94.20200585
-    model: Redlich-Kwong
   inchi: InChI=1S/C4H9O2/c1-3(5)4(2)6/h3-5H,1-2H3
   name: BUT2OLAO
-  note: '-thermBUT2OLAO was not found in all-species-data and was constructed as well
-    as possible using web requests and assuming ideal gas thermo.
+  note: 'BUT2OLAO was not found in all-species-data and was constructed as well as
+    possible using web requests and assuming ideal gas thermo.
 
-    It was found using the SMILES representation: C4H9O2.SMILES: CC([O])C(C)O
+    SMILES: CC([O])C(C)O
 
     InCHI: InChI=1S/C4H9O2/c1-3(5)4(2)6/h3-5H,1-2H3
 
     '
   smiles: CC([O])C(C)O
-  thermo: &id006
-    data:
-    - - 2.12203459
-      - 0.0522170099
-      - -3.45361525e-05
-      - 1.22590593e-08
-      - -1.85024171e-12
-      - -13305.9163
-      - 19.750235
-    - - 15.9125079
-      - 0.021017075
-      - -7.18695542e-06
-      - 1.11540718e-09
-      - -6.46906625e-14
-      - -18270.3158
-      - -54.7955211
-    model: NASA7
-    temperature-ranges:
-    - 300.0
-    - 1393.0
-    - 5000.0
+  thermo:
+    model: constant-cp
 BUT2OLNO3:
   composition:
     C: 4
@@ -2065,13 +1947,13 @@ C2H5O:
     rotational-relaxation: 1.5
     well-depth: 470.6
 C2H5O2:
-  composition: &id007
+  composition: &id001
     C: 2
     H: 5
     O: 2
   name: C2H5O2
   note: 1/14/5THERM
-  thermo: &id008
+  thermo: &id002
     data:
     - - 2.58630333
       - 0.0261836362
@@ -2093,7 +1975,7 @@ C2H5O2:
     - 300.0
     - 1387.0
     - 5000.0
-  transport: &id009
+  transport: &id003
     diameter: 4.41
     geometry: nonlinear
     model: gas
@@ -2995,57 +2877,23 @@ C45NO3:
   thermo:
     model: constant-cp
 C45O:
-  alias: C4H7O
   composition:
     C: 4
     H: 7
     O: 1
-  equation-of-state:
-    a:
-    - 31139300000000.0
-    - 0
-    b: 68.71205132
-    model: Redlich-Kwong
   inchi: InChI=1S/C4H7O/c1-4(2)3-5/h1,3H2,2H3
   name: C45O
-  note: '4/3/0THERMC45O was not found in all-species-data and was constructed as well
-    as possible using web requests and assuming ideal gas thermo.
+  note: 'C45O was not found in all-species-data and was constructed as well as possible
+    using web requests and assuming ideal gas thermo.
 
-    It was found using the SMILES representation: C4H7O.SMILES: CC(=C)C[O]
+    SMILES: CC(=C)C[O]
 
     InCHI: InChI=1S/C4H7O/c1-4(2)3-5/h1,3H2,2H3
 
     '
   smiles: CC(=C)C[O]
   thermo:
-    data:
-    - - -1.60619192
-      - 0.0558562682
-      - -4.35595767e-05
-      - 1.70589279e-08
-      - -2.6563518e-12
-      - 4850.90326
-      - 34.7112559
-    - - 15.313778
-      - 0.0143427017
-      - -4.81625517e-06
-      - 7.39574839e-10
-      - -4.26140814e-14
-      - -729.342884
-      - -55.2937859
-    model: NASA7
-    note: 4/3/0THERM
-    temperature-ranges:
-    - 300.0
-    - 1395.0
-    - 5000.0
-  transport:
-    diameter: 5.2
-    geometry: nonlinear
-    model: gas
-    note: NMM
-    rotational-relaxation: 1.0
-    well-depth: 496.0
+    model: constant-cp
 C45O2:
   composition:
     C: 4
@@ -5939,12 +5787,12 @@ C6H5O:
     polarizability: 10.32
     well-depth: 464.8
 C6H5O2:
-  composition: &id001
+  composition:
     C: 6
     H: 5
     O: 2
   name: C6H5O2
-  thermo: &id002
+  thermo:
     data:
     - - -4.10418376
       - 0.0756653434
@@ -5966,7 +5814,7 @@ C6H5O2:
     - 300.0
     - 1403.0
     - 5000.0
-  transport: &id003
+  transport:
     diameter: 5.68
     dipole: 0.43
     geometry: nonlinear
@@ -6027,21 +5875,23 @@ C7CO4DB:
   thermo:
     model: constant-cp
 CATEC1O:
-  alias: C6H5O2
-  composition: *id001
+  composition:
+    C: 6
+    H: 5
+    O: 2
   inchi: InChI=1S/C6H5O2/c7-5-3-1-2-4-6(5)8/h1-4,7H
   name: CATEC1O
   note: 'CATEC1O was not found in all-species-data and was constructed as well as
     possible using web requests and assuming ideal gas thermo.
 
-    It was found using the SMILES representation: C6H5O2.SMILES: [O]c1ccccc1O
+    SMILES: [O]c1ccccc1O
 
     InCHI: InChI=1S/C6H5O2/c7-5-3-1-2-4-6(5)8/h1-4,7H
 
     '
   smiles: '[O]c1ccccc1O'
-  thermo: *id002
-  transport: *id003
+  thermo:
+    model: constant-cp
 CATEC1O2:
   composition:
     C: 6
@@ -6134,51 +5984,23 @@ CH2CHCH2NO3:
   thermo:
     model: constant-cp
 CH2CHCH2O:
-  alias: C3H5O
   composition:
     C: 3
     H: 5
     O: 1
   inchi: InChI=1S/C3H5O/c1-2-3-4/h2H,1,3H2
   name: CH2CHCH2O
-  note: '7/20/95THERMCH2CHCH2O was not found in all-species-data and was constructed
-    as well as possible using web requests and assuming ideal gas thermo.
+  note: 'CH2CHCH2O was not found in all-species-data and was constructed as well as
+    possible using web requests and assuming ideal gas thermo.
 
-    It was found using the SMILES representation: C3H5O.SMILES: [O]CC=C
+    SMILES: [O]CC=C
 
     InCHI: InChI=1S/C3H5O/c1-2-3-4/h2H,1,3H2
 
     '
   smiles: '[O]CC=C'
   thermo:
-    data:
-    - - 1.19822582
-      - 0.0305579837
-      - -1.80630276e-05
-      - 4.86150033e-09
-      - -4.19854562e-13
-      - 9582.17784
-      - 21.5566221
-    - - 10.2551752
-      - 0.011498372
-      - -3.84645659e-06
-      - 5.88910346e-10
-      - -3.38557923e-14
-      - 6265.6081
-      - -27.7655042
-    model: NASA7
-    note: 7/20/95THERM
-    temperature-ranges:
-    - 300.0
-    - 1380.0
-    - 5000.0
-  transport:
-    diameter: 4.82
-    geometry: nonlinear
-    model: gas
-    note: NMM
-    rotational-relaxation: 1.0
-    well-depth: 411.0
+    model: constant-cp
 CH2CHCH2O2:
   composition:
     C: 3
@@ -10337,11 +10159,11 @@ HO1C3NO3:
     model: constant-cp
 HO1C3O:
   alias: C3H7O2
-  composition: &id010
+  composition:
     C: 3
     H: 7
     O: 2
-  equation-of-state: &id011
+  equation-of-state:
     a:
     - 37964200000000.0
     - 0
@@ -10358,7 +10180,7 @@ HO1C3O:
 
     '
   smiles: OCCC[O]
-  thermo: &id012
+  thermo:
     data:
     - - 2.25116181
       - 0.0404764261
@@ -10436,8 +10258,16 @@ HO1C4NO3:
     model: constant-cp
 HO1C4O:
   alias: C4H9O2
-  composition: *id004
-  equation-of-state: *id005
+  composition: &id004
+    C: 4
+    H: 9
+    O: 2
+  equation-of-state: &id005
+    a:
+    - 68529500000000.0
+    - 0
+    b: 94.20200585
+    model: Redlich-Kwong
   inchi: InChI=1S/C4H9O2/c5-3-1-2-4-6/h5H,1-4H2
   name: HO1C4O
   note: '-thermHO1C4O was not found in all-species-data and was constructed as well
@@ -10449,7 +10279,27 @@ HO1C4O:
 
     '
   smiles: OCCCC[O]
-  thermo: *id006
+  thermo: &id006
+    data:
+    - - 2.12203459
+      - 0.0522170099
+      - -3.45361525e-05
+      - 1.22590593e-08
+      - -1.85024171e-12
+      - -13305.9163
+      - 19.750235
+    - - 15.9125079
+      - 0.021017075
+      - -7.18695542e-06
+      - 1.11540718e-09
+      - -6.46906625e-14
+      - -18270.3158
+      - -54.7955211
+    model: NASA7
+    temperature-ranges:
+    - 300.0
+    - 1393.0
+    - 5000.0
 HO1C4O2:
   composition:
     C: 4
@@ -10820,21 +10670,23 @@ HO3C4NO3:
   thermo:
     model: constant-cp
 HO3C4O:
-  alias: C4H9O2
-  composition: *id004
-  equation-of-state: *id005
+  composition:
+    C: 4
+    H: 9
+    O: 2
   inchi: InChI=1S/C4H9O2/c1-2-4(6)3-5/h4,6H,2-3H2,1H3
   name: HO3C4O
-  note: '-thermHO3C4O was not found in all-species-data and was constructed as well
-    as possible using web requests and assuming ideal gas thermo.
+  note: 'HO3C4O was not found in all-species-data and was constructed as well as possible
+    using web requests and assuming ideal gas thermo.
 
-    It was found using the SMILES representation: C4H9O2.SMILES: CCC(O)C[O]
+    SMILES: CCC(O)C[O]
 
     InCHI: InChI=1S/C4H9O2/c1-2-4(6)3-5/h4,6H,2-3H2,1H3
 
     '
   smiles: CCC(O)C[O]
-  thermo: *id006
+  thermo:
+    model: constant-cp
 HO3C4O2:
   composition:
     C: 4
@@ -11072,7 +10924,7 @@ HOC6H4NO2:
     model: constant-cp
 HOCH2CH2O:
   alias: C2H5O2
-  composition: *id007
+  composition: *id001
   inchi: InChI=1S/C2H5O2/c3-1-2-4/h3H,1-2H2
   name: HOCH2CH2O
   note: '1/14/5THERMHOCH2CH2O was not found in all-species-data and was constructed
@@ -11084,8 +10936,8 @@ HOCH2CH2O:
 
     '
   smiles: OCC[O]
-  thermo: *id008
-  transport: *id009
+  thermo: *id002
+  transport: *id003
 HOCH2CH2O2:
   composition:
     C: 2
@@ -11540,21 +11392,23 @@ HYPERACET:
   thermo:
     model: constant-cp
 HYPROPO:
-  alias: C3H7O2
-  composition: *id010
-  equation-of-state: *id011
+  composition:
+    C: 3
+    H: 7
+    O: 2
   inchi: InChI=1S/C3H7O2/c1-3(5)2-4/h3-4H,2H2,1H3
   name: HYPROPO
   note: 'HYPROPO was not found in all-species-data and was constructed as well as
     possible using web requests and assuming ideal gas thermo.
 
-    It was found using the SMILES representation: C3H7O2.SMILES: OCC(C)[O]
+    SMILES: OCC(C)[O]
 
     InCHI: InChI=1S/C3H7O2/c1-3(5)2-4/h3-4H,2H2,1H3
 
     '
   smiles: OCC(C)[O]
-  thermo: *id012
+  thermo:
+    model: constant-cp
 HYPROPO2:
   composition:
     C: 3
@@ -13472,21 +13326,23 @@ IPROPOL:
   thermo:
     model: constant-cp
 IPROPOLO:
-  alias: C3H7O2
-  composition: *id010
-  equation-of-state: *id011
+  composition:
+    C: 3
+    H: 7
+    O: 2
   inchi: InChI=1S/C3H7O2/c1-3(5)2-4/h3,5H,2H2,1H3
   name: IPROPOLO
   note: 'IPROPOLO was not found in all-species-data and was constructed as well as
     possible using web requests and assuming ideal gas thermo.
 
-    It was found using the SMILES representation: C3H7O2.SMILES: [O]CC(C)O
+    SMILES: [O]CC(C)O
 
     InCHI: InChI=1S/C3H7O2/c1-3(5)2-4/h3,5H,2H2,1H3
 
     '
   smiles: '[O]CC(C)O'
-  thermo: *id012
+  thermo:
+    model: constant-cp
 IPROPOLO2:
   composition:
     C: 3
@@ -16485,21 +16341,23 @@ NBUTOLANO3:
   thermo:
     model: constant-cp
 NBUTOLAO:
-  alias: C4H9O2
-  composition: *id004
-  equation-of-state: *id005
+  composition:
+    C: 4
+    H: 9
+    O: 2
   inchi: InChI=1S/C4H9O2/c1-2-4(6)3-5/h4-5H,2-3H2,1H3
   name: NBUTOLAO
-  note: '-thermNBUTOLAO was not found in all-species-data and was constructed as well
-    as possible using web requests and assuming ideal gas thermo.
+  note: 'NBUTOLAO was not found in all-species-data and was constructed as well as
+    possible using web requests and assuming ideal gas thermo.
 
-    It was found using the INCHI representation: C4H9O2.SMILES: CCC([O])CO
+    SMILES: CCC([O])CO
 
     InCHI: InChI=1S/C4H9O2/c1-2-4(6)3-5/h4-5H,2-3H2,1H3
 
     '
   smiles: CCC([O])CO
-  thermo: *id006
+  thermo:
+    model: constant-cp
 NBUTOLAO2:
   composition:
     C: 4
@@ -16574,21 +16432,23 @@ NBUTOLBNO3:
   thermo:
     model: constant-cp
 NBUTOLBO:
-  alias: C4H9O2
-  composition: *id004
-  equation-of-state: *id005
+  composition:
+    C: 4
+    H: 9
+    O: 2
   inchi: InChI=1S/C4H9O2/c1-4(6)2-3-5/h4-5H,2-3H2,1H3
   name: NBUTOLBO
-  note: '-thermNBUTOLBO was not found in all-species-data and was constructed as well
-    as possible using web requests and assuming ideal gas thermo.
+  note: 'NBUTOLBO was not found in all-species-data and was constructed as well as
+    possible using web requests and assuming ideal gas thermo.
 
-    It was found using the SMILES representation: C4H9O2.SMILES: OCCC(C)[O]
+    SMILES: OCCC(C)[O]
 
     InCHI: InChI=1S/C4H9O2/c1-4(6)2-3-5/h4-5H,2-3H2,1H3
 
     '
   smiles: OCCC(C)[O]
-  thermo: *id006
+  thermo:
+    model: constant-cp
 NBUTOLBO2:
   composition:
     C: 4
@@ -17253,7 +17113,7 @@ NC4H9O2:
   note: '-thermNC4H9O2 was not found in all-species-data and was constructed as well
     as possible using web requests and assuming ideal gas thermo.
 
-    It was found using the SMILES representation: C4H9O2.SMILES: CCCCO[O]
+    It was found using the INCHI representation: C4H9O2.SMILES: CCCCO[O]
 
     InCHI: InChI=1S/C4H9O2/c1-2-3-4-6-5/h2-4H2,1H3
 
@@ -19109,50 +18969,23 @@ PBZQOH:
   thermo:
     model: constant-cp
 PBZQONE:
-  alias: C6H4O2
   composition:
     C: 6
     H: 4
     O: 2
   inchi: InChI=1S/C6H4O2/c7-5-1-2-6(8)4-3-5/h1-4H
   name: PBZQONE
-  note: 'PUML96PBZQONE was not found in all-species-data and was constructed as well
-    as possible using web requests and assuming ideal gas thermo.
+  note: 'PBZQONE was not found in all-species-data and was constructed as well as
+    possible using web requests and assuming ideal gas thermo.
 
-    It was found using the SMILES representation: C6H4O2.SMILES: O=C1C=CC(=O)C=C1
+    SMILES: O=C1C=CC(=O)C=C1
 
     InCHI: InChI=1S/C6H4O2/c7-5-1-2-6(8)4-3-5/h1-4H
 
     '
   smiles: O=C1C=CC(=O)C=C1
   thermo:
-    data:
-    - - -0.95193005
-      - 0.057842445
-      - -3.8214439e-05
-      - 4.6312656e-09
-      - 3.6296651e-12
-      - -17611.047
-      - 29.239513
-    - - 11.73084
-      - 0.023614995
-      - -1.0234576e-05
-      - 1.9532174e-09
-      - -1.2746022e-13
-      - -21085.77
-      - -36.300453
-    model: NASA7
-    temperature-ranges:
-    - 300.0
-    - 1000.0
-    - 5000.0
-  transport:
-    diameter: 5.425
-    dipole: 0.4
-    geometry: nonlinear
-    model: gas
-    rotational-relaxation: 1.0
-    well-depth: 485.0
+    model: constant-cp
 PBZQOOH:
   composition:
     C: 6
@@ -20595,51 +20428,22 @@ TOL1OHNO2:
   thermo:
     model: constant-cp
 TOLUENE:
-  alias: C7H8
   composition:
     C: 7
     H: 8
-  critical-parameters:
-    acentric-factor: 0.263
-    critical-compressibility: 0.265
-    critical-molar-volume: 0.3166
-    critical-pressure: 4210000.0
-    critical-temperature: 593.1
-  descriptive-name: toluene
   inchi: InChI=1S/C7H8/c1-7-5-3-2-4-6-7/h2-6H,1H3
-  molecular-weight: 92.14
   name: TOLUENE
   note: 'TOLUENE was not found in all-species-data and was constructed as well as
     possible using web requests and assuming ideal gas thermo.
 
-    It was found using the SMILES representation: C7H8.SMILES: Cc1ccccc1
+    SMILES: Cc1ccccc1
 
     InCHI: InChI=1S/C7H8/c1-7-5-3-2-4-6-7/h2-6H,1H3
 
     '
   smiles: Cc1ccccc1
   thermo:
-    data:
-    - - 1.611914
-      - 0.0211188902
-      - 8.53221453e-05
-      - -1.32566876e-07
-      - 5.59406109e-11
-      - 4096.51976
-      - 20.2973614
-    - - 12.939475
-      - 0.0266921558
-      - -9.68420108e-06
-      - 1.5739214e-09
-      - -9.46670482e-14
-      - -677.035769
-      - -46.7255302
-    model: NASA7
-    note: L 1/93
-    temperature-ranges:
-    - 200.0
-    - 1000.0
-    - 6000.0
+    model: constant-cp
 VGLYOX:
   composition:
     C: 4
