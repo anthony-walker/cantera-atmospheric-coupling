@@ -181,7 +181,7 @@ def run_combustor_atm_sim(equiv_ratio, test, steadystate, precon, endtime, nstep
     T2, p2 = combustor.thermo.TP
     # get total moles for volume calculation
     moles = combustor.get_state()[1:]
-    clean = True
+    clean = False
     if clean:
         max_mole_value = numpy.amax(moles)
         decimals = int(numpy.ceil(numpy.abs(numpy.log10(max_mole_value))))
@@ -228,20 +228,23 @@ def run_combustor_atm_sim(equiv_ratio, test, steadystate, precon, endtime, nstep
         atms = PlumeSolution(fuel_model, name="atmosphere", transport_model=None)
     atms.TPX = T_atm, p_atm, X_air
     air_state = atms.TPX
-    far_field = ct.Reservoir(atms)
+    air_enthalpy = atms.partial_molar_enthalpies
+    air_cp = atms.partial_molar_cp
     # create atmosphere reactor
     X_moles = moles / Ntotal
     atms.TPY = T4, p4, X_moles
     atmosphere = PlumeReactor(atms)
     atmosphere.volume = v4
     atmosphere.TX_air = [air_state[0],] + [x for x in air_state[2]]
+    atmosphere.enthalpy_air = air_enthalpy
+    atmosphere.cp_air = air_cp
     # setup mass flow from reservoir to atmosphere
     gc = 1 # 1 in SI system
     mdot = p4 * A4 * M4 * numpy.sqrt(gamma * gc / ct.gas_constant * T4)
     # setup reactor network
     net = new_network([atmosphere], precon)
     while atmosphere.T > T_atm:
-        print(atmosphere.T)
+        print(atmosphere.T, atmosphere.volume)
         net.step()
     print(net.time, atmosphere.T)
     # atms_states = ct.SolutionArray(atms)

@@ -12,6 +12,8 @@ class PlumeReactor(ct.ExtensibleIdealGasConstPressureMoleReactor):
     def __init__(self, label, *args, **kwargs):
         super(PlumeReactor, self).__init__(label, *args, **kwargs)
         self.state_air = []
+        self.enthalpy = []
+        self.cp = []
         self.times = []
         self.erates = []
         self.er_start = 0 # starting index for omega since time only moves forward
@@ -33,11 +35,27 @@ class PlumeReactor(ct.ExtensibleIdealGasConstPressureMoleReactor):
     def TX_air(self, value):
         self.state_air = np.array(value)
 
+
+    @property
+    def enthalpy_air(self):
+        return self.enthalpy
+
+    @enthalpy_air.setter
+    def enthalpy_air(self, value):
+        self.enthalpy = np.array(value)
+
+    @property
+    def cp_air(self):
+        return self.cp
+
+    @cp_air.setter
+    def cp_air(self, value):
+        self.cp = np.array(value)
+
     def log_rate_interpolation(self, x, x1, y1, x2, y2):
         nlog = np.log10
-        # logy = (nlog(x) - nlog(x1)) * (nlog(y2) - nlog(y1)) / (nlog(x2) - nlog(x1)) + nlog(y1)
         logy = nlog(x/x1) * nlog(y2/y1) / nlog(x2/x1) + nlog(y1)
-        return logy
+        return 10 ** logy
 
     def after_eval(self, t, LHS, RHS):
         # updating zenith angle after eval
@@ -46,6 +64,10 @@ class PlumeReactor(ct.ExtensibleIdealGasConstPressureMoleReactor):
         if self.entrainment:
             if len(self.state_air) == 0:
                 raise Exception("PlumeReactor: TX_air not set")
+            elif len(self.enthalpy) == 0:
+                raise Exception("PlumeReactor: enthalpy_air not set")
+            elif len(self.cp) == 0:
+                raise Exception("PlumeReactor: cp_air not set")
             # calculate entrainment rate by logarithmic interpolation
             for i in range(len(self.times) - 1):
                 if t < self.times[0]:
@@ -59,9 +81,15 @@ class PlumeReactor(ct.ExtensibleIdealGasConstPressureMoleReactor):
             # find most from ideal gas law
             T,P = self.thermo.TP
             Nt = P * self.volume / ct.gas_constant / T
-            moles = self.state_air * Nt
+            moles = self.state_air[1:] * Nt
             # addition of value to energy equation for thermal entrainment
             RHS[0] -= omega_ent * (self.T - self.state_air[0])
+            numer = 0
+            denom = 0
+            for i, m in enumerate(moles):
+                numer += omega_ent * self.enthalpy_air[i] * m
+                denom += self.cp_air[i] * m
+            RHS[0] -= numer / denom
             # addition of value for species equation entrainment
-            for i in range(1, len(self.state_air)):
-                RHS[i] += omega_ent * moles[i]
+            for i in range(len(moles)):
+                RHS[i+1] += omega_ent * moles[i]
