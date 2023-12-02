@@ -424,6 +424,7 @@ def update_duplicates_combustor_mechanism():
 @click.argument('mechanisms', nargs=-1)
 def merge_commandline(mechanisms):
     merge_all_mechanisms(*mechanisms)
+    update_duplicates_combustor_mechanism()
 
 def test_rmatch():
     # create solution object

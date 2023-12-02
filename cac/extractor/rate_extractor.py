@@ -3,12 +3,8 @@ import re
 import numpy as np
 import cantera as ct
 from cac.constants import DATA_DIR
-import cac.extractor.mcm_complex_rates as mcm_complex_rates
 from sympy.parsing.sympy_parser import parse_expr
 
-# global used to get function based rates
-complex_rate_fcns = list(filter(lambda x: re.fullmatch("([A-Z0-9])+", x),
-                                dir(mcm_complex_rates)))
 
 def get_photolysis_parameterization(photo_string):
     """ Get photolysis parameterization yaml
@@ -36,99 +32,11 @@ def get_photolysis_parameterization(photo_string):
     assert len(lines) == 1
     data = lines[0].split(" ")
     data = [re.sub(r"D", "e", d) for d in data]
+    # add conversion into scalar to convert rate to m^3 / kmol /s
+    scalar *= (ct.avogadro / 1e6)
     J, l, m, n = data
     return {"type": "zenith-angle-rate", "l": l, "m": m, "n": n, "scalar":str(scalar)}
 
-def get_pure_arrhenius(arrhen_string):
-    """ Get yaml parameterization for pure arrhenius expressions.
-        Also convert A to moles and Ea to cal per mole
-
-    Args:
-        arrhen_string (str): 2.03e-16*(TEMP/300)^4.57*exp(693/TEMP)
-    """
-    ymlout = {"rate-constant": {"A": 0.0, "b": 0.0, "Ea": 0.0}}
-    # find A coefficient and assign it
-    A_coeff = 1
-    res = re.search(r"[-]?\d+([.]\d*)?([e][+-]\d+)?", arrhen_string)
-    if res:
-        A_coeff = float(res.group(0)) * (ct.avogadro / 1000)
-        res = re.findall(r"([*]\d+([.]\d*)?([e][+-]\d+)?)", arrhen_string)
-        for r in res:
-            A_coeff *= float(r[0][1:])
-    ymlout["rate-constant"]["A"] = f"{A_coeff:0.2e}"
-    # find b coefficient
-    b_coeff = 0.0
-    res = re.search(r"[*][*][-]?\d+([.]\d*)?([e][+-]\d+)?", arrhen_string)
-    if res:
-        b_coeff = float(res.group(0)[1:])
-    ymlout["rate-constant"]["b"] = f"{b_coeff}"
-    # find Ea
-    Ea_coeff = 0.0
-    res = re.search(r"exp[(][-]?\d+([.]\d*)?([e][+-]\d+)?[/]TEMP[)]", arrhen_string)
-    if res:
-        res = re.search(r"[-]?\d+([.]\d*)?([e][+-]\d+)?", res.group(0))
-        if res:
-            Ea_coeff = float(res.group(0)) * 1.987202  # convert to cal per mole
-    ymlout["rate-constant"]["Ea"] = f"{Ea_coeff}"
-    return ymlout
-
-def get_complex_rate(rate_exp, species_names, func_names):
-    """ A function that can deal with a combined rate and produce the yaml
-
-    Args:
-        rate_exp (_type_): Stripped rate expression
-        species_names (_type_): Species names that are multiplied
-        func_names (_type_): Function names that are multiplied
-    """
-    arrhen_data = get_pure_arrhenius(rate_exp)
-    comp_data = {"type": "complex-rate"}
-    comp_data.update(arrhen_data["rate-constant"])
-    if species_names:
-        comp_data["species-names"] = species_names
-    if func_names:
-        comp_data["function-names"] = func_names
-    return comp_data
-
-
-def rate_sorter(rate_exp):
-    rate_exp = rate_exp.strip()
-    # replace spaces inside rate expressions
-    rate_exp = re.sub("\s+", "", rate_exp)
-    arrhen_regex = r"\d+([.]\d*)?([e][+-]\d+)?(([*]\d+([.]\d*)?([e][+-]\d+)?)+)?([*][(]TEMP[/]\d+[)][*][*][-]?\d+([.]\d*)?)?([*]exp[(][-]?\d+[/]TEMP[)])?(([*]\d+([.]\d*)?([e][+-]\d+)?)+)?"
-    # string check for concentration based rates
-    all_names = re.findall(r"(?:[A-Z]+[0-9]*)+", rate_exp)
-    all_names = list(filter(lambda x: x != "TEMP", all_names))
-    species_names = list(filter(lambda x: x not in complex_rate_fcns, all_names))
-    func_names = list(filter(lambda x: x in complex_rate_fcns, all_names))
-    # sort to regex match largest sections first
-    all_names = sorted(all_names, key=lambda x: len(x), reverse=True)
-    # conc sub string to check for arrhenius pattern
-    complex_arrhen_string = rate_exp
-    complex_arrhen_string = re.sub("TEMP", "!!!!", complex_arrhen_string)
-    for sp in all_names:
-        complex_arrhen_string = re.sub(sp + r"[*]?", "", complex_arrhen_string)
-    complex_arrhen_string = re.sub("!!!!", "TEMP", complex_arrhen_string)
-    # check if it is only a singly number multiple
-    if complex_arrhen_string.endswith("*"):
-        complex_arrhen_string = complex_arrhen_string[:-1]
-    # compare to cases
-    if re.search(r"[J][<]\d+[>]", rate_exp):
-        # print("Photo", rate_exp)
-        return get_photolysis_parameterization(rate_exp)
-    elif re.fullmatch(arrhen_regex, rate_exp):
-    #     print("Pure Arrhenius", rate_exp)
-        return get_pure_arrhenius(rate_exp)
-    elif re.fullmatch(arrhen_regex, complex_arrhen_string) or ((species_names or func_names) and complex_arrhen_string == ""):
-        return get_complex_rate(complex_arrhen_string, species_names, func_names)
-    # elif re.search(r"TEMP[*][*]2", rate_exp):
-    #     return get_temp_squared_rate(rate_exp)
-    # elif re.search(r"TEMP[*][*]3", rate_exp):
-    #     return get_temp_cubed_rate(rate_exp)
-    # elif re.search(r"[(]*[)][*][*]0.5", rate_exp):
-    #     return get_half_power_rate(rate_exp)
-    else:
-        print("Unknown rate", rate_exp)
-        return {"type":"unknown-rate", "expression": rate_exp}
 
 def get_list_of_rate_data(prefix, dirname):
     """ Get a complete list of rate data
@@ -137,66 +45,108 @@ def get_list_of_rate_data(prefix, dirname):
         list: data corresponding to each reaction
     """
     rate_file = os.path.join(dirname, f"{prefix}-rates.txt")
+    generic_file = os.path.join(dirname, f"{prefix}-generic.txt")
     with open(rate_file, "r") as f:
         rates = f.read().split("\n")
+    # get all generic rates
+    with open(generic_file, "r") as f:
+        gen_rates = f.read().split("\n")[:-1]
+    gen_dict = {}
+    for gr in gen_rates:
+        grn, gexp = gr.split(":")
+        grn = grn.strip()
+        gexp = gexp.strip()
+        gen_dict[grn] = gexp
+    modified = True
+    while modified:
+        modified = False
+        for n0, r0 in gen_dict.items():
+            for n1, r1 in gen_dict.items():
+                if re.search(f"(^|[^A-Z0-9]){n1}([^A-Z0-9]|$)", r0):
+                    nexp = re.sub(f"(^|[^A-Z0-9]){n1}([^A-Z0-9]|$)", r"\1_REPLACE_ME_\2", r0)
+                    nexp = re.sub("_REPLACE_ME_", r1, nexp)
+                    gen_dict[n0] = nexp
+                    modified = True
+    for gn, gr in gen_dict.items():
+        expr = re.sub("TEMP", "T", gr)
+        expr = re.sub("[@]", "**", expr)
+        expr = re.sub("[D]", "E", expr)
+        expr = re.sub("LOG10", "log10", expr)
+        expr = re.sub("EXP", "exp", expr)
+        expr = re.sub("M", "(O2 + N2)", expr)
+        parsed = parse_expr(expr).simplify()
+        gen_dict[gn] = str(parsed)
+    # now add generic expressions to all rates and simplify
+    srates = []
+    for r in rates:
+        cr = r
+        for gn, gr in gen_dict.items():
+            if re.search(f"(^|[^A-Z0-9]){gn}([^A-Z0-9]|$)", cr):
+                cr = re.sub(f"(^|[^A-Z0-9]){gn}([^A-Z0-9]|$)", r"\1_REPLACE_ME_\2", cr)
+                cr = re.sub("_REPLACE_ME_", gr, cr)
+        # other matches
+        cr = re.sub("TEMP", "T", cr)
+        cr = re.sub("[@]", "**", cr)
+        cr = re.sub("[D]", "E", cr)
+        cr = re.sub("LOG10", "log10", cr)
+        cr = re.sub("EXP", "exp", cr)
+        cr = re.sub("M", "(O2 + N2)", cr)
+        cr = re.sub(r"J[<](\d+)[>]", r"J\1", cr)
+        cr = parse_expr(cr).simplify()
+        srates.append(str(cr))
+    # regex and templates
+    arrhen_regex = r"((?P<A>[-]?\d+([.]\d+(e[+-]\d+)?)?)[*]?|T[*][*](?P<b>[-]?\d+([.]\d+(e[+-]\d+)?)?)[*]?|exp[\(](?P<EaR>[-]?\d+([.]\d+(e[+-]\d+)?)?)[/][T][\)][*]?)+"
     returns = []
-    for rate in rates[:-1]:
-        try:
-            val = rate_sorter(str(parse_expr(rate)))
-        except Exception as e:
-            val = rate_sorter(rate)
-        returns.append(val)
-    # go through and write complex-function for unknowns
+    functions = []
+    pyrate_file = os.path.join(os.path.dirname(__file__), "mcm_complex_rates.py")
+    pyprefix = prefix.replace("-", "_")
+    pypref_file = os.path.join(dirname, f"{pyprefix}_rates.py")
     fcn_template = "\ndef KUNKNOWN{}({}):\n    return {}\n"
     repl_exp = "KUNKNOWN{}"
-    pyrate_file = os.path.join(os.path.dirname(__file__), "mcm_complex_rates.py")
+    # add to returns
+    for rn, rate in enumerate(srates):
+        print(f"Evaluating rate {rate}")
+        if re.search(r"[J]\d+", rate):
+            prate = re.sub(r"J(\d+)", r"J<\1>", rate)
+            rate_data =get_photolysis_parameterization(prate)
+        elif re.fullmatch(arrhen_regex, rate):
+            match = re.fullmatch(arrhen_regex, rate)
+            rate_data = {"rate-constant": {"A": ct.avogadro / 1e6, "b": 0.0, "Ea": 0.0}}
+            A = match.group("A")
+            b = match.group("b")
+            EaR = match.group("EaR")
+            rate_data["rate-constant"]["A"] *= float(A) if A is not None else 1
+            rate_data["rate-constant"]["b"] = float(b) if b is not None else 0
+            rate_data["rate-constant"]["Ea"] =  float(EaR) * ct.gas_constant if EaR is not None else 0
+        else:
+            cplx_rate = parse_expr(rate) * (ct.avogadro / 1e6)
+            cplx_rate = cplx_rate.simplify()
+            # get and sort arguments
+            variables = [str(sym) for sym in cplx_rate.free_symbols]
+            if "T" not in variables:
+                variables.append("T")
+            variables.sort(reverse=True)
+            # setup rate data
+            rate_data = {"type": "function-rate"}
+            rate_data["function"] = repl_exp.format(rn)
+            rate_data["pyfile"] = f"{pyprefix}_rates.py"
+            rate_data["ro2file"] = f"{prefix}-ro2-sum.txt"
+            # format and add function
+            var_str = ", ".join(variables)
+            rate_str = str(cplx_rate)
+            rate_str = re.sub("log10", "math.log10", rate_str)
+            rate_str = re.sub("exp", "math.exp", rate_str)
+            fcn = fcn_template.format(rn, var_str, rate_str)
+            functions.append(fcn)
+        # set units for rate
+        rate_data["units"] = {"length":"m", "quantity":"kmol", "activation-energy":"J/kmol"}
+        returns.append(rate_data)
+    # read in generic rates
     with open(pyrate_file, "r") as f:
         mcm_complex_content = f.read()
-    for i, rate in enumerate(returns):
-        if rate.get("type", "") == "unknown-rate":
-            rate_exp = rate.pop("expression")
-            args = ", ".join(set(re.findall(r"(?:[A-Z]+[0-9]*)+", rate_exp)))
-            fcn = fcn_template.format(i, args, rate_exp)
-            fcn = re.sub("exp", "math.exp", fcn)
-            fcn = re.sub("TEMP", "T", fcn)
-            mcm_complex_content += fcn
-            returns[i] = get_complex_rate("", [], [repl_exp.format(i)])
-    pyprefix = prefix.replace("-", "_")
-    pypref_file = os.path.join(dirname, f"{pyprefix}_complex_rates.py")
+    for fcn in functions:
+        mcm_complex_content += fcn
+    # write out all function rates
     with open(pypref_file, "w") as f:
         f.write(mcm_complex_content)
-    # go through all returns and add files
-    for i, rate in enumerate(returns):
-        rate["units"] = {"length":"cm", "quantity":"molec", "activation-energy":"cal/mol"}
-        if rate.get("type", "") == "complex-rate":
-            rate["pyfile"] = f"{pyprefix}_complex_rates.py"
-            rate["ro2file"] = f"{prefix}-ro2-sum.txt"
     return returns
-
-def test_rate_sorter(prefix, skip_assertion=False):
-    with open(f"{prefix}-rates.txt", "r") as f:
-        rates = f.read().split("\n")
-    num_unknowns = 0
-    for rate in rates[:-1]:
-        try:
-            val = rate_sorter(str(parse_expr(rate)))
-        except Exception as e:
-            val = rate_sorter(rate)
-        if val.get("type", "") == "unknown-rate":
-            num_unknowns += 1
-    # check that all have been resolved
-    if not skip_assertion:
-        assert num_unknowns == 0
-
-def count_arrhenius(prefix):
-    rates = get_list_of_rate_data(prefix, "")
-    counts = {"total": len(rates), "arrhenius":0}
-    for r in rates:
-        if "rate-constant" in r:
-            counts["arrhenius"] += 1
-        elif "type" in r:
-            counts[r["type"]] = counts.get(r["type"], 0) + 1
-            if "function-names" in r:
-                counts["has-func"] = counts.get("has-func", 0) + 1
-            if "species-names" in r:
-                counts["has-spec"] = counts.get("has-spec", 0) + 1

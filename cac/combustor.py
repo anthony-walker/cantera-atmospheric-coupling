@@ -73,7 +73,7 @@ def run_combustor_atm_sim(equiv_ratio, test, steadystate, precon, endtime, nstep
     # append appropriate directories
     sys.path.append(DATA_DIR)
     # creation of combustor portion of simulation
-    fuel_model = os.path.join(DATA_DIR, f"combustor-min.yaml")
+    fuel_model = os.path.join(DATA_DIR, f"combustor-test.yaml")
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         fuel = ct.Solution(fuel_model, name="combustor", transport_model=None)

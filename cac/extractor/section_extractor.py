@@ -26,8 +26,11 @@ def extract_from_fac(facfile, dirname, replace_generics=True, replace_complex=Tr
     ccs = {}
     complex_coeffs = re.sub(r"\s*", "", sections.pop(0))
     complex_coeffs = re.sub(r"[*]+[;]", "", complex_coeffs)
+    generic_file = os.path.join(dirname, f"{prefix}-generic.txt")
+    gen_file_handle = open(generic_file, "w")
     for cc in complex_coeffs.split(";")[:-1]:
         cc_key, cc_rate = cc.split("=")
+        gen_file_handle.write(f"{cc_key} : {cc_rate}\n")
         cc_rate = re.sub(r"EXP", r"exp", cc_rate)
         cc_rate = re.sub(r"(\d+)[DE]([+-]?)(\d+)", r"\1e\2\3", cc_rate)
         cc_rate = re.sub(r"[@]([-]?\d+([.]\d+)?([e][+-]?\d+)?)", r"**(\1)", cc_rate)
