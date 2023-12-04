@@ -12,10 +12,10 @@ def all_mechanisms():
     simple = os.path.join(DATA_DIR, "farnesane", "farnesane.yaml")
     print_mech_stats(simple, "gas")
 
-    sc = os.path.join(DATA_DIR, "combustor.yaml")
+    sc = os.path.join(DATA_DIR, "combustor-min.yaml")
     print_mech_stats(sc, "combustor")
 
-    sc = os.path.join(DATA_DIR, "combustor.yaml")
+    sc = os.path.join(DATA_DIR, "combustor-min.yaml")
     print_mech_stats(sc, "atmosphere")
 
 

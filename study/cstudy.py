@@ -4,6 +4,7 @@ import sys
 import csv
 import h5py
 import numpy
+import random
 import matplotlib.pyplot as plt
 from cac.combustor import combustor_atm_sim
 from multiprocessing import Pool
@@ -23,7 +24,7 @@ def wrapped(vals):
     log_file = open(log_name, "w")
     ostd = sys.stdout
     sys.stdout = log_file
-    combustor_atm_sim(equiv_ratio=equiv_ratio, nsteps=100, farnesane=farnesane, sulfur=sulfur, outdir=outdir)
+    combustor_atm_sim(equiv_ratio=equiv_ratio, nsteps=500, farnesane=farnesane, sulfur=sulfur, outdir=outdir)
     log_file.close()
     sys.stdout = ostd
 
@@ -49,9 +50,10 @@ def run_combustion_study(run_missing=True):
             if case not in exists:
                 keep.append((eq, fs, sf))
         vals_list = keep
+    random.shuffle(vals_list)
     # run multi-processing pool
     # equiv_ratio, nsteps, farnesane, sulfur, outdir
-    with Pool(numpy.amin([os.cpu_count() - 2, len(vals_list)])) as p:
+    with Pool(numpy.amin([os.cpu_count() - 4, len(vals_list)])) as p:
         p.map(wrapped, vals_list)
 
 
@@ -89,6 +91,7 @@ def plot_temperature(hf_name):
 
 
 if __name__ == "__main__":
+    # combustor_atm_sim(0.6, 500, 0.08, 0.0001, "./")
     run_combustion_study()
     convert_all_files_to_hdf5()
     # plot_temperature("combustor/atms-states-0.7-0.05-0.0001.hdf5")

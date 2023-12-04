@@ -147,7 +147,7 @@ def combustor_atm_sim(equiv_ratio, nsteps, farnesane, sulfur, outdir):
     failures = 0
     T_jump = 0
     net.max_time_step = 1e-6
-    while T_jump < 100 and wsr.T > 800:
+    while T_jump < 200 and wsr.T > 800:
         net.initial_time = 0.0  # reset the integrator
         try:
             T_f = wsr.T
@@ -156,7 +156,7 @@ def combustor_atm_sim(equiv_ratio, nsteps, farnesane, sulfur, outdir):
             states.append(wsr.thermo.state, tres=residence_time, time=net.time)
             if net.max_time_step < 1e-6:
                 net.max_time_step = 1e-6
-            residence_time *= 0.99  # decrease the residence time for the next iteration
+            residence_time *= 0.9  # decrease the residence time for the next iteration
             failures = 0
         except:
             failures += 1 # increase number of failures
@@ -164,8 +164,9 @@ def combustor_atm_sim(equiv_ratio, nsteps, farnesane, sulfur, outdir):
             # reset state
             wsr.thermo.TPX = states[-1].TPX
             wsr.syncState()
+            residence_time *= states[-1].tres * 0.99 # reduce the residence time by smaller amount
             print('Failure: tres = {:.2e}; T = {:.1f}'.format(residence_time, wsr.T))
-            if (failures > 5): # 5 consecutive failures
+            if (failures > 4): # 5 consecutive failures
                 break
         T_jump = T_f - wsr.T
     # Plot results
@@ -285,9 +286,9 @@ def combustor_atm_sim(equiv_ratio, nsteps, farnesane, sulfur, outdir):
     # setup solution array
     atms_states = ct.SolutionArray(atms, extra=["time", "moles"])
     failures = 0
-    while atmosphere.T > T_atm:
-        moles = numpy.sum(atmosphere.get_state()[1:])
-        atms_states.append(atmosphere.thermo.state, time=net.time, moles=moles)
+    moles = numpy.sum(atmosphere.get_state()[1:])
+    atms_states.append(atmosphere.thermo.state, time=net.time, moles=moles)
+    while atmosphere.T > T_atm + 10:
         print(f"Integrating atmosphere time, temp: {net.time, atmosphere.T}...")
         try:
             for i in range(nsteps):
@@ -306,10 +307,12 @@ def combustor_atm_sim(equiv_ratio, nsteps, farnesane, sulfur, outdir):
             atmosphere.thermo.TPX = atms_states[-1].TPX
             atmosphere.syncState()
             net.initial_time = atms_states[-1].time
-            if failures > 5:
+            if failures > 4:
                 break
-    moles = numpy.sum(atmosphere.get_state()[1:])
-    atms_states.append(atmosphere.thermo.state, time=net.time, moles=moles)
+        # save state that makes it through
+        moles = numpy.sum(atmosphere.get_state()[1:])
+        atms_states.append(atmosphere.thermo.state, time=net.time, moles=moles)
+    # append thermo state
     thermo_states["T"].append(f"{atmosphere.T:0.2f}")
     thermo_states["P"].append(f"{p4:0.2f}")
     print_state_TP(atmosphere.T, p4, 5)
