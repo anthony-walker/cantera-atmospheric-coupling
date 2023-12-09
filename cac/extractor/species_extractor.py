@@ -9,7 +9,9 @@ from rdkit import Chem
 import pubchempy as pcp
 import concurrent.futures as cf
 from cac.constants import DATA_DIR
+from cac.extractor.msearch import msearch
 from rdkit.Chem import rdMolDescriptors
+from cantera import ck2yaml
 
 yaml = ruamel.yaml.YAML(typ='safe')
 yaml.default_flow_style=False
@@ -124,9 +126,21 @@ def get_not_found_species(specie):
             # try to locate from smiles
             # get smiles string
             res = re.search(r'strong[\>]Smiles: [^\<]*', response.text)
+            smiles = res.group(0)[15:].strip()
+            inchi = res.group(0)[14:].strip()
+            # try to get from rmg
+            try:
+                chemkin = msearch(smiles)
+                assert chemkin != ""
+                sp_data = convert_chemkin(specie, chemkin)
+                print(f"RMG Found {sp_data['alias']}:{specie}")
+                sp_data["smiles"] = smiles
+                sp_data["inchi"] = inchi
+                return sp_data
+            except:
+                pass
             # try to get smiles from group
             try:
-                smiles = res.group(0)[15:].strip()
                 cmp = pcp.get_compounds(smiles, "smiles")[0]
                 molecule = Chem.MolFromSmiles(smiles)
                 ffstr = "SMILES"
@@ -135,7 +149,6 @@ def get_not_found_species(specie):
             # try to get smiles from inchi
             res = re.search(r'strong[\>]InChI: InChI=[^\<]*', response.text)
             try:
-                inchi = res.group(0)[14:]
                 cmp = pcp.get_compounds(inchi, "inchi")[0]
                 if not smiles:
                     smiles = cmp.canonical_smiles
@@ -214,6 +227,28 @@ def assign_global_species_data():
         species_data = yaml.load(f)
 
 
+def convert_chemkin(species, chemkin):
+    # write
+    ckf = f"{species}.txt"
+    with open(ckf, "w") as f:
+        f.write("THERMO ALL\n0 200.00  1000.00  6000.00\n")
+        f.write(chemkin)
+    # convert to yaml
+    os.system(f"ck2yaml --thermo={ckf} --permissive")
+    # read yaml
+    yf = f"{species}.yaml"
+    with open(yf, "r") as f:
+        data = yaml.load(f)["species"][0]
+    # remove files
+    os.remove(ckf)
+    os.remove(yf)
+    # add alias
+    data["alias"] = data["name"]
+    data["name"] = species
+    # return data
+    return data
+
+
 def get_species_data(prefix, dirname):
     sfile = os.path.join(dirname, f"{prefix}-species.txt")
     with open(sfile, "r") as f:
@@ -221,7 +256,7 @@ def get_species_data(prefix, dirname):
     species += add_species
     print("Loading all species data...")
     assign_global_species_data()
-    # species = ["H2O", "IPROPOL", "O2", "N2", "TOLUENE"]
+
     print("Executing threads...")
     with cf.ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
         res = [executor.submit(get_not_found_species, s.upper()) for s in species]

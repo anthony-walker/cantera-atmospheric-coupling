@@ -1,5 +1,6 @@
 import os
 import sys
+import h5py
 import click
 import numpy
 import warnings
@@ -10,6 +11,23 @@ import matplotlib.pyplot as plt
 from cac.constants import DATA_DIR
 from cac.reactors import PlumeSolution, PlumeReactor
 
+def reformat_hdf5(hf_name):
+    with h5py.File(hf_name, "r+") as hf:
+        arr = hf["thermo"]['data']
+        Y_data = hf["thermo"]["data"]["Y"]
+        nsp = Y_data.shape[1]
+        Y_arr = Y_data[()]
+        # create species data sets
+        for i, c in enumerate(arr.attrs["components"][2:2+nsp]):
+            hf.create_dataset(f"Y_{c}", data=Y_arr[:, i])
+        # write the rest of the data out
+        other_keys = list(arr.keys())
+        other_keys.remove("Y")
+        for n in other_keys:
+            data = hf["thermo"]["data"][n][()]
+            hf.create_dataset(n, data=data)
+        # delete thermo group
+        del hf["thermo"]
 
 def get_debug_atmosphere():
     spec = ct.Species.list_from_file(os.path.join(DATA_DIR, "atmosphere.yaml"))
@@ -78,12 +96,12 @@ def print_state_TP(T, P, i):
     print(80 * "*")
     print()
 
-def combustor_atm_sim(equiv_ratio, nsteps, farnesane, sulfur, outdir):
+def combustor_atm_sim(equiv_ratio, nsteps, farnesane, sulfur, outdir, fmodel="combustor-min.yaml"):
     thermo_states = {"farnesane": f"{farnesane:.2f}", "sulfur": f"{sulfur:.4f}", "equivalence_ratio": f"{equiv_ratio:.1f}"}
     # append appropriate directories
     sys.path.append(DATA_DIR)
     # creation of combustor portion of simulation
-    fuel_model = os.path.join(DATA_DIR, f"combustor-min.yaml")
+    fuel_model = os.path.join(DATA_DIR, fmodel)
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         fuel = ct.Solution(fuel_model, name="combustor", transport_model=None, basis="mole")
@@ -142,18 +160,20 @@ def combustor_atm_sim(equiv_ratio, nsteps, farnesane, sulfur, outdir):
     wsr_to_cc = ct.PressureController(fuel_tank, combustion_chamber, primary=ft_to_wsr, K=0.01)
     net = new_network([wsr])
     # advance to steady state
-    states = ct.SolutionArray(fuel, extra=['tres', "time"])
+    states = ct.SolutionArray(fuel, extra=['tres', "time", 'mass'])
     last_good_rt = residence_time
     failures = 0
     T_jump = 0
     net.max_time_step = 1e-6
+    states.append(wsr.thermo.state, tres=residence_time, time=net.time, mass=wsr.mass)
+    # loop to get starting temp
     while T_jump < 200 and wsr.T > 800:
         net.initial_time = 0.0  # reset the integrator
         try:
             T_f = wsr.T
             net.advance_to_steady_state(residual_threshold=1e-2)
             print('tres = {:.2e}, T = {:.1f}'.format(residence_time, wsr.T))
-            states.append(wsr.thermo.state, tres=residence_time, time=net.time)
+            states.append(wsr.thermo.state, tres=residence_time, time=net.time, mass=wsr.mass)
             if net.max_time_step < 1e-6:
                 net.max_time_step = 1e-6
             residence_time *= 0.9  # decrease the residence time for the next iteration
@@ -169,17 +189,6 @@ def combustor_atm_sim(equiv_ratio, nsteps, farnesane, sulfur, outdir):
             if (failures > 4): # 5 consecutive failures
                 break
         T_jump = T_f - wsr.T
-    # Plot results
-    f, ax1 = plt.subplots(1, 1)
-    ax1.plot(states.tres, states.heat_release_rate, '.-', color='C0')
-    ax2 = ax1.twinx()
-    ax2.plot(states.tres[:-1], states.T[:-1], '.-', color='C1')
-    ax1.set_xlabel('residence time [s]')
-    ax1.set_ylabel('heat release rate [W/m$^3$]', color='C0')
-    ax2.set_ylabel('temperature [K]', color='C1')
-    f.tight_layout()
-    plt.savefig(os.path.join(outdir, "combustor", f"heat-release-rate-{equiv_ratio:.1f}-{farnesane:.2f}-{sulfur:.4f}.pdf"))
-    plt.close()
     # get a state a couple before the last
     fuel.TDY = states[-2].TDY
     residence = states[-2].tres
@@ -208,7 +217,11 @@ def combustor_atm_sim(equiv_ratio, nsteps, farnesane, sulfur, outdir):
         u1[n1] = mdot0 / combustor_area / combustor.thermo.density
         z1[n1] = z1[n1 - 1] + u1[n1] * dt
         combustor_states.append(combustor.thermo.state)
-    combustor_states.save(os.path.join(outdir, "combustor", f"combustor-pfr-states-{equiv_ratio:.1f}-{farnesane:.2f}-{sulfur:.4f}.csv"), overwrite=True, basis="mole")
+    # write data
+    ch5 = os.path.join(outdir, "combustor", f"combustor-pfr-states-{equiv_ratio:.1f}-{farnesane:.2f}-{sulfur:.4f}.hdf5")
+    combustor_states.save(ch5, overwrite=True, name="thermo")
+    reformat_hdf5(ch5)
+    # continue
     T2, p2 = combustor.thermo.TP
     print_state_TP(T2, p2, 2)
     thermo_states["T"].append(f"{T2:0.2f}")
@@ -284,10 +297,10 @@ def combustor_atm_sim(equiv_ratio, nsteps, farnesane, sulfur, outdir):
     net.max_time_step = 1e-6
     onsteps = nsteps
     # setup solution array
-    atms_states = ct.SolutionArray(atms, extra=["time", "moles"])
+    atms_states = ct.SolutionArray(atms, extra=["time", "moles", "mass"])
     failures = 0
     moles = numpy.sum(atmosphere.get_state()[1:])
-    atms_states.append(atmosphere.thermo.state, time=net.time, moles=moles)
+    atms_states.append(atmosphere.thermo.state, time=net.time, moles=moles, mass=atmosphere.mass)
     while atmosphere.T > T_atm + 10:
         print(f"Integrating atmosphere time, temp: {net.time, atmosphere.T}...")
         try:
@@ -311,7 +324,7 @@ def combustor_atm_sim(equiv_ratio, nsteps, farnesane, sulfur, outdir):
                 break
         # save state that makes it through
         moles = numpy.sum(atmosphere.get_state()[1:])
-        atms_states.append(atmosphere.thermo.state, time=net.time, moles=moles)
+        atms_states.append(atmosphere.thermo.state, time=net.time, moles=moles, mass=atmosphere.mass)
     # append thermo state
     thermo_states["T"].append(f"{atmosphere.T:0.2f}")
     thermo_states["P"].append(f"{p4:0.2f}")
@@ -320,8 +333,10 @@ def combustor_atm_sim(equiv_ratio, nsteps, farnesane, sulfur, outdir):
     states_file = os.path.join(outdir, "combustor", f"thermo-states-{equiv_ratio:.1f}-{farnesane:.2f}-{sulfur:.4f}.yaml")
     with open(states_file, "w") as f:
         yaml.dump(thermo_states, f)
-    # write out csv data
-    atms_states.save(os.path.join(outdir, "combustor", f"atms-states-{equiv_ratio:.1f}-{farnesane:.2f}-{sulfur:.4f}.csv"), overwrite=True, basis="mole")
+    # write out hdf5 data
+    ah5 = os.path.join(outdir, "combustor", f"atms-states-{equiv_ratio:.1f}-{farnesane:.2f}-{sulfur:.4f}.hdf5")
+    atms_states.save(ah5, overwrite=True, name="thermo")
+    reformat_hdf5(ah5)
 
 if __name__ == "__main__":
     run_combustor_atm_sim()

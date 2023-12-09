@@ -58,6 +58,7 @@ def get_balanced_reaction_list(prefix, dirname):
     syaml = os.path.join(dirname, f"{prefix}-species.yaml")
     with open(syaml, "r") as f:
         species = yaml.load(f)
+    # replace r
     # split reactions
     balanced_reactions = []
     for r in reactions:
