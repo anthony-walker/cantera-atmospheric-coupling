@@ -27,7 +27,8 @@ dynamic = ["version"]
 merger = "cac.merger:merge_commandline"
 extractor = "cac.extractor.extractor:main"
 combustor = "cac.combustor:run_combustor_atm_sim"
-box_model = "cac.verification:mixing_box_model_verification"
+verify_box_model = "cac.verification:mixing_box_model_verification"
+verify_braggs = "cac.verification:braggs_combustor_verification"
 
 [project.urls]
 repository = "https://github.com/anthony-walker/cantera-atmospheric-coupling"

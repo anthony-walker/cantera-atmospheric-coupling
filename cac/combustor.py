@@ -96,30 +96,7 @@ def print_state_TP(T, P, i):
     print(80 * "*")
     print()
 
-def combustor_atm_sim(equiv_ratio, nsteps, farnesane, sulfur, outdir, fmodel="combustor-min.yaml"):
-    thermo_states = {"farnesane": f"{farnesane:.2f}", "sulfur": f"{sulfur:.4f}", "equivalence_ratio": f"{equiv_ratio:.1f}"}
-    # append appropriate directories
-    sys.path.append(DATA_DIR)
-    # creation of combustor portion of simulation
-    fuel_model = os.path.join(DATA_DIR, fmodel)
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        fuel = ct.Solution(fuel_model, name="combustor", transport_model=None, basis="mole")
-    # create initial fuel setting
-    X_fuel = {"N-C10H22":0.4267, "I-C8H18":0.3302, "C7H8":0.2431}
-    # add H2S
-    if sulfur > 0:
-        X_fuel.update({"H2S":sulfur})
-    # adjust fuels for farnesane blend
-    X_fuel = {k:v * (1-farnesane-sulfur) for k,v in X_fuel.items()}
-    # add farnesane blend
-    Xfarne = 1 - numpy.sum([v for k,v in X_fuel.items()])
-    if Xfarne > 0:
-        X_fuel.update({"iC15H32": Xfarne})
-    X_fuel = ", ".join([f"{k}:{v:.6f}" for k, v in X_fuel.items()])
-    X_air = "H2O: 0.04, O2:0.2095, N2:0.7808"
-    thermo_states["X_fuel"] = X_fuel
-    thermo_states["X_air"] =  X_air
+def braggs_combustor(fuel, thermo_states={"T":[], "P":[]}):
     # combustor geometrical parameters
     plenum_radius = 0.035
     plenum_length = 0.1
@@ -127,24 +104,6 @@ def combustor_atm_sim(equiv_ratio, nsteps, farnesane, sulfur, outdir, fmodel="co
     chamber_length = 0.3
     # residence time in combustor
     residence_time = 0.1  # starting residence time
-    # design parameters
-    EPR = 25 # engine pressure ratio
-    EGT = 800 # K, exhaust gas temperatures
-    p_atm = 0.2 * ct.one_atm
-    T_atm = 240 # K
-    thermo_states["T"] = [f"{T_atm:0.2f}"]
-    thermo_states["P"] = [f"{p_atm:0.2f}"]
-    fuel.TPX = T_atm, p_atm, X_air
-    # isentropic compression
-    p1 = p_atm * EPR
-    T1 = T_atm * (p1 / p_atm) ** (ct.gas_constant / fuel.cp_mole)
-    print_state_TP(T_atm, p_atm, 0)
-    thermo_states["T"].append(f"{T1:0.2f}")
-    thermo_states["P"].append(f"{p1:0.2f}")
-    print_state_TP(T1, p1, 1)
-    # set input fuel conditions
-    fuel.TP = T1, p1
-    fuel.set_equivalence_ratio(equiv_ratio, X_fuel, X_air, basis="mole")
     # inlet fuel tank
     fuel_tank = ct.Reservoir(fuel)
     # creating braggs combustor with a WSR and PFR
@@ -217,6 +176,53 @@ def combustor_atm_sim(equiv_ratio, nsteps, farnesane, sulfur, outdir, fmodel="co
         u1[n1] = mdot0 / combustor_area / combustor.thermo.density
         z1[n1] = z1[n1 - 1] + u1[n1] * dt
         combustor_states.append(combustor.thermo.state)
+    return combustor, combustor_states, wsr, states
+
+def combustor_atm_sim(equiv_ratio, nsteps, farnesane, sulfur, outdir, fmodel="combustor-min.yaml"):
+    thermo_states = {"farnesane": f"{farnesane:.2f}", "sulfur": f"{sulfur:.4f}", "equivalence_ratio": f"{equiv_ratio:.1f}"}
+    # append appropriate directories
+    sys.path.append(DATA_DIR)
+    # create initial fuel setting
+    X_fuel = {"N-C10H22":0.4267, "I-C8H18":0.3302, "C7H8":0.2431}
+    # add H2S
+    if sulfur > 0:
+        X_fuel.update({"H2S":sulfur})
+    # adjust fuels for farnesane blend
+    X_fuel = {k:v * (1-farnesane-sulfur) for k,v in X_fuel.items()}
+    # add farnesane blend
+    Xfarne = 1 - numpy.sum([v for k,v in X_fuel.items()])
+    if Xfarne > 0:
+        X_fuel.update({"iC15H32": Xfarne})
+    X_fuel = ", ".join([f"{k}:{v:.6f}" for k, v in X_fuel.items()])
+    X_air = "H2O: 0.04, O2:0.2095, N2:0.7808"
+    thermo_states["X_fuel"] = X_fuel
+    thermo_states["X_air"] =  X_air
+    # design parameters
+    EPR = 25 # engine pressure ratio
+    EGT = 800 # K, exhaust gas temperatures
+    p_atm = 0.2 * ct.one_atm
+    T_atm = 240 # K
+    print_state_TP(T_atm, p_atm, 0)
+    thermo_states["T"] = [f"{T_atm:0.2f}"]
+    thermo_states["P"] = [f"{p_atm:0.2f}"]
+    # create path to fuel model
+    fuel_model = os.path.join(DATA_DIR, fmodel)
+    # creation of fuel thermo object
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        fuel = ct.Solution(fuel_model, name="combustor", transport_model=None, basis="mole")
+    fuel.TPX = T_atm, p_atm, X_air
+    # isentropic compression
+    p1 = p_atm * EPR
+    T1 = T_atm * (p1 / p_atm) ** (ct.gas_constant / fuel.cp_mole)
+    thermo_states["T"].append(f"{T1:0.2f}")
+    thermo_states["P"].append(f"{p1:0.2f}")
+    print_state_TP(T1, p1, 1)
+    # set input fuel conditions
+    fuel.TP = T1, p1
+    fuel.set_equivalence_ratio(equiv_ratio, X_fuel, X_air, basis="mole")
+    # run braggs combustor
+    combustor, combustor_states, wsr, wsr_states = braggs_combustor(fuel, thermo_states=thermo_states)
     # write data
     ch5 = os.path.join(outdir, "combustor", f"combustor-pfr-states-{equiv_ratio:.1f}-{farnesane:.2f}-{sulfur:.4f}.hdf5")
     combustor_states.save(ch5, overwrite=True, name="thermo")

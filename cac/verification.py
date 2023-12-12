@@ -3,8 +3,8 @@ import csv
 import cantera as ct
 import matplotlib.pyplot as plt
 from cac.constants import DATA_DIR, COLORS
+from cac.combustor import braggs_combustor
 from cac.reactors import PlumeSolution, PlumeReactor
-
 
 def mixing_box_model_verification():
     # setup plume reactor
@@ -45,7 +45,7 @@ def mixing_box_model_verification():
     normalized_Xh2o = [i/Xh2o[0] for i in Xh2o]
     # plot data
     plt.loglog(times, normalized_temp, color=COLORS[0], linestyle="-.", linewidth=2, label="$T_{\\text{ct}}$")
-    plt.loglog(times, normalized_Xh2o, color=COLORS[1], linestyle="--", linewidth=2, label="$X_{\\text{ct}}$")
+    plt.loglog(times, normalized_Xh2o, color=COLORS[1], linestyle="--", linewidth=2, label="$X_{\\text{H2O, ct}}$")
     plt.xlim([10e-4, 10])
     plt.ylim([0.01, 10])
     # load data
@@ -55,13 +55,35 @@ def mixing_box_model_verification():
         next(rdr)
         data = zip(*[r for r in rdr])
         xT, yT, xX, yX = [list(map(float, filter(lambda x: x, l))) for l in data]
-    plt.loglog(xT, yT, color=COLORS[0], linestyle="", marker="s", label="$T_{\\text{karcher}}$")
-    plt.loglog(xX, yX, color=COLORS[1], linestyle="", marker="s", label="$X_{\\text{karcher}}$")
+    plt.loglog(xT, yT, color=COLORS[0], linestyle="", marker="s", label="$T_{\\text{Karcher}}$")
+    plt.loglog(xX, yX, color=COLORS[1], linestyle="", marker="s", label="$X_{\\text{H2O, Karcher}}$")
     plt.ylabel("Normalized variables")
     plt.xlabel("Time [s]")
     plt.legend()
     plt.savefig("box-model-verification.pdf")
 
+
+def braggs_combustor_verification():
+    # design parameters
+    EPR = 25 # engine pressure ratio
+    EGT = 800 # K, exhaust gas temperatures
+    p_atm = 0.2 * ct.one_atm
+    T_atm = 240 # K
+    print_state_TP(T_atm, p_atm, 0)
+    thermo_states["T"] = [f"{T_atm:0.2f}"]
+    thermo_states["P"] = [f"{p_atm:0.2f}"]
+    # create path to fuel model
+    fuel_model = "gri30.yaml"
+    # creation of fuel thermo object
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        fuel = ct.Solution(fuel_model, name="combustor", transport_model=None, basis="mole")
+    fuel.TPX = T_atm, p_atm, X_air
+    # isentropic compression
+    p1 = p_atm * EPR
+    T1 = T_atm * (p1 / p_atm) ** (ct.gas_constant / fuel.cp_mole)
+    thermo_states["T"].append(f"{T1:0.2f}")
+    thermo_states["P"].append(f"{p1:0.2f}")
 
 
 if __name__ == "__main__":
