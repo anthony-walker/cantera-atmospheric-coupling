@@ -227,7 +227,7 @@ def assign_global_species_data():
         species_data = yaml.load(f)
 
 
-def convert_chemkin(species, chemkin):
+def convert_chemkin(species, chemkin, cleanup=True, add_alias=True):
     # write
     ckf = f"{species}.txt"
     with open(ckf, "w") as f:
@@ -240,11 +240,13 @@ def convert_chemkin(species, chemkin):
     with open(yf, "r") as f:
         data = yaml.load(f)["species"][0]
     # remove files
-    os.remove(ckf)
-    os.remove(yf)
+    if cleanup:
+        os.remove(ckf)
+        os.remove(yf)
     # add alias
-    data["alias"] = data["name"]
-    data["name"] = species
+    if species and add_alias:
+        data["alias"] = data["name"]
+        data["name"] = species
     # return data
     return data
 

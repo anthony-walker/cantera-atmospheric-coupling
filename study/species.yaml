@@ -1,0 +1,215 @@
+species:
+- composition: {C: 10, H: 22}
+  inchi: InChI=1S/C10H22/c1-3-5-7-9-10-8-6-4-2/h3-10H2,1-2H3
+  name: N-C10H22
+  smiles: CCCCCCCCCC
+  thermo:
+    data:
+    - [0.480311, 0.104086, -3.18681e-05, -2.25594e-08, 1.4423e-11, -34612.7, 33.4559]
+    - [17.8403, 0.0665048, -2.32831e-05, 3.77059e-09, -2.33609e-13, -39694.8, -58.2861]
+    model: NASA7
+    note: Date
+    temperature-ranges: [300.0, 1000.0, 3000.0]
+  transport: {diameter: 6.87, geometry: nonlinear, model: gas, rotational-relaxation: 1.0,
+    well-depth: 523.6}
+- composition: {C: 8, H: 18}
+  inchi: InChI=1S/C8H18/c1-7(2)6-8(3,4)5/h7H,6H2,1-5H3
+  name: I-C8H18
+  smiles: CC(C)CC(C)(C)C
+  thermo:
+    data:
+    - [-4.20868893, 0.111440581, -7.91346582e-05, 2.92406242e-08, -4.43743191e-12,
+      -29944.6875, 44.9521701]
+    - [27.137359, 0.037900489, -1.29437358e-05, 2.00760372e-09, -1.1640058e-13, -40795.8177,
+      -123.277495]
+    model: NASA7
+    note: 7/27/95 THERM
+    temperature-ranges: [300.0, 1396.0, 5000.0]
+  transport: {diameter: 6.414, geometry: nonlinear, model: gas, rotational-relaxation: 1.0,
+    well-depth: 458.5}
+- composition: {C: 7, H: 8}
+  inchi: InChI=1S/C7H8/c1-7-5-3-2-4-6-7/h2-6H,1H3
+  name: C7H8
+  note: C7H8 Toluene (C6H5CH3)
+  smiles: CC1=CC=CC=C1
+  thermo:
+    data:
+    - [1.6152663, 0.021099438, 8.5366018e-05, -1.3261066e-07, 5.5956604e-11, 4075.63,
+      20.28221]
+    - [12.940034, 0.026691287, -9.6838505e-06, 1.5738629e-09, -9.4663601e-14, -697.64908,
+      -46.728785]
+    model: NASA7
+    note: L 6/87
+    temperature-ranges: [200.0, 1000.0, 6000.0]
+  transport: {diameter: 5.68, dipole: 0.43, geometry: nonlinear, model: gas, polarizability: 12.3,
+    well-depth: 495.3}
+- composition: {H: 2, S: 1}
+  inchi: InChI=1S/H2S/h1H2
+  name: H2S
+  smiles: S
+  thermo:
+    data:
+    - [4.12024455, -0.00187907426, 8.2142665e-06, -7.0642573e-09, 2.1423486e-12, -3682.15173,
+      1.53174068]
+    - [2.9787943, 0.00359760372, -1.22803151e-06, 1.96833209e-10, -1.16716162e-14,
+      -3516.07638, 6.77921228]
+    model: NASA7
+    note: "g 4/01\n Zhou: R.C. Shiell, X.K. Hu, Q.J. Hu, J.W. Hepburn, J. Phys. Chem.
+      A 104 (2000) 43394342.\n -4.92  49.18"
+    temperature-ranges: [200.0, 1000.0, 6000.0]
+- composition: {C: 15, H: 32}
+  inchi: InChI=1S/C15H32/c1-6-14(4)10-8-12-15(5)11-7-9-13(2)3/h13-15H,6-12H2,1-5H3
+  name: iC15H32
+  note: Farnesane
+  smiles: CCC(C)CCCC(C)CCCC(C)C
+  thermo:
+    data:
+    - [2.05758053, 0.124275447, 5.89356601e-05, -1.5439917e-07, 6.47407405e-11, -50269.1293,
+      35.8235967]
+    - [36.4318725, 0.0847064992, -3.00719795e-05, 4.83310882e-09, -2.89255839e-13,
+      -61991.8049, -154.37276]
+    model: NASA7
+    note: Farnesane
+    temperature-ranges: [250.0, 995.0, 5000.0]
+  transport: {diameter: 9.356, geometry: nonlinear, model: gas, rotational-relaxation: 1.0,
+    well-depth: 389.767}
+- name: C10H16
+  composition: {C: 10, H: 16}
+  thermo:
+    model: NASA7
+    temperature-ranges: [100.0, 1010.28, 5000.0]
+    data:
+    - [-0.41125692, 0.0742699419, 2.68081521e-05, -7.96224384e-08, 3.32814069e-11,
+      -3084.13249, 32.583026]
+    - [18.3488021, 0.053168642, -2.08128262e-05, 3.89978945e-09, -2.78545641e-13,
+      -9588.44879, -71.5458364]
+    note: |-
+      Thermo group additivity estimation: group(Cs-(Cds-Cds)CsCsH) + group(Cs-CsCsHH) + group(Cs-(Cds-Cds)CsHH) + group(Cs-(Cds-Cds)CsHH) + group(Cs-(Cds-
+      Cds)HHH) + group(Cs-(Cds-Cds)HHH) + group(Cds-CdsCsCs) + group(Cds-CdsCsCs) + group(Cds-CdsCsH) + group(Cds-CdsHH) + ring(Cyclohexene)
+- name: C10H16a
+  composition: {C: 10, H: 16}
+  thermo:
+    model: NASA7
+    temperature-ranges: [100.0, 992.71, 5000.0]
+    data:
+    - [-0.0388564943, 0.0587634076, 7.87710761e-05, -1.37002775e-07, 5.39979253e-11,
+      3090.91235, 27.1558206]
+    - [20.3888732, 0.0501255807, -1.94982793e-05, 3.75038391e-09, -2.7581044e-13,
+      -4594.99485, -89.5307186]
+    note: |-
+      Thermo group additivity estimation: group(Cs-CsCsCsCs) + group(Cs-CsCsCsH) + group(Cs-(Cds-Cds)CsCsH) + group(Cs-CsCsHH) + group(Cs-(Cds-Cds)CsHH) +
+      group(Cs-CsHHH) + group(Cs-CsHHH) + group(Cs-(Cds-Cds)HHH) + group(Cds-CdsCsCs) + group(Cds-CdsCsH) + polycyclic(s3_4_6_ene_1)
+- name: C10H16b
+  composition: {C: 10, H: 16}
+  thermo:
+    model: NASA7
+    temperature-ranges: [100.0, 984.49, 5000.0]
+    data:
+    - [0.240843897, 0.0491967862, 1.08134648e-04, -1.6818688e-07, 6.51664481e-11,
+      5405.38807, 27.0161708]
+    - [20.7004941, 0.0492897935, -1.88052612e-05, 3.63696748e-09, -2.70471865e-13,
+      -2656.04182, -91.8525254]
+    note: |-
+      Thermo group additivity estimation: group(Cs-CsCsCsCs) + group(Cs-CsCsCsH) + group(Cs-(Cds-Cds)CsCsH) + group(Cs-CsCsHH) + group(Cs-CsCsHH) +
+      group(Cs-(Cds-Cds)CsHH) + group(Cs-CsHHH) + group(Cs-CsHHH) + group(Cds-CdsCsCs) + group(Cds-CdsHH) + polycyclic(s3_4_6_ane)
+- name: N2
+  composition:
+    N: 2
+  thermo:
+    model: NASA7
+    temperature-ranges:
+    - 300.0
+    - 1000.0
+    - 5000.0
+    data:
+    - - 3.298677
+      - 0.00140824
+      - -3.963222e-06
+      - 5.641515e-09
+      - -2.444855e-12
+      - -1020.9
+      - 3.950372
+    - - 2.92664
+      - 0.001487977
+      - -5.684761e-07
+      - 1.009704e-10
+      - -6.753351e-15
+      - -922.7977
+      - 5.980528
+    note: '121286'
+  transport:
+    model: gas
+    geometry: linear
+    well-depth: 97.53
+    diameter: 3.621
+    polarizability: 1.76
+    rotational-relaxation: 4.0
+  note: '121286'
+  equation-of-state:
+    model: Redlich-Kwong
+    a:
+    - 1559760000000.0
+    - 0
+    b: 26.81725
+  descriptive-name: nitrogen
+  critical-parameters:
+    critical-temperature: 126.2
+    critical-pressure: 3390000.0
+    acentric-factor: 0.038
+    source: 'The acentric factor is calculated using the pure fluid saturation data
+      from
+
+      Lemmon et al. (2022).'
+- name: O2
+  composition:
+    O: 2
+  thermo:
+    model: NASA7
+    temperature-ranges:
+    - 300.0
+    - 1000.0
+    - 5000.0
+    data:
+    - - 3.212936
+      - 0.001127486
+      - -5.75615e-07
+      - 1.313877e-09
+      - -8.768554e-13
+      - -1005.249
+      - 6.034738
+    - - 3.697578
+      - 0.0006135197
+      - -1.258842e-07
+      - 1.775281e-11
+      - -1.136435e-15
+      - -1233.93
+      - 3.189166
+    note: '121386'
+  transport:
+    model: gas
+    geometry: linear
+    well-depth: 107.4
+    diameter: 3.458
+    polarizability: 1.6
+    rotational-relaxation: 3.8
+  note: TPIS89
+  equation-of-state:
+    model: Redlich-Kwong
+    a:
+    - 1731320000000.0
+    - 0
+    b: 22.04783
+  another-literal-string: 'foo
+
+    bar
+
+    '
+  descriptive-name: oxygen
+  critical-parameters:
+    critical-temperature: 154.58
+    critical-pressure: 5043000.0
+    acentric-factor: 0.022
+    source: 'The acentric factor is calculated using the pure fluid saturation data
+      from
+
+      Lemmon et al. (2022).'

@@ -14,18 +14,16 @@ class PlumeReactor(ct.ExtensibleIdealGasConstPressureMoleReactor):
         self.state_air = []
         self.enthalpy = []
         self.cp = []
-        self.times = []
-        self.erates = []
         self.er_start = 0 # starting index for omega since time only moves forward
         self.thermo.zenith_angle = 0
         # open entrainment rate data
         self.entrainment = True
-        with open(os.path.join(DATA_DIR, "entrainment_rates.csv"), "r") as f:
-            csv_data = csv.reader(f, delimiter=",")
-            next(csv_data) # skip name row
-            for t, r in csv_data:
-                self.times.append(float(t))
-                self.erates.append(float(r))
+        with open(os.path.join(DATA_DIR, "entrainment-rates.csv"), "r") as f:
+            rdr = csv.reader(f, delimiter=",")
+            next(rdr)
+            next(rdr)
+            data = zip(*[r for r in rdr])
+            self.tX, self.wX, self.tT, self.wT = [list(map(float, filter(lambda x: x, l))) for l in data]
 
     @property
     def TX_air(self):
@@ -69,21 +67,25 @@ class PlumeReactor(ct.ExtensibleIdealGasConstPressureMoleReactor):
             elif len(self.cp) == 0:
                 raise Exception("PlumeReactor: cp_air not set")
             # calculate entrainment rate by logarithmic interpolation
-            for i in range(len(self.times) - 1):
-                if t < self.times[0]:
-                    omega_ent = self.erates[0]
-                    break
-                elif t >= self.times[i] and t < self.times[i+1]:
-                    omega_ent = self.log_rate_interpolation(t, self.times[i], self.erates[i], self.times[i+1], self.erates[i+1])
-                    break
-                elif t > self.times[-1]:
-                    omega_ent = 1 / t
+            def entrain_loop(times, rates):
+                for i in range(len(times) - 1):
+                    if t < times[0]:
+                        omega_ent = rates[0]
+                        break
+                    elif t >= times[i] and t < times[i+1]:
+                        omega_ent = self.log_rate_interpolation(t, times[i], rates[i], times[i+1], rates[i+1])
+                        break
+                    elif t > times[-1]:
+                        omega_ent = 1 / t
+                return omega_ent
+            omega_T = entrain_loop(self.tT, self.wT)
+            omega_X = entrain_loop(self.tX, self.wX)
             # find most from ideal gas law
             T,P = self.thermo.TP
             Nt = P * self.volume / ct.gas_constant / self.T
             moles = self.state_air[1:] * Nt
             # addition of value to energy equation for thermal entrainment
-            RHS[0] -= omega_ent * (self.T - self.state_air[0]) * self.mass * self.thermo.cp_mass
+            RHS[0] -= omega_T * (self.T - self.state_air[0]) * self.mass * self.thermo.cp_mass
             # addition of value for species equation entrainment
             for i in range(len(moles)):
-                RHS[i+1] += omega_ent * moles[i]
+                RHS[i+1] += omega_X * moles[i]
