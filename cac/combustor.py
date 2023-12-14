@@ -75,6 +75,7 @@ def new_network(r):
     net.max_steps = 100000
     # setup preconditioner
     net.preconditioner = ct.AdaptivePreconditioner()
+    net.initialize()
     return net
 
 
@@ -96,6 +97,29 @@ def print_state_TP(T, P, i):
     print(80 * "*")
     print()
 
+def steady_state_advance(net, reactor, solarr):
+        # get default tolerances:
+        atol = net.atol
+        residual_threshold = 1e-4
+        max_steps = 10000
+        max_state_values = net.get_state()  # denominator for feature scaling
+        for step in range(max_steps):
+            previous_state = net.get_state()
+            solarr.append(reactor.thermo.state, U=0.0, z=0.0, t=net.time)
+            # take 10 steps (just to increase speed)
+            for n1 in range(10):
+                net.step()
+            state = net.get_state()
+            max_state_values = numpy.maximum(max_state_values, state)
+            # determine feature_scaled residual
+            residual = numpy.linalg.norm((state - previous_state)
+                / (max_state_values + atol)) / numpy.sqrt(net.n_vars)
+            if residual < residual_threshold:
+                break
+        if step == max_steps - 1:
+            raise ct.CanteraError('Maximum number of steps reached before'
+                               ' convergence below maximum residual')
+
 def braggs_combustor(fuel, thermo_states={"T":[], "P":[]}):
     # combustor geometrical parameters
     plenum_radius = 0.035
@@ -103,7 +127,9 @@ def braggs_combustor(fuel, thermo_states={"T":[], "P":[]}):
     chamber_radius = 0.045
     chamber_length = 0.3
     # residence time in combustor
-    residence_time = 0.1  # starting residence time
+    residence_time = 1.0  # starting residence time
+    # initial state
+    initial_state = list(fuel.TPX)
     # inlet fuel tank
     fuel_tank = ct.Reservoir(fuel)
     # creating braggs combustor with a WSR and PFR
@@ -130,26 +156,27 @@ def braggs_combustor(fuel, thermo_states={"T":[], "P":[]}):
         net.initial_time = 0.0  # reset the integrator
         try:
             T_f = wsr.T
-            net.advance_to_steady_state(residual_threshold=1e-2)
+            net.advance_to_steady_state(residual_threshold=1e-4)
             print('tres = {:.2e}, T = {:.1f}'.format(residence_time, wsr.T))
             states.append(wsr.thermo.state, tres=residence_time, time=net.time, mass=wsr.mass)
             if net.max_time_step < 1e-6:
                 net.max_time_step = 1e-6
             residence_time *= 0.9  # decrease the residence time for the next iteration
             failures = 0
-        except:
+        except Exception as e:
             failures += 1 # increase number of failures
             net.max_time_step = net.max_time_step / 10 # decrease
             # reset state
             wsr.thermo.TPX = states[-1].TPX
             wsr.syncState()
-            residence_time *= states[-1].tres * 0.99 # reduce the residence time by smaller amount
+            residence_time = states[-1].tres * 0.95 # reduce the residence time by smaller amount
             print('Failure: tres = {:.2e}; T = {:.1f}'.format(residence_time, wsr.T))
-            if (failures > 4): # 5 consecutive failures
+            if (failures >= 5): # 5 consecutive failures
                 break
         T_jump = T_f - wsr.T
     # get a state a couple before the last
-    fuel.TDY = states[-2].TDY
+    initial_state[0] = states[-2].TP[0]
+    fuel.TPX = initial_state
     residence = states[-2].tres
     thermo_states["T"].append(f"{fuel.TP[0]:0.2f}")
     thermo_states["P"].append(f"{fuel.TP[1]:0.2f}")
@@ -157,7 +184,14 @@ def braggs_combustor(fuel, thermo_states={"T":[], "P":[]}):
     # create the combustor that acts as a plug flow reactor
     combustor = ct.IdealGasConstPressureMoleReactor(fuel)
     combustor.volume = numpy.pi * chamber_radius * chamber_radius * chamber_length
+    # solution array for combustor
+    combustor_states = ct.SolutionArray(combustor.thermo, extra=["U", "z", "t"])
     net = new_network([combustor])
+    net.atol = 1e-24
+    # WSR portion
+    steady_state_advance(net, combustor, combustor_states)
+    wsr_time = net.time
+    wsr_len = len(combustor_states)
     # plug flow reactor states
     n_steps_pfr = 1000
     t_total = residence_time
@@ -165,18 +199,17 @@ def braggs_combustor(fuel, thermo_states={"T":[], "P":[]}):
     mdot0 = combustor.mass / residence_time
     combustor_area = numpy.pi * chamber_radius * chamber_radius
     # define time, space, and other information vectors
-    t1 = (numpy.arange(n_steps_pfr) + 1) * dt
+    t1 = (numpy.arange(n_steps_pfr) + 1) * dt + net.time
     z1 = numpy.zeros_like(t1)
-    u1 = numpy.zeros_like(t1)
-    combustor_states = ct.SolutionArray(combustor.thermo)
+    combustor_states.append(combustor.thermo.state, U=mdot0 / combustor_area / combustor.thermo.density, z=0.0, t=net.time)
     for n1, t_i in enumerate(t1):
         # perform time integration
         net.advance(t_i)
         # compute velocity and transform into space
-        u1[n1] = mdot0 / combustor_area / combustor.thermo.density
-        z1[n1] = z1[n1 - 1] + u1[n1] * dt
-        combustor_states.append(combustor.thermo.state)
-    return combustor, combustor_states, wsr, states
+        U = mdot0 / combustor_area / combustor.thermo.density
+        z1[n1] = z1[n1 - 1] + U * dt
+        combustor_states.append(combustor.thermo.state, U=U, z=z1[n1], t=t_i)
+    return combustor, combustor_states, wsr, states, (wsr_time, wsr_len)
 
 def combustor_atm_sim(equiv_ratio, nsteps, farnesane, sulfur, outdir, fmodel="combustor-min.yaml"):
     thermo_states = {"farnesane": f"{farnesane:.2f}", "sulfur": f"{sulfur:.4f}", "equivalence_ratio": f"{equiv_ratio:.1f}"}
@@ -222,7 +255,7 @@ def combustor_atm_sim(equiv_ratio, nsteps, farnesane, sulfur, outdir, fmodel="co
     fuel.TP = T1, p1
     fuel.set_equivalence_ratio(equiv_ratio, X_fuel, X_air, basis="mole")
     # run braggs combustor
-    combustor, combustor_states, wsr, wsr_states = braggs_combustor(fuel, thermo_states=thermo_states)
+    combustor, combustor_states, wsr, wsr_states. ss_data = braggs_combustor(fuel, thermo_states=thermo_states)
     # write data
     ch5 = os.path.join(outdir, "combustor", f"combustor-pfr-states-{equiv_ratio:.1f}-{farnesane:.2f}-{sulfur:.4f}.hdf5")
     combustor_states.save(ch5, overwrite=True, name="thermo")
