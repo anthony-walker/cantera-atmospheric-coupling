@@ -1,12 +1,15 @@
 import os
 import csv
+import h5py
 import numpy
 import warnings
 import cantera as ct
+import multiprocessing as mp
 import matplotlib.pyplot as plt
 from cac.constants import DATA_DIR, COLORS
-from cac.combustor import braggs_combustor
+from cac.combustor import multizone_combustor
 from cac.reactors import PlumeSolution, PlumeReactor
+
 
 def mixing_box_model_verification():
     # setup plume reactor
@@ -65,17 +68,18 @@ def mixing_box_model_verification():
     plt.savefig("box-model-verification.pdf")
 
 
-def combustor_verification():
+def combustor_design_params():
     # design parameters
-    equiv_ratio = 0.25
+    equiv_ratio = 1.77
     EPR = 25 # engine pressure ratio
-    EGT = 800 # K, exhaust gas temperatures
     p_atm = 0.2 * ct.one_atm
     T_atm = 240 # K
     X_air = "O2:1.0, N2:3.76"
-    X_fuel = "H2:1.0"
+    X_fuel = ", ".join([f'{k}:{v}'for k, v in {"NC10H22":0.4267, "IC8H18":0.3302, "C7H8":0.2431}.items()])
     # create path to fuel model
-    fuel_model = "h2o2.yaml"
+    fuel_model = os.path.join(DATA_DIR, "jetfuel.yaml")
+    # fuel_model = "h2o2.yaml"
+    # X_fuel = "H2:1.0"
     # creation of fuel thermo object
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
@@ -84,33 +88,51 @@ def combustor_verification():
     # isentropic compression
     p1 = p_atm * EPR
     T1 = T_atm * (p1 / p_atm) ** (ct.gas_constant / fuel.cp_mole)
-    # setup fuel for braggs combustor
     # set input fuel conditions
     fuel.TP = T1, p1
     fuel.set_equivalence_ratio(equiv_ratio, X_fuel, X_air, basis="mole")
-    # run braggs combustor
-    combustor, combustor_states, wsr, wsr_states = braggs_combustor(fuel)
-    # plots to verify combustor behavior
-    Y = numpy.array(combustor_states.X)
-    ch4_id = combustor.thermo.species_index("H2")
-    # ch4_id = combustor.thermo.species_index("")
-    # plot data
-    f, ax1 = plt.subplots(1, 1)
-    ax1.loglog(combustor_states.t, Y[:, ch4_id], color=COLORS[3])
-    ax2 = ax1.twinx()
-    ax2.semilogx(combustor_states.t, combustor_states.T, color=COLORS[1])
-    # x axis
-    ax1.set_xlabel("Time [s]")
-    # ax1 y axis setup
-    ax1.set_ylabel("$Y_{H2}$", color=COLORS[3])
-    ax1.tick_params(axis="y", colors=COLORS[3])
-    # ax2 y axis setup
-    ax2.set_ylabel("Temperature [K]", color=COLORS[1])
-    ax2.tick_params(axis="y", colors=COLORS[1])
-    plt.savefig("h2o2-combustor.pdf")
-    # plt.plot(combustor_states.z, combustor_states.T)
-    plt.show()
+    return fuel, equiv_ratio, X_fuel, X_air
 
 
+def parallel_run_combustor(x):
+    fuel, equiv_ratio, X_fuel, X_air = combustor_design_params()
+    try:
+        print(f"Running thrust-level: {x:.3f}")
+        combustor, ifm = multizone_combustor(fuel, x, equiv_ratio, X_fuel, X_air, n_pz=21, name_id=f"-verification-{x:0.1f}")
+    except:
+        print(f"Failed for Thrust-level: {x:.3f}")
+        return None
+    return (combustor.thermo.state, combustor.mass, ifm, x)
+
+
+def combustor_verification():
+    # run in parallel
+    fuel, equiv_ratio, X_fuel, X_air = combustor_design_params()
+    thrust_levels = numpy.linspace(0.1, 1.0, 10)
+    # with mp.Pool(os.cpu_count()) as pool:
+    #     res = pool.map(parallel_run_combustor, thrust_levels)
+    # # solution array
+    # combustor_states = ct.SolutionArray(fuel, extra=["mass", "TL", "phi", "mdot", "fuel_mass"])
+    # for r in res:
+    #     if r is not None:
+    #         state, mass, ifm, tl = r
+    #         combustor_states.append(state, mass=mass, TL=tl, phi=equiv_ratio, mdot=1.086*tl, fuel_mass=ifm)
+    # # write out state and reformats
+    cbs = f"combustor-verification.hdf5"
+    # combustor_states.save(cbs, overwrite=True, name="thermo")
+    # create plot with generated data
+    with h5py.File(cbs, "r") as hf:
+        Y_data = hf["thermo"]["data"]["Y"]
+        mass_data = hf["thermo"]["data"]["mass"]
+        fuel_mass_data = hf["thermo"]["data"]["fuel_mass"]
+        mdot_data = hf["thermo"]["data"]["mdot"]
+        thrust_levels = hf["thermo"]["data"]["TL"]
+        # compute NOx
+        mass_nox = Y_data[:, fuel.species_index("NO2")] * mass_data * 1000 # grams
+        nox_ratio = mass_nox / fuel_mass_data
+        print(numpy.array(fuel_mass_data))
+        print(nox_ratio)
+
+        print(mass_nox)
 if __name__ == "__main__":
     mixing_box_model_verification()

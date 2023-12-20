@@ -138,7 +138,7 @@ pressureDependence(
 )
 
 quantumMechanics(
-        software='mopac',
+        software='gaussian',
         method='pm3',
         fileStore='QMfiles',
         scratchDirectory = None,
@@ -149,6 +149,6 @@ quantumMechanics(
 options(
     units='si',
     generatePlots=False,
-    saveEdgeSpecies=True,
+    saveEdgeSpecies=False,
     verboseComments=True
 )

@@ -1,11 +1,13 @@
 import os
 import sys
 import h5py
+import yaml
+import copy
 import click
 import numpy
 import warnings
 import cantera as ct
-import yaml
+import scipy.stats as stats
 from scipy.optimize import fsolve
 import matplotlib.pyplot as plt
 from cac.constants import DATA_DIR
@@ -19,12 +21,20 @@ def reformat_hdf5(hf_name):
         Y_arr = Y_data[()]
         # create species data sets
         for i, c in enumerate(arr.attrs["components"][2:2+nsp]):
+            try:
+                del hf[f"Y_{c}"] # delete it if it exists
+            except:
+                pass
             hf.create_dataset(f"Y_{c}", data=Y_arr[:, i])
         # write the rest of the data out
         other_keys = list(arr.keys())
         other_keys.remove("Y")
         for n in other_keys:
             data = hf["thermo"]["data"][n][()]
+            try:
+                del hf[n] # delete it if it exists
+            except:
+                pass
             hf.create_dataset(n, data=data)
         # delete thermo group
         del hf["thermo"]
@@ -88,6 +98,7 @@ def new_network(r):
 def run_combustor_atm_sim(equiv_ratio, nsteps, farnesane, sulfur, outdir):
     combustor_atm_sim(equiv_ratio, nsteps, farnesane, sulfur, outdir)
 
+
 def print_state_TP(T, P, i):
     print()
     print(80 * "*")
@@ -96,6 +107,7 @@ def print_state_TP(T, P, i):
     print(ast_len * "*" + tp_str + ast_len * "*")
     print(80 * "*")
     print()
+
 
 def steady_state_advance(net, reactor, solarr):
         # get default tolerances:
@@ -120,96 +132,229 @@ def steady_state_advance(net, reactor, solarr):
             raise ct.CanteraError('Maximum number of steps reached before'
                                ' convergence below maximum residual')
 
-def braggs_combustor(fuel, thermo_states={"T":[], "P":[]}):
-    # combustor geometrical parameters
-    plenum_radius = 0.035
-    plenum_length = 0.1
-    chamber_radius = 0.045
-    chamber_length = 0.3
-    # residence time in combustor
-    residence_time = 1.0  # starting residence time
-    # initial state
-    initial_state = list(fuel.TPX)
-    # inlet fuel tank
-    fuel_tank = ct.Reservoir(fuel)
-    # creating braggs combustor with a WSR and PFR
-    fuel.equilibrate("HP")
-    wsr = ct.IdealGasConstPressureMoleReactor(fuel)
-    wsr.volume = numpy.pi * plenum_radius * plenum_radius * plenum_length
-    # outlet exhaust reservoir
-    combustion_chamber = ct.Reservoir(fuel)
-    def mflow(t):
-        return wsr.mass / residence_time
-    # connect to reservoirs and get steady state operation
-    ft_to_wsr = ct.MassFlowController(fuel_tank, wsr, mdot=mflow)
-    wsr_to_cc = ct.PressureController(fuel_tank, combustion_chamber, primary=ft_to_wsr, K=0.01)
-    net = new_network([wsr])
-    # advance to steady state
-    states = ct.SolutionArray(fuel, extra=['tres', "time", 'mass'])
-    last_good_rt = residence_time
-    failures = 0
-    T_jump = 0
-    net.max_time_step = 1e-6
-    states.append(wsr.thermo.state, tres=residence_time, time=net.time, mass=wsr.mass)
-    # loop to get starting temp
-    while T_jump < 200 and wsr.T > 800:
-        net.initial_time = 0.0  # reset the integrator
-        try:
-            T_f = wsr.T
-            net.advance_to_steady_state(residual_threshold=1e-4)
-            print('tres = {:.2e}, T = {:.1f}'.format(residence_time, wsr.T))
-            states.append(wsr.thermo.state, tres=residence_time, time=net.time, mass=wsr.mass)
-            if net.max_time_step < 1e-6:
-                net.max_time_step = 1e-6
-            residence_time *= 0.9  # decrease the residence time for the next iteration
-            failures = 0
-        except Exception as e:
-            failures += 1 # increase number of failures
-            net.max_time_step = net.max_time_step / 10 # decrease
-            # reset state
-            wsr.thermo.TPX = states[-1].TPX
-            wsr.syncState()
-            residence_time = states[-1].tres * 0.95 # reduce the residence time by smaller amount
-            print('Failure: tres = {:.2e}; T = {:.1f}'.format(residence_time, wsr.T))
-            if (failures >= 5): # 5 consecutive failures
-                break
-        T_jump = T_f - wsr.T
-    # get a state a couple before the last
-    initial_state[0] = states[-2].TP[0]
-    fuel.TPX = initial_state
-    residence = states[-2].tres
-    thermo_states["T"].append(f"{fuel.TP[0]:0.2f}")
-    thermo_states["P"].append(f"{fuel.TP[1]:0.2f}")
-    print_state_TP(fuel.TP[0], fuel.TP[1], "2i")
-    # create the combustor that acts as a plug flow reactor
-    combustor = ct.IdealGasConstPressureMoleReactor(fuel)
-    combustor.volume = numpy.pi * chamber_radius * chamber_radius * chamber_length
+
+def adjust_volume_to_preserve_mass(r, tm):
+    # adjust volume such that mass is
+    step = 1e-6
+    vp = False
+    vm = False
+    while not numpy.isclose(r.mass, tm, rtol=1e-12, atol=1e-16):
+        if r.mass > tm:
+            r.volume -= step
+            vm = True
+        elif r.mass < tm:
+            r.volume += step
+            vp = True
+        # adjust step if both were visited
+        if vm and vp:
+            step /= 2
+            vm = False
+            vp = False
+
+
+def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
+    # default parameters
+    thermo_states = kwargs.get("thermo_states", {"T":[], "P":[]})
+    n_pz = kwargs.get("n_pz", 9)
+    n_pz += 1 if n_pz % 2 != 0  else 0
+    mixing_param = kwargs.get("mixing_param", 0.39) # mixing parameter
+    volume = kwargs.get("volume", 0.0023) # m^3
+    m_dot_fuel_takeoff = kwargs.get("m_dot_fuel_takeoff", 1.086) #  kg / s
+    m_dot_fuel = thrust_level * m_dot_fuel_takeoff
+    assert thrust_level <= 1.0
+    equiv_sec_zone = kwargs.get("equiv_sz", 0.7)
+    BPR = kwargs.get("BPR", 5.2) # Bypass ratio from ICAO data
+    outdir = kwargs.get("outdir", "./")
+    name_id = kwargs.get("name_id", "")
+    # fixed params from study
+    A_sz = 0.15 # m^2
+    L_sz = 0.075 # m
+    l_das = 0.95 # start
+    l_dae = 1.0 # end
+    f_sm = 0.5 # fraction of mass flow in slow mixing
+    f_fm = 1 - f_sm
+    l_sa_sm = 0.55
+    l_sa_fm = 0.055
+    T_i, P_i = fuel.TP
+    # calculate total mass flow rate
+    akeys = [fuel.species_index(x.split(":")[0].strip()) for x in X_air.split(",")]
+    fkeys = [fuel.species_index(x.split(":")[0].strip()) for x in X_fuel.split(",")]
+    # FAR stoichiomentric
+    fuel.set_equivalence_ratio(1.0, X_fuel, X_air)
+    m_dot_fuel_st = m_dot_fuel
+    m_dot_st = numpy.sum(m_dot_fuel_st / fuel.Y[fkeys])
+    m_dot_air_st = numpy.sum(m_dot_st * fuel.Y[akeys])
+    FARst = m_dot_fuel_st / m_dot_air_st
+    # take off values
+    fuel.set_equivalence_ratio(equiv_pz, X_fuel, X_air)
+    m_dot = numpy.sum(m_dot_fuel / fuel.Y[fkeys])
+    m_dot_air = numpy.sum(m_dot * fuel.Y[akeys])
+    # determine takeoff amount of mass flow
+    m_dot_takeoff = numpy.sum(m_dot_fuel_takeoff / fuel.Y[fkeys])
+    m_dot_air_takeoff = numpy.sum(m_dot_takeoff * fuel.Y[akeys]) * BPR
+    # calculate phi values
+    norm_dist = stats.norm(loc=equiv_pz, scale=mixing_param * equiv_pz)
+    x = numpy.linspace(norm_dist.ppf(0.001), norm_dist.ppf(0.999), n_pz)
+    dist = norm_dist.cdf(x)
+    phis = list(dist * equiv_pz)
+    # calculate mass flows
+    xf = numpy.linspace(norm_dist.ppf(0.001), norm_dist.ppf(0.999), n_pz * 2)
+    mfs = (norm_dist.pdf(xf) * (x[1] - x[0]))[:n_pz]
+    mfs = mfs/numpy.sum(mfs) * m_dot / 2
+    split_volume = volume / 2 / n_pz # divided by 2 because axi-symmetric
+    # create number of reactors
+    reactors = []
+    initial_mass_fuel = 0
+    for i in range(n_pz):
+        # reset fuel object
+        fuel.TP = T_i, P_i
+        fuel.set_equivalence_ratio(phis[i], X_fuel, X_air, basis="mole")
+        # create reservoirs
+        inlet = ct.Reservoir(fuel)
+        outlet = ct.Reservoir(fuel)
+        # create reactor
+        reactors.append(ct.IdealGasConstPressureMoleReactor(fuel))
+        reactors[i].volume = split_volume
+        # get mass of initial fuel for verification purposes
+        initial_mass_fuel += numpy.sum(reactors[i].Y[fkeys] * reactors[i].mass)
+        reactors[i].thermo.equilibrate("HP")
+        reactors[i].syncState()
+        # connect
+        mfc = ct.MassFlowController(inlet, reactors[i], mdot=mfs[i])
+        ct.PressureController(reactors[i], outlet, primary=mfc)
+    # create network and advance to steady state to simulate well stirred reactors
+    net = new_network(reactors)
+    # net.max_time_step = 1e-7
+    net.advance_to_steady_state(residual_threshold=1e-2)
+    # mix together at constant enthalpy and pressure
+    quantities = [ct.Quantity(r.thermo, constant="HP") for r in reactors]
+    Q = quantities[0]
+    for q in quantities[1:]:
+        Q += q
+    fuel.TPX = Q.TPX
+    print_state_TP(fuel.TP[0], fuel.TP[1], "2pz")
+    thermo_states["T"].append(fuel.TP[0])
+    thermo_states["P"].append(fuel.TP[1])
+    # PFR representing the rest of the combustor
+    f_air_pz = m_dot_air / m_dot_air_takeoff
+    f_air_sa = m_dot_fuel_takeoff / (equiv_sec_zone * FARst * m_dot_air_takeoff)
+    # calculated parameters
+    f_air_da = 1 - f_air_sa - f_air_pz
+    beta_sa_sm = f_air_sa * f_sm * m_dot_air / (l_sa_sm * L_sz)
+    beta_sa_fm = f_air_sa * f_fm * m_dot_air / (l_sa_fm * L_sz)
+    beta_da = f_air_da * m_dot_air / (l_dae - l_das) / L_sz
+    # reactors
+    fast_mixing = ct.IdealGasConstPressureMoleReactor(fuel)
+    fast_mixing.volume = volume / 2
+    slow_mixing = ct.IdealGasConstPressureMoleReactor(fuel)
+    slow_mixing.volume = volume / 2
+    # adjust volume to preserve mass
+    total_mass = numpy.sum([r.mass for r in reactors])
+    adjust_volume_to_preserve_mass(fast_mixing, total_mass / 2)
+    slow_mixing.volume = fast_mixing.volume
+    assert numpy.isclose(fast_mixing.mass, total_mass / 2)
+    assert numpy.isclose(slow_mixing.mass, total_mass / 2)
+    # setup PFR
+    n_steps = 1000
+    u = m_dot / (fast_mixing.density * A_sz)
+    t_total = L_sz / u
+    dt = t_total / n_steps
+    # dilution function for slow zone
+    Lcs = 0
+    dilution_on = True
+    def slow_zone_dilution(t):
+        if dilution_on:
+            mdt = beta_sa_sm * Lcs
+            if Lcs >= l_das * L_sz and Lcs <= l_dae * L_sz:
+                mdt += beta_da * Lcs
+            return mdt
+        else:
+            return 0
+    # dilution function for fast zone
+    Lcf = 0
+    def fast_zone_dilution(t):
+        if dilution_on:
+            mdt = beta_sa_fm * Lcf
+            if Lcf >= l_das * L_sz and Lcf <= l_dae * L_sz:
+                mdt += beta_da * Lcf
+            return mdt
+        else:
+            return 0
+    # create dilution reservoir
+    fuel.TP = T_i, P_i
+    fuel.set_equivalence_ratio(0, X_fuel, X_air)
+    dilution_air = ct.Reservoir(fuel)
+    mfc_sm = ct.MassFlowController(dilution_air, slow_mixing, mdot=slow_zone_dilution)
+    mfc_fm = ct.MassFlowController(dilution_air, fast_mixing, mdot=fast_zone_dilution)
+    # create network
+    netf = new_network([fast_mixing,])
+    # vector of locations
+    zf = [0.0]
+    uf = [u]
+    # integrate over length
+    ctr = 1
     # solution array for combustor
-    combustor_states = ct.SolutionArray(combustor.thermo, extra=["U", "z", "t"])
-    net = new_network([combustor])
-    net.atol = 1e-24
-    # WSR portion
-    steady_state_advance(net, combustor, combustor_states)
-    wsr_time = net.time
-    wsr_len = len(combustor_states)
-    # plug flow reactor states
-    n_steps_pfr = 1000
-    t_total = residence_time
-    dt = t_total / n_steps_pfr
-    mdot0 = combustor.mass / residence_time
-    combustor_area = numpy.pi * chamber_radius * chamber_radius
-    # define time, space, and other information vectors
-    t1 = (numpy.arange(n_steps_pfr) + 1) * dt + net.time
-    z1 = numpy.zeros_like(t1)
-    combustor_states.append(combustor.thermo.state, U=mdot0 / combustor_area / combustor.thermo.density, z=0.0, t=net.time)
-    for n1, t_i in enumerate(t1):
+    fast_mixing_states = ct.SolutionArray(fast_mixing.thermo, extra=["U", "z", "t"])
+    fast_mixing_states.append(fast_mixing.thermo.state, U=uf[0], z=zf[0], t=0.0)
+    while Lcf <= L_sz:
         # perform time integration
-        net.advance(t_i)
+        netf.advance(ctr * dt)
         # compute velocity and transform into space
-        U = mdot0 / combustor_area / combustor.thermo.density
-        z1[n1] = z1[n1 - 1] + U * dt
-        combustor_states.append(combustor.thermo.state, U=U, z=z1[n1], t=t_i)
-    return combustor, combustor_states, wsr, states, (wsr_time, wsr_len)
+        uf.append(m_dot / A_sz / fast_mixing.thermo.density)
+        # locations
+        zf.append(zf[ctr - 1] + uf[ctr] * dt)
+        Lcf = zf[ctr]
+        # update array
+        fast_mixing_states.append(fast_mixing.thermo.state, U=uf[ctr], z=zf[ctr], t=ctr*dt)
+        ctr += 1
+    # write out state and reformat
+    fm5 = os.path.join(outdir, f"fast-mixing-states{name_id}.hdf5")
+    fast_mixing_states.save(fm5, overwrite=True, name="thermo")
+    reformat_hdf5(fm5)
+    # create network
+    nets = new_network([slow_mixing,])
+    # vector of locations
+    zs = [0.0]
+    us = [u]
+    # integrate over length
+    ctr = 1
+    # solution array for combustor
+    slow_mixing_states = ct.SolutionArray(slow_mixing.thermo, extra=["U", "z", "t"])
+    slow_mixing_states.append(slow_mixing.thermo.state, U=uf[0], z=zf[0], t=0.0)
+    while Lcs <= L_sz:
+        # perform time integration
+        nets.advance(ctr * dt)
+        # compute velocity and transform into space
+        us.append(m_dot / A_sz / slow_mixing.thermo.density)
+        # locations
+        zs.append(zs[ctr - 1] + us[ctr] * dt)
+        Lcs = zs[ctr]
+        # update array
+        slow_mixing_states.append(slow_mixing.thermo.state, U=uf[ctr], z=zf[ctr], t=ctr*dt)
+        ctr += 1
+    # write out state and reformat
+    sm5 = os.path.join(outdir, f"slow-mixing-states{name_id}.hdf5")
+    slow_mixing_states.save(sm5, overwrite=True, name="thermo")
+    reformat_hdf5(sm5)
+    # mix together at constant enthalpy and pressure
+    zones = [slow_mixing, fast_mixing]
+    quantities = [ct.Quantity(r.thermo, constant="HP") for r in zones]
+    Q = quantities[0]
+    for q in quantities[1:]:
+        Q += q
+    fuel.TPX = Q.TPX
+    print_state_TP(fuel.TP[0], fuel.TP[1], "2sz")
+    thermo_states["T"].append(fuel.TP[0])
+    thermo_states["P"].append(fuel.TP[1])
+    # make and return combustor reactor
+    combustor = ct.IdealGasConstPressureMoleReactor(fuel)
+    total_mass = slow_mixing.mass + fast_mixing.mass
+    combustor.volume = slow_mixing.volume + fast_mixing.volume
+    adjust_volume_to_preserve_mass(combustor, total_mass)
+    assert numpy.isclose(combustor.mass, total_mass)
+
+    return combustor, initial_mass_fuel
+
 
 def combustor_atm_sim(equiv_ratio, nsteps, farnesane, sulfur, outdir, fmodel="combustor-min.yaml"):
     thermo_states = {"farnesane": f"{farnesane:.2f}", "sulfur": f"{sulfur:.4f}", "equivalence_ratio": f"{equiv_ratio:.1f}"}
