@@ -1,7 +1,9 @@
 import os
 import csv
 import h5py
+import yaml
 import numpy
+import click
 import warnings
 import cantera as ct
 import multiprocessing as mp
@@ -65,21 +67,23 @@ def mixing_box_model_verification():
     plt.ylabel("Normalized variables")
     plt.xlabel("Time [s]")
     plt.legend()
-    plt.savefig("box-model-verification.pdf")
+    fname = os.path.join(DATA_DIR, "verification", "box-model-verification.pdf")
+    # add RMS error file
+    plt.savefig(fname)
 
 
 def combustor_design_params():
     # design parameters
     equiv_ratio = 1.77
-    EPR = 25 # engine pressure ratio
+    EPR = 25.8 # engine pressure ratio
     p_atm = 0.2 * ct.one_atm
     T_atm = 240 # K
     X_air = "O2:1.0, N2:3.76"
     X_fuel = ", ".join([f'{k}:{v}'for k, v in {"NC10H22":0.4267, "IC8H18":0.3302, "C7H8":0.2431}.items()])
     # create path to fuel model
     fuel_model = os.path.join(DATA_DIR, "jetfuel.yaml")
-    # fuel_model = "h2o2.yaml"
-    # X_fuel = "H2:1.0"
+    fuel_model = "h2o2.yaml"
+    X_fuel = "H2:1.0"
     # creation of fuel thermo object
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
@@ -96,43 +100,65 @@ def combustor_design_params():
 
 def parallel_run_combustor(x):
     fuel, equiv_ratio, X_fuel, X_air = combustor_design_params()
-    try:
-        print(f"Running thrust-level: {x:.3f}")
-        combustor, ifm = multizone_combustor(fuel, x, equiv_ratio, X_fuel, X_air, n_pz=21, name_id=f"-verification-{x:0.1f}")
-    except:
-        print(f"Failed for Thrust-level: {x:.3f}")
-        return None
-    return (combustor.thermo.state, combustor.mass, ifm, x)
+    out_dir = ver_dir = os.path.join(DATA_DIR, "verification")
+    # try:
+    print(f"Running thrust-level: {x:.3f}")
+    combustor, thermo_states = multizone_combustor(fuel, x, equiv_ratio, X_fuel, X_air, n_pz=21, name_id=f"-verification-{x:0.1f}", outdir=out_dir)
+    # except:
+    #     print(f"Failed for Thrust-level: {x:.3f}")
+    #     return None
+    return (combustor.thermo.state, combustor.mass, thermo_states, x)
 
 
-def combustor_verification():
-    # run in parallel
+@click.command()
+@click.option('--regenerate', is_flag=True, help='Regenerate verification data')
+def combustor_verification(regenerate):
+    ver_dir = os.path.join(DATA_DIR, "verification")
+    cbs = os.path.join(ver_dir, f"combustor-verification.hdf5")
+    yfile = os.path.join(ver_dir, "combustor-verification.yaml")
+    if not os.path.isdir(ver_dir):
+        os.mkdir(ver_dir)
     fuel, equiv_ratio, X_fuel, X_air = combustor_design_params()
     thrust_levels = numpy.linspace(0.1, 1.0, 10)
-    # with mp.Pool(os.cpu_count()) as pool:
-    #     res = pool.map(parallel_run_combustor, thrust_levels)
-    # # solution array
-    # combustor_states = ct.SolutionArray(fuel, extra=["mass", "TL", "phi", "mdot", "fuel_mass"])
-    # for r in res:
-    #     if r is not None:
-    #         state, mass, ifm, tl = r
-    #         combustor_states.append(state, mass=mass, TL=tl, phi=equiv_ratio, mdot=1.086*tl, fuel_mass=ifm)
-    # # write out state and reformats
-    cbs = f"combustor-verification.hdf5"
-    # combustor_states.save(cbs, overwrite=True, name="thermo")
-    # create plot with generated data
-    with h5py.File(cbs, "r") as hf:
-        Y_data = hf["thermo"]["data"]["Y"]
-        mass_data = hf["thermo"]["data"]["mass"]
-        fuel_mass_data = hf["thermo"]["data"]["fuel_mass"]
-        mdot_data = hf["thermo"]["data"]["mdot"]
-        thrust_levels = hf["thermo"]["data"]["TL"]
-        # compute NOx
-        mass_nox = Y_data[:, fuel.species_index("NO2")] * mass_data * 1000 # grams
-        nox_ratio = mass_nox / fuel_mass_data
-        print(numpy.array(fuel_mass_data))
-        print(nox_ratio)
+    if not os.path.isfile(cbs) or regenerate:
+        # run in parallel
+        with mp.Pool(os.cpu_count()) as pool:
+            res = pool.map(parallel_run_combustor, thrust_levels)
+        # solution array
+        combustor_states = ct.SolutionArray(fuel, extra=["mass", "TL", "phi", "mdot", "fuel_mass"])
+        verification_data = {}
+        for r in res:
+            if r is not None:
+                state, mass, thermo_states, tl = r
+                verification_data[f"thrust-level-{tl}"] = thermo_states
+                combustor_states.append(state, mass=mass, TL=tl, phi=equiv_ratio, mdot=1.086*tl, fuel_mass=thermo_states["initial_fuel_mass"])
+        # dump verification data
+        os.path.join("")
+        with open(yfile, "w") as f:
+            yaml.dump(verification_data, f)
+        # write out state and reformats
+        combustor_states.save(cbs, overwrite=True, name="thermo")
+    # create plots of profiles from yaml
+    with open(yfile, "r") as f:
+        yaml_data = yaml.load(f, Loader=yaml.SafeLoader)
 
-        print(mass_nox)
+    fig, ax = plt.subplots()
+    for i, k in enumerate(yaml_data.keys()):
+        ldata = yaml_data[k]
+        ax.plot(ldata["phi_distribution"], ldata["mass_flow_fraction_distribution"], color=COLORS[i])
+    plt.show()
+    # # create plot with generated data
+    # with h5py.File(cbs, "r") as hf:
+    #     Y_data = hf["thermo"]["data"]["Y"]
+    #     mass_data = hf["thermo"]["data"]["mass"]
+    #     fuel_mass_data = hf["thermo"]["data"]["fuel_mass"]
+    #     mdot_data = hf["thermo"]["data"]["mdot"]
+    #     thrust_levels = hf["thermo"]["data"]["TL"]
+    #     # compute NOx
+    #     mass_nox = Y_data[:, fuel.species_index("NO2")] * mass_data * 1000 # grams
+    #     nox_ratio = mass_nox / fuel_mass_data
+    #     print(numpy.array(fuel_mass_data))
+    #     print(nox_ratio)
+    #     print(mass_nox)
 if __name__ == "__main__":
     mixing_box_model_verification()

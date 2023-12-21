@@ -156,14 +156,14 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     # default parameters
     thermo_states = kwargs.get("thermo_states", {"T":[], "P":[]})
     n_pz = kwargs.get("n_pz", 9)
-    n_pz += 1 if n_pz % 2 != 0  else 0
+    n_pz += 1 if n_pz % 2 == 0  else 0 # ensure always odd
     mixing_param = kwargs.get("mixing_param", 0.39) # mixing parameter
     volume = kwargs.get("volume", 0.0023) # m^3
+    BPR = kwargs.get("BPR", 5.2)
     m_dot_fuel_takeoff = kwargs.get("m_dot_fuel_takeoff", 1.086) #  kg / s
     m_dot_fuel = thrust_level * m_dot_fuel_takeoff
     assert thrust_level <= 1.0
     equiv_sec_zone = kwargs.get("equiv_sz", 0.7)
-    BPR = kwargs.get("BPR", 5.2) # Bypass ratio from ICAO data
     outdir = kwargs.get("outdir", "./")
     name_id = kwargs.get("name_id", "")
     # fixed params from study
@@ -179,29 +179,42 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     # calculate total mass flow rate
     akeys = [fuel.species_index(x.split(":")[0].strip()) for x in X_air.split(",")]
     fkeys = [fuel.species_index(x.split(":")[0].strip()) for x in X_fuel.split(",")]
-    # FAR stoichiomentric
-    fuel.set_equivalence_ratio(1.0, X_fuel, X_air)
-    m_dot_fuel_st = m_dot_fuel
-    m_dot_st = numpy.sum(m_dot_fuel_st / fuel.Y[fkeys])
-    m_dot_air_st = numpy.sum(m_dot_st * fuel.Y[akeys])
-    FARst = m_dot_fuel_st / m_dot_air_st
     # take off values
     fuel.set_equivalence_ratio(equiv_pz, X_fuel, X_air)
+    m_dot_takeoff = numpy.sum(m_dot_fuel_takeoff / fuel.Y[fkeys])
+    m_dot_air_takeoff = numpy.sum(m_dot_takeoff * fuel.Y[akeys])
+    m_dot_air_total = m_dot_air_takeoff * BPR
+    # stoichiometric values
+    fuel.set_equivalence_ratio(1.0, X_fuel, X_air)
+    m_dot_fuel_st = m_dot_fuel_takeoff
+    m_dot_st = numpy.sum(m_dot_fuel_st / fuel.Y[fkeys])
+    m_dot_air_st= numpy.sum(m_dot_st * fuel.Y[akeys])
+    FARst = m_dot_fuel_st / m_dot_air_st
+    # now determine mean equiv ratio with takeoff air and mdot fuel
+    equiv_mean = (m_dot_fuel / m_dot_air_takeoff) / (m_dot_fuel_st / m_dot_air_st)
+    print(equiv_mean)
+    fuel.set_equivalence_ratio(equiv_mean, X_fuel, X_air)
     m_dot = numpy.sum(m_dot_fuel / fuel.Y[fkeys])
     m_dot_air = numpy.sum(m_dot * fuel.Y[akeys])
-    # determine takeoff amount of mass flow
-    m_dot_takeoff = numpy.sum(m_dot_fuel_takeoff / fuel.Y[fkeys])
-    m_dot_air_takeoff = numpy.sum(m_dot_takeoff * fuel.Y[akeys]) * BPR
+    # fraction of total air
+    f_air_pz = m_dot_air / m_dot_air_total
+    f_air_sa = m_dot_fuel_takeoff / (equiv_sec_zone * FARst * m_dot_air_total)
+    # calculated parameters
+    f_air_da = 1 - f_air_sa - f_air_pz
+    beta_sa_sm = f_air_sa * f_sm * m_dot_air / (l_sa_sm * L_sz)
+    beta_sa_fm = f_air_sa * f_fm * m_dot_air / (l_sa_fm * L_sz)
+    beta_da = f_air_da * m_dot_air / (l_dae - l_das) / L_sz
     # calculate phi values
-    norm_dist = stats.norm(loc=equiv_pz, scale=mixing_param * equiv_pz)
-    x = numpy.linspace(norm_dist.ppf(0.001), norm_dist.ppf(0.999), n_pz)
-    dist = norm_dist.cdf(x)
-    phis = list(dist * equiv_pz)
+    norm_dist = stats.norm(loc=equiv_mean, scale=mixing_param * equiv_mean)
+    phis = numpy.linspace(norm_dist.ppf(0.01), norm_dist.ppf(0.99), n_pz)
+    thermo_states["phi_distribution"] = [float(p) for p in phis]
     # calculate mass flows
-    xf = numpy.linspace(norm_dist.ppf(0.001), norm_dist.ppf(0.999), n_pz * 2)
-    mfs = (norm_dist.pdf(xf) * (x[1] - x[0]))[:n_pz]
-    mfs = mfs/numpy.sum(mfs) * m_dot / 2
-    split_volume = volume / 2 / n_pz # divided by 2 because axi-symmetric
+    mass_flow_fractions = norm_dist.pdf(phis) * (phis[1] - phis[0])
+    mfs = mass_flow_fractions * m_dot
+    # add to thermo states
+    thermo_states["mass_flow_fraction_distribution"] = [float(p) for p in mass_flow_fractions]
+    thermo_states["mass_flow_distribution"] = [float(p) for p in mfs]
+    split_volume = volume / n_pz # split over zones
     # create number of reactors
     reactors = []
     initial_mass_fuel = 0
@@ -226,23 +239,19 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     net = new_network(reactors)
     # net.max_time_step = 1e-7
     net.advance_to_steady_state(residual_threshold=1e-2)
+    # temperature distribution
+    thermo_states["temperature_distribution"] = [r.T for r in reactors]
+    thermo_states["initial_fuel_mass"] = float(initial_mass_fuel)
     # mix together at constant enthalpy and pressure
     quantities = [ct.Quantity(r.thermo, constant="HP") for r in reactors]
     Q = quantities[0]
     for q in quantities[1:]:
         Q += q
     fuel.TPX = Q.TPX
-    print_state_TP(fuel.TP[0], fuel.TP[1], "2pz")
+    # print_state_TP(fuel.TP[0], fuel.TP[1], "2pz")
     thermo_states["T"].append(fuel.TP[0])
     thermo_states["P"].append(fuel.TP[1])
     # PFR representing the rest of the combustor
-    f_air_pz = m_dot_air / m_dot_air_takeoff
-    f_air_sa = m_dot_fuel_takeoff / (equiv_sec_zone * FARst * m_dot_air_takeoff)
-    # calculated parameters
-    f_air_da = 1 - f_air_sa - f_air_pz
-    beta_sa_sm = f_air_sa * f_sm * m_dot_air / (l_sa_sm * L_sz)
-    beta_sa_fm = f_air_sa * f_fm * m_dot_air / (l_sa_fm * L_sz)
-    beta_da = f_air_da * m_dot_air / (l_dae - l_das) / L_sz
     # reactors
     fast_mixing = ct.IdealGasConstPressureMoleReactor(fuel)
     fast_mixing.volume = volume / 2
@@ -330,7 +339,7 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
         zs.append(zs[ctr - 1] + us[ctr] * dt)
         Lcs = zs[ctr]
         # update array
-        slow_mixing_states.append(slow_mixing.thermo.state, U=uf[ctr], z=zf[ctr], t=ctr*dt)
+        slow_mixing_states.append(slow_mixing.thermo.state, U=us[ctr], z=zs[ctr], t=ctr*dt)
         ctr += 1
     # write out state and reformat
     sm5 = os.path.join(outdir, f"slow-mixing-states{name_id}.hdf5")
@@ -343,7 +352,7 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     for q in quantities[1:]:
         Q += q
     fuel.TPX = Q.TPX
-    print_state_TP(fuel.TP[0], fuel.TP[1], "2sz")
+    # print_state_TP(fuel.TP[0], fuel.TP[1], "2sz")
     thermo_states["T"].append(fuel.TP[0])
     thermo_states["P"].append(fuel.TP[1])
     # make and return combustor reactor
@@ -353,7 +362,7 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     adjust_volume_to_preserve_mass(combustor, total_mass)
     assert numpy.isclose(combustor.mass, total_mass)
 
-    return combustor, initial_mass_fuel
+    return combustor, thermo_states
 
 
 def combustor_atm_sim(equiv_ratio, nsteps, farnesane, sulfur, outdir, fmodel="combustor-min.yaml"):
