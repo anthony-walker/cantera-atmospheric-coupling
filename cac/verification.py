@@ -127,7 +127,7 @@ def combustor_verification(regenerate):
         os.mkdir(ver_dir)
     fuel, equiv_ratio, X_fuel, X_air = combustor_design_params()
     thrust_levels = numpy.linspace(0.1, 1.0, 10)
-    thrust_levels = [0.5]
+    # thrust_levels = [0.5]
     # thrust_levels = numpy.array([0.07, 0.3, 0.65, 0.85, 1.0])
     if not os.path.isfile(cbs) or regenerate:
         # run in parallel
@@ -208,7 +208,7 @@ def combustor_verification(regenerate):
     axes[1].set_xlabel("Mass Flow Fraction")
     axes[1].set_ylabel("EI CO [g/$\\text{kg}_{\\text{fuel}}$]")
     plt.subplots_adjust(wspace=0.25)
-    # plt.show()
+    plt.show()
 
 def convert_mission_out():
     ver_dir = os.path.join(DATA_DIR, "verification")

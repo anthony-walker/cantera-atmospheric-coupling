@@ -15,7 +15,7 @@ from scipy.optimize import curve_fit
 from scipy.interpolate import interp1d
 import matplotlib.pyplot as plt
 from cac.constants import DATA_DIR
-from cac.reactors import PlumeSolution, PlumeReactor
+from cac.reactors import PlumeSolution, PlumeReactor, DilutionReactor
 
 def reformat_hdf5(hf_name):
     with h5py.File(hf_name, "r+") as hf:
@@ -190,14 +190,13 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     outdir = kwargs.get("outdir", "./")
     name_id = kwargs.get("name_id", "")
     # fixed params from study
-    A_sz = 0.15 # m^2
     L_sz = 0.075 # m
-    l_das = 0.95 # start
-    l_dae = 1.0 # end
     f_sm = 0.5 # fraction of mass flow in slow mixing
     f_fm = 1 - f_sm
     l_sa_sm = 0.55
     l_sa_fm = 0.055
+    l_dae = 1
+    l_das = 0.95
     T_i, P_i = fuel.TP
     # calculate total mass flow rate
     akeys = [fuel.species_index(x.split(":")[0].strip()) for x in X_air.split(",")]
@@ -211,7 +210,6 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     # fraction of total air
     f_air_pz = m_dot_fuel_takeoff / (m_dot_air_takeoff * equiv_pz * FARst)
     f_air_sa = m_dot_fuel_takeoff / (equiv_sec_zone * FARst * m_dot_air_takeoff)
-
     # update mass flow rates
     m_dot_air = m_dot_air * f_air_pz
     m_dot = m_dot_air + m_dot_fuel
@@ -222,7 +220,6 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     beta_sa_sm = f_air_sa * f_sm * m_dot_air / (l_sa_sm * L_sz)
     beta_sa_fm = f_air_sa * f_fm * m_dot_air / (l_sa_fm * L_sz)
     beta_da = f_air_da * m_dot_air / (l_dae - l_das) / L_sz
-    print(thrust_level, beta_sa_fm, beta_sa_sm, beta_da)
     # calculate phi values
     lower_bound = (0 - equiv_mean) / (mixing_param * equiv_mean)
     norm_dist = stats.truncnorm(lower_bound, 5, loc=equiv_mean, scale=mixing_param * equiv_mean)
@@ -271,11 +268,12 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     # print_state_TP(fuel.TP[0], fuel.TP[1], "2pz")
     thermo_states["T"].append(fuel.TP[0])
     thermo_states["P"].append(fuel.TP[1])
-    # PFR representing the rest of the combustor
+    # Instead of modeling as a PFR, converting dilution as a function of z
+    # to dilution as a function of time
     # reactors
-    fast_mixing = ct.IdealGasConstPressureMoleReactor(fuel)
+    fast_mixing = DilutionReactor(fuel, mdot=m_dot / 2, beta_da=beta_da, beta_mixing=beta_sa_fm, mixing_scale=0.055)
     fast_mixing.volume = volume / 2
-    slow_mixing = ct.IdealGasConstPressureMoleReactor(fuel)
+    slow_mixing = DilutionReactor(fuel, mdot=m_dot / 2, beta_da=beta_da, beta_mixing=beta_sa_sm, mixing_scale=0.55)
     slow_mixing.volume = volume / 2
     # adjust volume to preserve mass
     total_mass = numpy.sum([r.mass for r in reactors])
@@ -283,84 +281,30 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     slow_mixing.volume = fast_mixing.volume
     assert numpy.isclose(fast_mixing.mass, total_mass / 2)
     assert numpy.isclose(slow_mixing.mass, total_mass / 2)
-    # setup PFR
-    n_steps = 1000
-    u = m_dot / (fast_mixing.density * A_sz)
-    t_total = L_sz / u
-    dt = t_total / n_steps
-    # dilution function for slow zone
-    Lcs = 0
-    dilution_on = True
-    def slow_zone_dilution(t):
-        if dilution_on:
-            if Lcs >= 0 and Lcs <= l_sa_sm * L_sz:
-                return beta_sa_sm * Lcs
-            elif Lcs >= l_das * L_sz and Lcs <= l_dae * L_sz:
-                return beta_da * Lcs
-        return 0
-    # dilution function for fast zone
-    Lcf = 0
-    def fast_zone_dilution(t):
-        if dilution_on:
-            if Lcf >= 0 and Lcf <= l_sa_fm * L_sz:
-                # print("Lcf", Lcf)
-                return beta_sa_fm * Lcf
-            elif Lcf >= l_das * L_sz and Lcf <= l_dae * L_sz:
-                return beta_da * Lcf
-        return 0
-
     # create dilution reservoir
     fuel.TP = T_i, P_i
     fuel.set_equivalence_ratio(0, X_fuel, X_air)
     dilution_air = ct.Reservoir(fuel)
-    mfc_sm = ct.MassFlowController(dilution_air, slow_mixing, mdot=slow_zone_dilution)
-    mfc_fm = ct.MassFlowController(dilution_air, fast_mixing, mdot=fast_zone_dilution)
+    mfc_sm = ct.MassFlowController(dilution_air, slow_mixing, mdot=slow_mixing.get_mass_flow_rate)
+    mfc_fm = ct.MassFlowController(dilution_air, fast_mixing, mdot=fast_mixing.get_mass_flow_rate)
     # create network
-    netf = new_network([fast_mixing,])
-    # vector of locations
-    zf = [0.0]
-    uf = [u]
-    # integrate over length
-    ctr = 1
+    net = new_network([slow_mixing, fast_mixing,])
     # solution array for combustor
-    fast_mixing_states = ct.SolutionArray(fast_mixing.thermo, extra=["U", "z", "t"])
-    fast_mixing_states.append(fast_mixing.thermo.state, U=uf[0], z=zf[0], t=0.0)
-    while Lcf <= L_sz:
-        # perform time integration
-        netf.advance(ctr * dt)
-        # compute velocity and transform into space
-        uf.append(m_dot / A_sz / fast_mixing.thermo.density)
-        # locations
-        zf.append(zf[ctr - 1] + uf[ctr] * dt)
-        Lcf = zf[ctr]
-        # update array
-        fast_mixing_states.append(fast_mixing.thermo.state, U=uf[ctr], z=zf[ctr], t=ctr*dt)
-        ctr += 1
+    fast_mixing_states = ct.SolutionArray(fast_mixing.thermo, extra=["z", "mdot", "t"])
+    slow_mixing_states = ct.SolutionArray(slow_mixing.thermo, extra=["z", "mdot", "t"])
+    while fast_mixing.zloc < L_sz or slow_mixing.zloc < L_sz:
+        slow_mixing_states.append(slow_mixing.thermo.state, z=slow_mixing.zloc, t=0.0, mdot=slow_mixing.mass_flow_rate)
+        fast_mixing_states.append(fast_mixing.thermo.state, z=fast_mixing.zloc, t=0.0, mdot=fast_mixing.mass_flow_rate)
+        # take 10 steps before every record
+        for i in range(10):
+            net.step()
+    # write last state
+    slow_mixing_states.append(slow_mixing.thermo.state, z=slow_mixing.zloc, t=0.0, mdot=slow_mixing.mass_flow_rate)
+    fast_mixing_states.append(fast_mixing.thermo.state, z=fast_mixing.zloc, t=0.0, mdot=fast_mixing.mass_flow_rate)
     # write out state and reformat
     fm5 = os.path.join(outdir, f"fast-mixing-states{name_id}.hdf5")
     fast_mixing_states.save(fm5, overwrite=True, name="thermo")
     reformat_hdf5(fm5)
-    # create network
-    nets = new_network([slow_mixing,])
-    # vector of locations
-    zs = [0.0]
-    us = [u]
-    # integrate over length
-    ctr = 1
-    # solution array for combustor
-    slow_mixing_states = ct.SolutionArray(slow_mixing.thermo, extra=["U", "z", "t"])
-    slow_mixing_states.append(slow_mixing.thermo.state, U=uf[0], z=zf[0], t=0.0)
-    while Lcs <= L_sz:
-        # perform time integration
-        nets.advance(ctr * dt)
-        # compute velocity and transform into space
-        us.append(m_dot / A_sz / slow_mixing.thermo.density)
-        # locations
-        zs.append(zs[ctr - 1] + us[ctr] * dt)
-        Lcs = zs[ctr]
-        # update array
-        slow_mixing_states.append(slow_mixing.thermo.state, U=us[ctr], z=zs[ctr], t=ctr*dt)
-        ctr += 1
     # write out state and reformat
     sm5 = os.path.join(outdir, f"slow-mixing-states{name_id}.hdf5")
     slow_mixing_states.save(sm5, overwrite=True, name="thermo")
@@ -372,7 +316,7 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     for q in quantities[1:]:
         Q += q
     fuel.TPX = Q.TPX
-    # print_state_TP(fuel.TP[0], fuel.TP[1], "2sz")
+    print_state_TP(fuel.TP[0], fuel.TP[1], "2sz")
     thermo_states["T"].append(fuel.TP[0])
     thermo_states["P"].append(fuel.TP[1])
     # make and return combustor reactor
@@ -381,9 +325,7 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     combustor.volume = slow_mixing.volume + fast_mixing.volume
     adjust_volume_to_preserve_mass(combustor, total_mass)
     assert numpy.isclose(combustor.mass, total_mass)
-
     return combustor, thermo_states
-    # return (0, 0)
 
 
 def combustor_atm_sim(equiv_ratio, nsteps, farnesane, sulfur, outdir, fmodel="combustor-min.yaml"):
