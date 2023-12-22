@@ -155,22 +155,26 @@ def adjust_volume_to_preserve_mass(r, tm):
             vm = False
             vp = False
 
+
 def get_mass_flow_thrust_data(thrust_level):
-    cycle_data = pd.read_csv(os.path.join(DATA_DIR, "verification", 'CFM56-5B-737.csv'), delimiter=", ", engine="python")
+    cycle_data = pd.read_csv(os.path.join(DATA_DIR, "verification", 'CFM56-7B-737.csv'), delimiter=",", engine="python")
     ma = cycle_data['W3[kg/s]'].values
     mf = cycle_data['Wf[kg/s]'].values
     thrust = cycle_data['NetThrust[kN]']
     thrust_percents = thrust / numpy.amax(thrust)
     zipped = list(zip(thrust_percents, thrust, mf, ma))
     thrust_percents, thrust, mf, ma = zip(*sorted(zipped, key=lambda x: x[0]))
-    # itf
+    # interpolate for values
     mdot_fuel_func = interp1d(thrust_percents, mf)
     mdot_air_func = interp1d(thrust_percents, ma)
+    thrust_func = interp1d(thrust_percents, thrust)
+    thrust = thrust_func(thrust_level)
     mdot_fuel = mdot_fuel_func(thrust_level)
     mdot_air = mdot_air_func(thrust_level)
     mdot_fuel_to = mf[-1]
     mdot_air_to = ma[-1]
     return mdot_fuel, mdot_air, mdot_fuel_to, mdot_air_to
+
 
 def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     # default parameters
@@ -207,6 +211,7 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     # fraction of total air
     f_air_pz = m_dot_fuel_takeoff / (m_dot_air_takeoff * equiv_pz * FARst)
     f_air_sa = m_dot_fuel_takeoff / (equiv_sec_zone * FARst * m_dot_air_takeoff)
+
     # update mass flow rates
     m_dot_air = m_dot_air * f_air_pz
     m_dot = m_dot_air + m_dot_fuel
@@ -217,8 +222,10 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     beta_sa_sm = f_air_sa * f_sm * m_dot_air / (l_sa_sm * L_sz)
     beta_sa_fm = f_air_sa * f_fm * m_dot_air / (l_sa_fm * L_sz)
     beta_da = f_air_da * m_dot_air / (l_dae - l_das) / L_sz
+    print(thrust_level, beta_sa_fm, beta_sa_sm, beta_da)
     # calculate phi values
-    norm_dist = stats.norm(loc=equiv_mean, scale=mixing_param * equiv_mean)
+    lower_bound = (0 - equiv_mean) / (mixing_param * equiv_mean)
+    norm_dist = stats.truncnorm(lower_bound, 5, loc=equiv_mean, scale=mixing_param * equiv_mean)
     phis = numpy.linspace(norm_dist.ppf(0.01), norm_dist.ppf(0.99), n_pz)
     thermo_states["phi_distribution"] = [float(p) for p in phis]
     # calculate mass flows
@@ -261,7 +268,7 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     for q in quantities[1:]:
         Q += q
     fuel.TPX = Q.TPX
-    print_state_TP(fuel.TP[0], fuel.TP[1], "2pz")
+    # print_state_TP(fuel.TP[0], fuel.TP[1], "2pz")
     thermo_states["T"].append(fuel.TP[0])
     thermo_states["P"].append(fuel.TP[1])
     # PFR representing the rest of the combustor
@@ -286,22 +293,22 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     dilution_on = True
     def slow_zone_dilution(t):
         if dilution_on:
-            mdt = beta_sa_sm * Lcs
-            if Lcs >= l_das * L_sz and Lcs <= l_dae * L_sz:
-                mdt += beta_da * Lcs
-            return mdt
-        else:
-            return 0
+            if Lcs >= 0 and Lcs <= l_sa_sm * L_sz:
+                return beta_sa_sm * Lcs
+            elif Lcs >= l_das * L_sz and Lcs <= l_dae * L_sz:
+                return beta_da * Lcs
+        return 0
     # dilution function for fast zone
     Lcf = 0
     def fast_zone_dilution(t):
         if dilution_on:
-            mdt = beta_sa_fm * Lcf
-            if Lcf >= l_das * L_sz and Lcf <= l_dae * L_sz:
-                mdt += beta_da * Lcf
-            return mdt
-        else:
-            return 0
+            if Lcf >= 0 and Lcf <= l_sa_fm * L_sz:
+                # print("Lcf", Lcf)
+                return beta_sa_fm * Lcf
+            elif Lcf >= l_das * L_sz and Lcf <= l_dae * L_sz:
+                return beta_da * Lcf
+        return 0
+
     # create dilution reservoir
     fuel.TP = T_i, P_i
     fuel.set_equivalence_ratio(0, X_fuel, X_air)
@@ -365,7 +372,7 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     for q in quantities[1:]:
         Q += q
     fuel.TPX = Q.TPX
-    print_state_TP(fuel.TP[0], fuel.TP[1], "2sz")
+    # print_state_TP(fuel.TP[0], fuel.TP[1], "2sz")
     thermo_states["T"].append(fuel.TP[0])
     thermo_states["P"].append(fuel.TP[1])
     # make and return combustor reactor

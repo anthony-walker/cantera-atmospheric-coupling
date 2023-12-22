@@ -60,7 +60,7 @@ def mixing_box_model_verification():
     plt.xlim([10e-4, 10])
     plt.ylim([0.01, 10])
     # load data
-    with open(os.path.join(DATA_DIR, "box-model-verification.csv"), "r") as f:
+    with open(os.path.join(DATA_DIR, "verification", "box-model-verification.csv"), "r") as f:
         rdr = csv.reader(f)
         next(rdr)
         next(rdr)
@@ -106,12 +106,13 @@ def combustor_design_params():
 def parallel_run_combustor(x):
     fuel, equiv_ratio, X_fuel, X_air = combustor_design_params()
     out_dir = ver_dir = os.path.join(DATA_DIR, "verification")
-    try:
-        print(f"Running thrust-level: {x:.3f}")
-        combustor, thermo_states = multizone_combustor(fuel, x, equiv_ratio, X_fuel, X_air, n_pz=25, name_id=f"-verification-{x:0.1f}", outdir=out_dir)
-    except:
-        print(f"Failed for Thrust-level: {x:.3f}")
-        return None
+    # try:
+    print(f"Running thrust-level: {x:.3f}")
+    combustor, thermo_states = multizone_combustor(fuel, x, equiv_ratio, X_fuel, X_air, n_pz=21, name_id=f"-verification-{x:0.1f}", outdir=out_dir)
+    # except Exception as e:
+    #     print(f"Failed for Thrust-level: {x:.3f}")
+    #     # print(e)
+    #     return None
     return (combustor.thermo.state, combustor.mass, thermo_states, x)
 
 
@@ -125,7 +126,9 @@ def combustor_verification(regenerate):
     if not os.path.isdir(ver_dir):
         os.mkdir(ver_dir)
     fuel, equiv_ratio, X_fuel, X_air = combustor_design_params()
-    thrust_levels = numpy.linspace(0.175, 1.0, 4)
+    thrust_levels = numpy.linspace(0.1, 1.0, 10)
+    thrust_levels = [0.5]
+    # thrust_levels = numpy.array([0.07, 0.3, 0.65, 0.85, 1.0])
     if not os.path.isfile(cbs) or regenerate:
         # run in parallel
         with mp.Pool(os.cpu_count()) as pool:
@@ -156,6 +159,17 @@ def combustor_verification(regenerate):
     ax.set_ylabel("Temperature [K]")
     ax.set_xlabel("Equivalence Ratio")
     fig.savefig(os.path.join(ver_dir, f"T-profiles.pdf"), bbox_inches='tight')
+    plt.close()
+
+    # mass flow fraction profiles
+    fig, ax = plt.subplots()
+    for i, k in enumerate(yaml_data.keys()):
+        ldata = yaml_data[k]
+        ax.plot(ldata["phi_distribution"], ldata["mass_flow_fraction_distribution"], color=COLORS[i], label=f"{float(k.split('-')[-1]):.2f}")
+    ax.legend(ncols=1, bbox_to_anchor=(1.2, 1.03))
+    ax.set_ylabel("Fraction of Total Mass Flow")
+    ax.set_xlabel("Equivalence Ratio")
+    fig.savefig(os.path.join(ver_dir, f"mass-flow-fraction-profiles.pdf"), bbox_inches='tight')
     plt.close()
 
     # create plot with generated data
@@ -189,12 +203,12 @@ def combustor_verification(regenerate):
         next(reader)
         co_x, co_y = zip(*list(map(lambda x: (float(x[0])/100, float(x[1])), reader)))
     # plot
-    axes[1].plot(thrust_levels, co_ratio, color=COLORS[0], label="Model prediction")
+    axes[1].plot(thrust_levels[::-1], co_ratio, color=COLORS[0], label="Model prediction")
     axes[1].plot(co_x, co_y, color=COLORS[1], linestyle="", marker="o", label="EDB data")
     axes[1].set_xlabel("Mass Flow Fraction")
     axes[1].set_ylabel("EI CO [g/$\\text{kg}_{\\text{fuel}}$]")
     plt.subplots_adjust(wspace=0.25)
-    plt.show()
+    # plt.show()
 
 def convert_mission_out():
     ver_dir = os.path.join(DATA_DIR, "verification")
@@ -210,6 +224,15 @@ def convert_mission_out():
     with open(os.path.join(ver_dir, "CFM56-5B-737.csv"), "w") as f:
         f.write(content)
 
+def check_thrust():
+    cycle_data = pd.read_csv(os.path.join(DATA_DIR, "verification", 'CFM56-7B-737.csv'), delimiter=",", engine="python")
+    ma = cycle_data['W3[kg/s]'].values
+    mf = cycle_data['Wf[kg/s]'].values
+    thrust = cycle_data['NetThrust[kN]'].values
+    for i, j, k in zip(ma, mf, thrust):
+        print(i, j, k)
+
 
 if __name__ == "__main__":
-    get_mass_flow_thrust_data(0.5)
+    # get_mass_flow_thrust_data(0.5)
+    check_thrust()
