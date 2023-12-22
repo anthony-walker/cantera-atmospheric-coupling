@@ -160,3 +160,4 @@ cython_debug/
 #.idea/
 study/rmg/*
 !study/rmg/input_rmg.py
+*mixing*.hdf5

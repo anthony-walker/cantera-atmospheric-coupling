@@ -1,14 +1,18 @@
 import os
 import sys
+import csv
 import h5py
 import yaml
 import copy
 import click
 import numpy
 import warnings
+import pandas as pd
 import cantera as ct
 import scipy.stats as stats
 from scipy.optimize import fsolve
+from scipy.optimize import curve_fit
+from scipy.interpolate import interp1d
 import matplotlib.pyplot as plt
 from cac.constants import DATA_DIR
 from cac.reactors import PlumeSolution, PlumeReactor
@@ -151,6 +155,22 @@ def adjust_volume_to_preserve_mass(r, tm):
             vm = False
             vp = False
 
+def get_mass_flow_thrust_data(thrust_level):
+    cycle_data = pd.read_csv(os.path.join(DATA_DIR, "verification", 'CFM56-5B-737.csv'), delimiter=", ", engine="python")
+    ma = cycle_data['W3[kg/s]'].values
+    mf = cycle_data['Wf[kg/s]'].values
+    thrust = cycle_data['NetThrust[kN]']
+    thrust_percents = thrust / numpy.amax(thrust)
+    zipped = list(zip(thrust_percents, thrust, mf, ma))
+    thrust_percents, thrust, mf, ma = zip(*sorted(zipped, key=lambda x: x[0]))
+    # itf
+    mdot_fuel_func = interp1d(thrust_percents, mf)
+    mdot_air_func = interp1d(thrust_percents, ma)
+    mdot_fuel = mdot_fuel_func(thrust_level)
+    mdot_air = mdot_air_func(thrust_level)
+    mdot_fuel_to = mf[-1]
+    mdot_air_to = ma[-1]
+    return mdot_fuel, mdot_air, mdot_fuel_to, mdot_air_to
 
 def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     # default parameters
@@ -160,8 +180,7 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     mixing_param = kwargs.get("mixing_param", 0.39) # mixing parameter
     volume = kwargs.get("volume", 0.0023) # m^3
     BPR = kwargs.get("BPR", 5.2)
-    m_dot_fuel_takeoff = kwargs.get("m_dot_fuel_takeoff", 1.086) #  kg / s
-    m_dot_fuel = thrust_level * m_dot_fuel_takeoff
+    m_dot_fuel, m_dot_air, m_dot_fuel_takeoff, m_dot_air_takeoff = get_mass_flow_thrust_data(thrust_level)
     assert thrust_level <= 1.0
     equiv_sec_zone = kwargs.get("equiv_sz", 0.7)
     outdir = kwargs.get("outdir", "./")
@@ -179,26 +198,20 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     # calculate total mass flow rate
     akeys = [fuel.species_index(x.split(":")[0].strip()) for x in X_air.split(",")]
     fkeys = [fuel.species_index(x.split(":")[0].strip()) for x in X_fuel.split(",")]
-    # take off values
-    fuel.set_equivalence_ratio(equiv_pz, X_fuel, X_air)
-    m_dot_takeoff = numpy.sum(m_dot_fuel_takeoff / fuel.Y[fkeys])
-    m_dot_air_takeoff = numpy.sum(m_dot_takeoff * fuel.Y[akeys])
-    m_dot_air_total = m_dot_air_takeoff * BPR
     # stoichiometric values
     fuel.set_equivalence_ratio(1.0, X_fuel, X_air)
     m_dot_fuel_st = m_dot_fuel_takeoff
     m_dot_st = numpy.sum(m_dot_fuel_st / fuel.Y[fkeys])
     m_dot_air_st= numpy.sum(m_dot_st * fuel.Y[akeys])
     FARst = m_dot_fuel_st / m_dot_air_st
-    # now determine mean equiv ratio with takeoff air and mdot fuel
-    equiv_mean = (m_dot_fuel / m_dot_air_takeoff) / (m_dot_fuel_st / m_dot_air_st)
-    print(equiv_mean)
-    fuel.set_equivalence_ratio(equiv_mean, X_fuel, X_air)
-    m_dot = numpy.sum(m_dot_fuel / fuel.Y[fkeys])
-    m_dot_air = numpy.sum(m_dot * fuel.Y[akeys])
     # fraction of total air
-    f_air_pz = m_dot_air / m_dot_air_total
-    f_air_sa = m_dot_fuel_takeoff / (equiv_sec_zone * FARst * m_dot_air_total)
+    f_air_pz = m_dot_fuel_takeoff / (m_dot_air_takeoff * equiv_pz * FARst)
+    f_air_sa = m_dot_fuel_takeoff / (equiv_sec_zone * FARst * m_dot_air_takeoff)
+    # update mass flow rates
+    m_dot_air = m_dot_air * f_air_pz
+    m_dot = m_dot_air + m_dot_fuel
+    # now determine mean equiv ratio with takeoff air and mdot fuel
+    equiv_mean = m_dot_fuel / (m_dot_air * FARst)
     # calculated parameters
     f_air_da = 1 - f_air_sa - f_air_pz
     beta_sa_sm = f_air_sa * f_sm * m_dot_air / (l_sa_sm * L_sz)
@@ -209,7 +222,7 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     phis = numpy.linspace(norm_dist.ppf(0.01), norm_dist.ppf(0.99), n_pz)
     thermo_states["phi_distribution"] = [float(p) for p in phis]
     # calculate mass flows
-    mass_flow_fractions = norm_dist.pdf(phis) * (phis[1] - phis[0])
+    mass_flow_fractions = (1 / (mixing_param * numpy.sqrt(2*numpy.pi))) * numpy.exp(- (phis - equiv_mean) ** 2 / (2 * mixing_param ** 2 )) * (phis[1] - phis[0])
     mfs = mass_flow_fractions * m_dot
     # add to thermo states
     thermo_states["mass_flow_fraction_distribution"] = [float(p) for p in mass_flow_fractions]
@@ -248,7 +261,7 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     for q in quantities[1:]:
         Q += q
     fuel.TPX = Q.TPX
-    # print_state_TP(fuel.TP[0], fuel.TP[1], "2pz")
+    print_state_TP(fuel.TP[0], fuel.TP[1], "2pz")
     thermo_states["T"].append(fuel.TP[0])
     thermo_states["P"].append(fuel.TP[1])
     # PFR representing the rest of the combustor
@@ -352,7 +365,7 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     for q in quantities[1:]:
         Q += q
     fuel.TPX = Q.TPX
-    # print_state_TP(fuel.TP[0], fuel.TP[1], "2sz")
+    print_state_TP(fuel.TP[0], fuel.TP[1], "2sz")
     thermo_states["T"].append(fuel.TP[0])
     thermo_states["P"].append(fuel.TP[1])
     # make and return combustor reactor
@@ -363,6 +376,7 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     assert numpy.isclose(combustor.mass, total_mass)
 
     return combustor, thermo_states
+    # return (0, 0)
 
 
 def combustor_atm_sim(equiv_ratio, nsteps, farnesane, sulfur, outdir, fmodel="combustor-min.yaml"):
@@ -530,6 +544,27 @@ def combustor_atm_sim(equiv_ratio, nsteps, farnesane, sulfur, outdir, fmodel="co
     ah5 = os.path.join(outdir, "combustor", f"atms-states-{equiv_ratio:.1f}-{farnesane:.2f}-{sulfur:.4f}.hdf5")
     atms_states.save(ah5, overwrite=True, name="thermo")
     reformat_hdf5(ah5)
+
+def curve_fit_thrust_data(xval=0, mdot=1.086, test=False):
+    with open(os.path.join(DATA_DIR, "thrust-data.csv"), "r")  as f:
+        reader = csv.reader(f)
+        next(reader)
+        next(reader)
+        data = list(map(lambda x: (float(x[0]), float(x[1])), reader))
+    xd, yd = zip(*data) # thrust level, mfraction
+    yd = numpy.array(yd) / numpy.amax(yd) * mdot
+    def func(x, a, b):
+        return a + b * numpy.log(x) + 0.103
+    popt, pcov = curve_fit(func, xd, yd)
+    if test:
+        x = numpy.linspace(0.01, 1.0, 10)
+        y = [func(xi, popt[0], popt[1]) for xi in x]
+        plt.plot(x, y)
+        plt.show()
+        print(x, y)
+    return func(xval, popt[0], popt[1])
+
+
 
 if __name__ == "__main__":
     run_combustor_atm_sim()

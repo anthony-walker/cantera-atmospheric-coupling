@@ -1,15 +1,19 @@
 import os
+import re
 import csv
 import h5py
 import yaml
 import numpy
 import click
 import warnings
+import pandas as pd
 import cantera as ct
 import multiprocessing as mp
 import matplotlib.pyplot as plt
+from scipy.interpolate import interp1d
 from cac.constants import DATA_DIR, COLORS
 from cac.combustor import multizone_combustor
+from cac.combustor import curve_fit_thrust_data
 from cac.reactors import PlumeSolution, PlumeReactor
 
 
@@ -80,10 +84,11 @@ def combustor_design_params():
     T_atm = 240 # K
     X_air = "O2:1.0, N2:3.76"
     X_fuel = ", ".join([f'{k}:{v}'for k, v in {"NC10H22":0.4267, "IC8H18":0.3302, "C7H8":0.2431}.items()])
+    X_fuel = "POSF10325:1.0"
     # create path to fuel model
-    fuel_model = os.path.join(DATA_DIR, "jetfuel.yaml")
-    fuel_model = "h2o2.yaml"
-    X_fuel = "H2:1.0"
+    fuel_model = os.path.join(DATA_DIR, "A2NOx.yaml")
+    # fuel_model = "h2o2.yaml"
+    # X_fuel = "H2:1.0"
     # creation of fuel thermo object
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
@@ -101,25 +106,26 @@ def combustor_design_params():
 def parallel_run_combustor(x):
     fuel, equiv_ratio, X_fuel, X_air = combustor_design_params()
     out_dir = ver_dir = os.path.join(DATA_DIR, "verification")
-    # try:
-    print(f"Running thrust-level: {x:.3f}")
-    combustor, thermo_states = multizone_combustor(fuel, x, equiv_ratio, X_fuel, X_air, n_pz=21, name_id=f"-verification-{x:0.1f}", outdir=out_dir)
-    # except:
-    #     print(f"Failed for Thrust-level: {x:.3f}")
-    #     return None
+    try:
+        print(f"Running thrust-level: {x:.3f}")
+        combustor, thermo_states = multizone_combustor(fuel, x, equiv_ratio, X_fuel, X_air, n_pz=25, name_id=f"-verification-{x:0.1f}", outdir=out_dir)
+    except:
+        print(f"Failed for Thrust-level: {x:.3f}")
+        return None
     return (combustor.thermo.state, combustor.mass, thermo_states, x)
 
 
 @click.command()
 @click.option('--regenerate', is_flag=True, help='Regenerate verification data')
 def combustor_verification(regenerate):
+    # curve_fit_thrust_data(test=True)
     ver_dir = os.path.join(DATA_DIR, "verification")
     cbs = os.path.join(ver_dir, f"combustor-verification.hdf5")
     yfile = os.path.join(ver_dir, "combustor-verification.yaml")
     if not os.path.isdir(ver_dir):
         os.mkdir(ver_dir)
     fuel, equiv_ratio, X_fuel, X_air = combustor_design_params()
-    thrust_levels = numpy.linspace(0.1, 1.0, 10)
+    thrust_levels = numpy.linspace(0.175, 1.0, 4)
     if not os.path.isfile(cbs) or regenerate:
         # run in parallel
         with mp.Pool(os.cpu_count()) as pool:
@@ -141,24 +147,69 @@ def combustor_verification(regenerate):
     # create plots of profiles from yaml
     with open(yfile, "r") as f:
         yaml_data = yaml.load(f, Loader=yaml.SafeLoader)
-
+    # temperature profiles
     fig, ax = plt.subplots()
     for i, k in enumerate(yaml_data.keys()):
         ldata = yaml_data[k]
-        ax.plot(ldata["phi_distribution"], ldata["mass_flow_fraction_distribution"], color=COLORS[i])
+        ax.plot(ldata["phi_distribution"], ldata["temperature_distribution"], color=COLORS[i], label=f"{float(k.split('-')[-1]):.2f}")
+    ax.legend(ncols=1, bbox_to_anchor=(1.2, 1.03))
+    ax.set_ylabel("Temperature [K]")
+    ax.set_xlabel("Equivalence Ratio")
+    fig.savefig(os.path.join(ver_dir, f"T-profiles.pdf"), bbox_inches='tight')
+    plt.close()
+
+    # create plot with generated data
+    with h5py.File(cbs, "r") as hf:
+        Y_data = hf["thermo"]["data"]["Y"]
+        mass_data = hf["thermo"]["data"]["mass"]
+        fuel_mass_data = hf["thermo"]["data"]["fuel_mass"]
+        mdot_data = hf["thermo"]["data"]["mdot"]
+        thrust_levels = numpy.array(hf["thermo"]["data"]["TL"])
+        # compute NOx
+        mass_nox = Y_data[:, fuel.species_index("NO")] * mass_data * 1000 # grams
+        nox_ratio = mass_nox / fuel_mass_data
+        mass_co = Y_data[:, fuel.species_index("CO")] * mass_data * 1000 # grams
+        co_ratio = mass_co / fuel_mass_data
+    # plots
+    fig, axes = plt.subplots(1, 2)
+    with open(os.path.join(ver_dir, "NOX-data.csv")) as f:
+        reader = csv.reader(f)
+        next(reader)
+        next(reader)
+        nox_x, nox_y = zip(*list(map(lambda x: (float(x[0])/100, float(x[1])), reader)))
+    # plot
+    axes[0].plot(thrust_levels, nox_ratio, color=COLORS[0], label="Model prediction")
+    axes[0].plot(nox_x, nox_y, color=COLORS[1], linestyle="", marker="o", label="EDB data")
+    axes[0].set_xlabel("Mass Flow Fraction")
+    axes[0].set_ylabel("EI $\\text{NO}_x$ [g/$\\text{kg}_{\\text{fuel}}$]")
+
+    with open(os.path.join(ver_dir, "CO-data.csv")) as f:
+        reader = csv.reader(f)
+        next(reader)
+        next(reader)
+        co_x, co_y = zip(*list(map(lambda x: (float(x[0])/100, float(x[1])), reader)))
+    # plot
+    axes[1].plot(thrust_levels, co_ratio, color=COLORS[0], label="Model prediction")
+    axes[1].plot(co_x, co_y, color=COLORS[1], linestyle="", marker="o", label="EDB data")
+    axes[1].set_xlabel("Mass Flow Fraction")
+    axes[1].set_ylabel("EI CO [g/$\\text{kg}_{\\text{fuel}}$]")
+    plt.subplots_adjust(wspace=0.25)
     plt.show()
-    # # create plot with generated data
-    # with h5py.File(cbs, "r") as hf:
-    #     Y_data = hf["thermo"]["data"]["Y"]
-    #     mass_data = hf["thermo"]["data"]["mass"]
-    #     fuel_mass_data = hf["thermo"]["data"]["fuel_mass"]
-    #     mdot_data = hf["thermo"]["data"]["mdot"]
-    #     thrust_levels = hf["thermo"]["data"]["TL"]
-    #     # compute NOx
-    #     mass_nox = Y_data[:, fuel.species_index("NO2")] * mass_data * 1000 # grams
-    #     nox_ratio = mass_nox / fuel_mass_data
-    #     print(numpy.array(fuel_mass_data))
-    #     print(nox_ratio)
-    #     print(mass_nox)
+
+def convert_mission_out():
+    ver_dir = os.path.join(DATA_DIR, "verification")
+    fname = os.path.join(ver_dir, "CFM56_5B_737Mission.out")
+    with open(fname, "r") as f:
+        lines = f.read().split("\n")
+        headers = ", ".join(re.split("\s+", lines[2])[1:-1])
+        nls = [headers]
+        for l in lines[3:]:
+            r = re.split("\s+", l)[2:-1]
+            nls.append(", ".join(r))
+        content = "\n".join(nls)
+    with open(os.path.join(ver_dir, "CFM56-5B-737.csv"), "w") as f:
+        f.write(content)
+
+
 if __name__ == "__main__":
-    mixing_box_model_verification()
+    get_mass_flow_thrust_data(0.5)
