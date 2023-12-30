@@ -1,5 +1,6 @@
 import os
 import csv
+import datetime
 import cantera as ct
 import numpy as np
 from cac.constants import DATA_DIR
@@ -15,7 +16,12 @@ class PlumeReactor(ct.ExtensibleIdealGasConstPressureMoleReactor):
         self.enthalpy = []
         self.cp = []
         self.er_start = 0 # starting index for omega since time only moves forward
-        self.thermo.zenith_angle = 0
+        self.latitude = kwargs.get("latitude", 0)
+        self.longitude = kwargs.get("longitude", 0)
+        self.start_day = kwargs.get("start_day", 0)
+        self.start_time = kwargs.get("start_time", 0) # hours
+        self.thermo.zenith_angle = self.calculate_solar_zenith_angle(0)
+        self.zat = -1
         # open entrainment rate data
         self.entrainment = True
         with open(os.path.join(DATA_DIR, "entrainment-rates.csv"), "r") as f:
@@ -55,9 +61,32 @@ class PlumeReactor(ct.ExtensibleIdealGasConstPressureMoleReactor):
         logy = nlog(x/x1) * nlog(y2/y1) / nlog(x2/x1) + nlog(y1)
         return 10 ** logy
 
+    def calculate_solar_zenith_angle(self, t):
+        # calculate day number from start day, start time, and time
+        time = t / 3600 + self.start_time# convert to hours
+        days_ahead = time // 24
+        time = time % 24 # get time remainder
+        day_number = self.start_day + days_ahead # calculate day number
+        # Convert latitude and longitude to radians
+        latitude_rad = np.radians(self.latitude)
+        # Calculate the declination angle
+        declination = 23.45 * np.sin(np.radians((360/365) * (day_number - 81)))
+        # Calculate the time correction factor
+        time_correction = 4 * (self.longitude - 15 * 1) + 60 * 1
+        # Calculate the solar hour angle
+        solar_hour_angle = 15 * (time - 12) + time_correction
+        # Calculate the solar zenith angle
+        solar_zenith_angle = np.clip(np.mod(np.arccos(
+            np.sin(np.radians(latitude_rad)) * np.sin(np.radians(declination)) +
+            np.cos(np.radians(latitude_rad)) * np.cos(np.radians(declination)) * np.cos(np.radians(solar_hour_angle))
+        ), 2*np.pi), 0, np.pi / 2) - np.pi / 2
+        return solar_zenith_angle
+
     def after_eval(self, t, LHS, RHS):
         # updating zenith angle after eval
-        self.thermo.zenith_angle = np.clip(np.mod(2*np.pi*t / (24*60*60), 2*np.pi), 0, np.pi) - np.pi/2
+        if t != self.zat:
+            self.zat = t
+            self.thermo.zenith_angle = self.calculate_solar_zenith_angle(t)
         # entrainment model
         if self.entrainment:
             if len(self.state_air) == 0:
@@ -130,8 +159,8 @@ class DilutionReactor(ct.ExtensibleIdealGasConstPressureMoleReactor):
 
     def after_eval(self, t, LHS, RHS):
         # dz/dt evaluation
-        RHS[self.i_z] = self.mass_flow_rate / self.thermo.density / self.flow_area
-        RHS[self.i_mdot] = self.get_beta(self.zloc)
+        RHS[self.i_z] = self.mass_flow_rate / self.thermo.density / self.flow_area if self.zloc < self.total_length else 0
+        RHS[self.i_mdot] = self.get_beta(self.zloc) * RHS[self.i_z]
 
     def before_component_index(self, name):
         if name == 'zloc':
@@ -146,4 +175,8 @@ class DilutionReactor(ct.ExtensibleIdealGasConstPressureMoleReactor):
             return 'mdot'
 
     def get_mass_flow_rate(self, t):
-        return self.mass_flow_rate
+        if self.zloc >= 0 and self.zloc <= self.total_length * self.mixing_scale:
+            return self.mass_flow_rate
+        elif self.zloc >= self.dilution_scale_start * self.total_length and self.zloc <= self.total_length * self.dilution_scale_end:
+            return self.mass_flow_rate
+        return 0.0

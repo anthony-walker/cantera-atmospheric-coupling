@@ -139,7 +139,7 @@ def get_list_of_rate_data(prefix, dirname):
             fcn = fcn_template.format(rn, var_str, rate_str)
             functions.append(fcn)
         # set units for rate
-        # rate_data["units"] = {"length":"cm", "quantity":"molec", "activation-energy":"K"}
+        rate_data["units"] = {"length":"cm", "quantity":"molec", "activation-energy":"K"}
         returns.append(rate_data)
     # read in generic rates
     with open(pyrate_file, "r") as f:

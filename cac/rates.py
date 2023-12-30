@@ -1,7 +1,6 @@
 import re
 import os
 import sys
-import math
 import inspect
 import numpy as np
 import cantera as ct
@@ -20,7 +19,7 @@ class ZenithAngleData(ct.ExtensibleRateData):
     def update(self, gas):
         if self.zenith_angle != gas.zenith_angle:
             self.zenith_angle = gas.zenith_angle
-            self.cza = math.cos(self.zenith_angle)
+            self.cza = np.cos(self.zenith_angle)
             return True
         else:
             return False
@@ -28,13 +27,15 @@ class ZenithAngleData(ct.ExtensibleRateData):
 
 @ct.extension(name="zenith-angle-rate", data=ZenithAngleData)
 class ZenithAngleRate(ct.ExtensibleRate):
-    __slots__ = ("ell", "m", "n", "scalar")
+    __slots__ = ("ell", "m", "n", "scalar", "conversion")
 
     def set_parameters(self, node, units):
         self.ell = node["l"]
         self.m = node["m"]
         self.n = node["n"]
         self.scalar = node.get("scalar", 1)
+        system = ct.UnitSystem(node.get("units"))
+        self.conversion = system.convert_rate_coeff_to(1, units)
 
     def get_parameters(self, node):
         node["l"] = self.ell
@@ -43,7 +44,7 @@ class ZenithAngleRate(ct.ExtensibleRate):
         node["scalar"] = self.scalar
 
     def eval(self, data):
-        return self.ell * data.cza**self.m * math.exp(-self.n / data.cza) * self.scalar
+        return self.conversion * self.ell * data.cza**self.m * np.exp(-self.n / data.cza) * self.scalar
 
 
 class FunctionData(ct.ExtensibleRateData):
@@ -61,7 +62,7 @@ class FunctionData(ct.ExtensibleRateData):
 
 @ct.extension(name="function-rate", data=FunctionData)
 class FunctionRate(ct.ExtensibleRate):
-    __slots__ = ("function", "pyfile", "ro2_species", "fargs")
+    __slots__ = ("function", "pyfile", "ro2_species", "fargs", "conversion")
 
     def set_parameters(self, node, units):
         fcn_name = node["function"]
@@ -87,14 +88,12 @@ class FunctionRate(ct.ExtensibleRate):
         # assign function
         self.function = mcm_complex_funcs[fcn_name]
         self.fargs = inspect.getargspec(self.function).args
+        system = ct.UnitSystem(node.get("units"))
+        self.conversion = system.convert_rate_coeff_to(1, units)
 
 
     def get_parameters(self, node):
-        node["A"] = self.A
-        node["b"] = self.b
-        node["Ea"] = self.Ea
-        node["function-names"] = self.function_names
-        node["species-names"] = self.species_names
+        node["function"] = self.function.__name__
 
 
     def eval(self, data):
@@ -114,4 +113,4 @@ class FunctionRate(ct.ExtensibleRate):
                 built_args.append(data.thermo.concentrations[data.thermo.species_index(a)])
         rate = self.function(*built_args)
         # return the rate
-        return rate
+        return self.conversion * rate
