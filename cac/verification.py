@@ -289,62 +289,79 @@ def mcm_verification():
     volume = 1e3
     gas.TPX = 298, ct.one_atm, "O3:0.2, CO:0.2, O2:0.2, N2:0.2, H2O:0.2"
     # setup initial conditions as 30 ppbv O3 and 100 ppbv CO with 1% water vapor
-    r = PlumeReactor(gas)
+    r = PlumeReactor(gas, start_day=182)
     r.entrainment = False # Turn off entrainment
     r.volume = volume
     # setup reactor network
     net = ct.ReactorNet([r])
     net.max_steps = 1e7
     net.preconditioner = ct.AdaptivePreconditioner()
-    # set tolerances
-    # net.rtol = 1e-10
-    # net.atol = 1e-16
-    # setup time steps
-    nsteps = 10
-    ndays = 3
-    seconds = ndays * 24 * 3600 # convert days to seconds
-    steps = numpy.linspace(0, seconds, nsteps)
-    # setup solution array
-    arr = ct.SolutionArray(gas, extra=["t", "mass"])
-    arr.append(r.thermo.state, t=0.0, mass=r.mass)
-    # loop through all time steps
-    for t in numpy.linspace(0, seconds, 500): #for t in steps:
-        loop = True
-        while loop:
-            try:
-                print(f"Advancing to {t:0.2f}..")
-                net.advance(t)
-                net.max_time_step = 0
-                loop = False
-            except Exception as e:
-                print("Reducing max time step")
-                if net.max_time_step == 0:
-                    net.max_time_step == 1
-                else:
-                    net.max_time_step = net.max_time_step / 5
-        # append the state
-        arr.append(r.thermo.state, t=net.time, mass=r.mass)
-    # save hdf5 file
-    hdf5_file = os.path.join(ver_dir, "mcm.hdf5")
-    arr.save(hdf5_file, overwrite=True, name="thermo")
-    reformat_hdf5(hdf5_file)
-    # verification data
-    mcm_data = pd.read_csv(os.path.join(ver_dir, 'mcm-verification.csv'), engine="python")
-    mcm_time = mcm_data['TIME'].values
-    # print(gas.reactions()[0].rate_coeff_units)
-    # plot from arr object
-    fig, ax = plt.subplots()
-    mcm_o3 = mcm_data["O3"].values
-    o3_id = gas.species_index("O3")
-    ax.plot(arr.t / 24 / 3600, arr.Y[:, o3_id] * arr.D / gas.molecular_weights[o3_id] * 1e9, color=COLORS[1])
-    ax.set_xlim(0, 3)
-    ax.set_xticks(numpy.linspace(0, 3, 4))
-    # ax.set_xticklabels(labels)
-    # ax.plot(mcm_time, mcm_o3, color=COLORS[0], linestyle="", marker="o")
-    ax.set_xlabel("Time [days]")
-    ax.set_ylabel("$O_3$")
-    plt.show()
+    test_solar_zenith_angle()
+    # # set tolerances
+    # # net.rtol = 1e-10
+    # # net.atol = 1e-16
+    # # setup time steps
+    # nsteps = 10
+    # ndays = 3
+    # seconds = ndays * 24 * 3600 # convert days to seconds
+    # steps = numpy.linspace(0, seconds, nsteps)
+    # # setup solution array
+    # arr = ct.SolutionArray(gas, extra=["t", "mass"])
+    # arr.append(r.thermo.state, t=0.0, mass=r.mass)
+    # # loop through all time steps
+    # for t in numpy.linspace(0, seconds, 500): #for t in steps:
+    #     loop = True
+    #     while loop:
+    #         try:
+    #             # print(f"Advancing to {t:0.2f}..")
+    #             net.advance(t)
+    #             net.max_time_step = 100
+    #             loop = False
+    #         except Exception as e:
+    #             print("Reducing max time step")
+    #             if net.max_time_step == 0:
+    #                 net.max_time_step == 1
+    #             else:
+    #                 net.max_time_step = net.max_time_step / 5
+    #     # append the state
+    #     arr.append(r.thermo.state, t=net.time, mass=r.mass)
+    # # save hdf5 file
+    # hdf5_file = os.path.join(ver_dir, "mcm.hdf5")
+    # arr.save(hdf5_file, overwrite=True, name="thermo")
+    # reformat_hdf5(hdf5_file)
+    # # verification data
+    # mcm_data = pd.read_csv(os.path.join(ver_dir, 'mcm-verification.csv'), engine="python")
+    # mcm_time = mcm_data['TIME'].values
+    # # print(gas.reactions()[0].rate_coeff_units)
+    # # plot from arr object
+    # fig, ax = plt.subplots()
+    # mcm_o3 = mcm_data["O3"].values
+    # o3_id = gas.species_index("O3")
+    # ax.plot(arr.t / 24 / 3600, arr.Y[:, o3_id] * arr.D / gas.molecular_weights[o3_id] * 1e9, color=COLORS[1])
+    # ax.set_xlim(0, 3)
+    # ax.set_xticks(numpy.linspace(0, 3, 4))
+    # # ax.set_xticklabels(labels)
+    # # ax.plot(mcm_time, mcm_o3, color=COLORS[0], linestyle="", marker="o")
+    # ax.set_xlabel("Time [days]")
+    # ax.set_ylabel("$O_3$")
+    # plt.show()
 
+def test_solar_zenith_angle():
+    # setup reactor
+    ver_dir = os.path.join(DATA_DIR, "verification")
+    gas = PlumeSolution(os.path.join(ver_dir, "verification.yaml"))
+    # setup initial conditions as 30 ppbv O3 and 100 ppbv CO with 1% water vapor
+    r = PlumeReactor(gas, start_day=180)
+    # one week
+    hours = 168
+    times = list(range(hours))
+    angles = [numpy.rad2deg(r.calculate_solar_zenith_angle(t*3600)) for t in times] # a week of angles
+    fig, ax = plt.subplots()
+    stimes = [t*3600 for t in times]
+    ax.plot(stimes, angles)
+    ax.set_xticks([i * 3600 for i in range(0, 169, 24)])
+    ax.set_xticklabels([str(i) for i in range(168//24 + 1)])
+    plt.show()
 
 
 if __name__ == "__main__":

@@ -33,7 +33,6 @@ def get_photolysis_parameterization(photo_string):
     data = lines[0].split(" ")
     data = [re.sub(r"D", "e", d) for d in data]
     # add conversion into scalar to convert rate to m^3 / kmol /s
-    # scalar *= (ct.avogadro / 1e6)
     J, l, m, n = data
     return {"type": "zenith-angle-rate", "l": l, "m": m, "n": n, "scalar":str(scalar)}
 
@@ -111,7 +110,7 @@ def get_list_of_rate_data(prefix, dirname):
             rate_data =get_photolysis_parameterization(prate)
         elif re.fullmatch(arrhen_regex, rate):
             match = re.fullmatch(arrhen_regex, rate)
-            rate_data = {"rate-constant": {"A": 1, "b": 0.0, "Ea": 0.0}} # ct.avogadro / 1e6
+            rate_data = {"rate-constant": {"A": 1, "b": 0.0, "Ea": 0.0}}
             A = match.group("A")
             b = match.group("b")
             EaR = match.group("EaR")
@@ -119,7 +118,7 @@ def get_list_of_rate_data(prefix, dirname):
             rate_data["rate-constant"]["b"] = float(b) if b is not None else 0
             rate_data["rate-constant"]["Ea"] =  float(EaR) if EaR is not None else 0
         else:
-            cplx_rate = parse_expr(rate) # * (ct.avogadro / 1e6)
+            cplx_rate = parse_expr(rate)
             cplx_rate = cplx_rate.simplify()
             # get and sort arguments
             variables = [str(sym) for sym in cplx_rate.free_symbols]

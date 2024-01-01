@@ -5,21 +5,23 @@ import cantera as ct
 import numpy as np
 from cac.constants import DATA_DIR
 
+
 class PlumeSolution(ct.Solution):
     "Wrapper to allow assignment of custom attributes"
 
 class PlumeReactor(ct.ExtensibleIdealGasConstPressureMoleReactor):
 
     def __init__(self, label, *args, **kwargs):
+        # get some possible kwargs
+        self.latitude = kwargs.pop("latitude", 0)
+        self.longitude = kwargs.pop("longitude", 0)
+        self.start_day = kwargs.pop("start_day", 0)
+        self.start_time = kwargs.pop("start_time", 0) # hours
         super(PlumeReactor, self).__init__(label, *args, **kwargs)
         self.state_air = []
         self.enthalpy = []
         self.cp = []
         self.er_start = 0 # starting index for omega since time only moves forward
-        self.latitude = kwargs.get("latitude", 0)
-        self.longitude = kwargs.get("longitude", 0)
-        self.start_day = kwargs.get("start_day", 0)
-        self.start_time = kwargs.get("start_time", 0) # hours
         self.thermo.zenith_angle = self.calculate_solar_zenith_angle(0)
         self.zat = -1
         # open entrainment rate data
@@ -82,11 +84,13 @@ class PlumeReactor(ct.ExtensibleIdealGasConstPressureMoleReactor):
         ), 2*np.pi), 0, np.pi / 2) - np.pi / 2
         return solar_zenith_angle
 
-    def after_eval(self, t, LHS, RHS):
+    def replace_eval(self, t, LHS, RHS):
         # updating zenith angle after eval
         if t != self.zat:
             self.zat = t
             self.thermo.zenith_angle = self.calculate_solar_zenith_angle(t)
+        # evaluate original eval
+        self.default_eval(t, LHS, RHS)
         # entrainment model
         if self.entrainment:
             if len(self.state_air) == 0:
@@ -118,7 +122,6 @@ class PlumeReactor(ct.ExtensibleIdealGasConstPressureMoleReactor):
             # addition of value for species equation entrainment
             for i in range(len(moles)):
                 RHS[i+1] += omega_X * moles[i]
-
 
 class DilutionReactor(ct.ExtensibleIdealGasConstPressureMoleReactor):
     def __init__(self, *args, mdot, beta_da, beta_mixing, **kwargs):
