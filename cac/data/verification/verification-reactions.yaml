@@ -18,87 +18,6 @@ aerosol-reactions:
     length: cm
     quantity: molec
 atmosphere-reactions:
-- equation: CH3NO3 + OH => HCHO + NO2 + H2O
-  rate-constant:
-    A: 4e-13
-    Ea: -845.0
-    b: 0
-  units:
-    activation-energy: K
-    length: cm
-    quantity: molec
-- equation: CH3O2 + NO => CH3NO3
-  rate-constant:
-    A: 2.3e-15
-    Ea: 360.0
-    b: 0
-  units:
-    activation-energy: K
-    length: cm
-    quantity: molec
-- equation: CH3O2 + NO => CH3O + NO2
-  rate-constant:
-    A: 2.2977e-12
-    Ea: 360.0
-    b: 0
-  units:
-    activation-energy: K
-    length: cm
-    quantity: molec
-- equation: CH3O2 + NO3 => CH3O + NO2 + O2
-  rate-constant:
-    A: 1.2e-12
-    Ea: 0
-    b: 0
-  units:
-    activation-energy: K
-    length: cm
-    quantity: molec
-- equation: CH3OH + OH + O2 => HCHO + HO2 + H2O
-  rate-constant:
-    A: 2.85e-12
-    Ea: -345.0
-    b: 0
-  units:
-    activation-energy: K
-    length: cm
-    quantity: molec
-- equation: CH3OOH + OH => CH3O2 + H2O
-  rate-constant:
-    A: 3.18e-12
-    Ea: 190.0
-    b: 0
-  units:
-    activation-energy: K
-    length: cm
-    quantity: molec
-- equation: CH3OOH + OH => HCHO + OH + H2O
-  rate-constant:
-    A: 2.12e-12
-    Ea: 190.0
-    b: 0
-  units:
-    activation-energy: K
-    length: cm
-    quantity: molec
-- equation: CH4 + CL + O2 => CH3O2 + HCL
-  rate-constant:
-    A: 6.6e-12
-    Ea: -1240.0
-    b: 0
-  units:
-    activation-energy: K
-    length: cm
-    quantity: molec
-- equation: CH4 + OH + O2 => CH3O2 + H2O
-  rate-constant:
-    A: 1.85e-12
-    Ea: -1690.0
-    b: 0
-  units:
-    activation-energy: K
-    length: cm
-    quantity: molec
 - equation: H2 + OH + O2 => HO2 + H2O
   rate-constant:
     A: 7.7e-12
@@ -112,24 +31,6 @@ atmosphere-reactions:
   rate-constant:
     A: 2.9e-12
     Ea: -160.0
-    b: 0
-  units:
-    activation-energy: K
-    length: cm
-    quantity: molec
-- equation: HCHO + NO3 + O2 => CO + HNO3 + HO2
-  rate-constant:
-    A: 5.5e-16
-    Ea: 0
-    b: 0
-  units:
-    activation-energy: K
-    length: cm
-    quantity: molec
-- equation: HCHO + OH + O2 => CO + HO2 + H2O
-  rate-constant:
-    A: 5.4e-12
-    Ea: 135.0
     b: 0
   units:
     activation-energy: K
@@ -261,80 +162,8 @@ atmosphere-reactions:
     activation-energy: K
     length: cm
     quantity: molec
-- equation: CH3O + O2 => HCHO + HO2
-  function: KUNKNOWN2
-  pyfile: verification_rates.py
-  ro2file: verification-ro2-sum.txt
-  type: function-rate
-  units:
-    activation-energy: K
-    length: cm
-    quantity: molec
-- equation: CH3O2 + HO2 => CH3OOH + O2
-  function: KUNKNOWN3
-  pyfile: verification_rates.py
-  ro2file: verification-ro2-sum.txt
-  type: function-rate
-  units:
-    activation-energy: K
-    length: cm
-    quantity: molec
-- equation: CH3O2 + HO2 => HCHO + H2O + O2
-  function: KUNKNOWN4
-  pyfile: verification_rates.py
-  ro2file: verification-ro2-sum.txt
-  type: function-rate
-  units:
-    activation-energy: K
-    length: cm
-    quantity: molec
-- equation: CH3O2 + NO2 => CH3O2NO2
-  function: KUNKNOWN7
-  pyfile: verification_rates.py
-  ro2file: verification-ro2-sum.txt
-  type: function-rate
-  units:
-    activation-energy: K
-    length: cm
-    quantity: molec
-- equation: CH3O2 => CH3O + 0.5 O2
-  function: KUNKNOWN9
-  pyfile: verification_rates.py
-  ro2file: verification-ro2-sum.txt
-  type: function-rate
-  units:
-    activation-energy: K
-    length: cm
-    quantity: molec
-- equation: CH3O2 + 0.5 H2O => CH3OH + 0.75 O2
-  function: KUNKNOWN10
-  pyfile: verification_rates.py
-  ro2file: verification-ro2-sum.txt
-  type: function-rate
-  units:
-    activation-energy: K
-    length: cm
-    quantity: molec
-- equation: CH3O2 => HCHO + 0.5 H2O + 0.25 O2
-  function: KUNKNOWN11
-  pyfile: verification_rates.py
-  ro2file: verification-ro2-sum.txt
-  type: function-rate
-  units:
-    activation-energy: K
-    length: cm
-    quantity: molec
-- equation: CH3O2NO2 => CH3O2 + NO2
-  function: KUNKNOWN12
-  pyfile: verification_rates.py
-  ro2file: verification-ro2-sum.txt
-  type: function-rate
-  units:
-    activation-energy: K
-    length: cm
-    quantity: molec
 - equation: CO + OH + O2 => HO2 + CO2
-  function: KUNKNOWN19
+  function: KUNKNOWN0
   pyfile: verification_rates.py
   ro2file: verification-ro2-sum.txt
   type: function-rate
@@ -343,7 +172,7 @@ atmosphere-reactions:
     length: cm
     quantity: molec
 - equation: HNO3 + OH => NO3 + H2O
-  function: KUNKNOWN27
+  function: KUNKNOWN4
   pyfile: verification_rates.py
   ro2file: verification-ro2-sum.txt
   type: function-rate
@@ -353,7 +182,7 @@ atmosphere-reactions:
     quantity: molec
 - duplicate: true
   equation: HO2 + HO2 => H2O2 + O2
-  function: KUNKNOWN30
+  function: KUNKNOWN7
   pyfile: verification_rates.py
   ro2file: verification-ro2-sum.txt
   type: function-rate
@@ -363,7 +192,7 @@ atmosphere-reactions:
     quantity: molec
 - duplicate: true
   equation: HO2 + HO2 => H2O2 + O2
-  function: KUNKNOWN31
+  function: KUNKNOWN8
   pyfile: verification_rates.py
   ro2file: verification-ro2-sum.txt
   type: function-rate
@@ -372,7 +201,7 @@ atmosphere-reactions:
     length: cm
     quantity: molec
 - equation: HO2 + NO2 => HO2NO2
-  function: KUNKNOWN33
+  function: KUNKNOWN10
   pyfile: verification_rates.py
   ro2file: verification-ro2-sum.txt
   type: function-rate
@@ -381,7 +210,7 @@ atmosphere-reactions:
     length: cm
     quantity: molec
 - equation: HO2NO2 => HO2 + NO2
-  function: KUNKNOWN38
+  function: KUNKNOWN15
   pyfile: verification_rates.py
   ro2file: verification-ro2-sum.txt
   type: function-rate
@@ -390,7 +219,7 @@ atmosphere-reactions:
     length: cm
     quantity: molec
 - equation: HSO3 + O2 => HO2 + SO3
-  function: KUNKNOWN41
+  function: KUNKNOWN18
   pyfile: verification_rates.py
   ro2file: verification-ro2-sum.txt
   type: function-rate
@@ -399,7 +228,7 @@ atmosphere-reactions:
     length: cm
     quantity: molec
 - equation: N2O5 => NO2 + NO3
-  function: KUNKNOWN43
+  function: KUNKNOWN20
   pyfile: verification_rates.py
   ro2file: verification-ro2-sum.txt
   type: function-rate
@@ -408,7 +237,7 @@ atmosphere-reactions:
     length: cm
     quantity: molec
 - equation: NO + NO + O2 => NO2 + NO2
-  function: KUNKNOWN44
+  function: KUNKNOWN21
   pyfile: verification_rates.py
   ro2file: verification-ro2-sum.txt
   type: function-rate
@@ -417,7 +246,7 @@ atmosphere-reactions:
     length: cm
     quantity: molec
 - equation: NO + O => NO2
-  function: KUNKNOWN46
+  function: KUNKNOWN23
   pyfile: verification_rates.py
   ro2file: verification-ro2-sum.txt
   type: function-rate
@@ -426,7 +255,7 @@ atmosphere-reactions:
     length: cm
     quantity: molec
 - equation: NO + OH => HONO
-  function: KUNKNOWN48
+  function: KUNKNOWN25
   pyfile: verification_rates.py
   ro2file: verification-ro2-sum.txt
   type: function-rate
@@ -435,7 +264,7 @@ atmosphere-reactions:
     length: cm
     quantity: molec
 - equation: NO2 + NO3 => N2O5
-  function: KUNKNOWN49
+  function: KUNKNOWN26
   pyfile: verification_rates.py
   ro2file: verification-ro2-sum.txt
   type: function-rate
@@ -444,7 +273,7 @@ atmosphere-reactions:
     length: cm
     quantity: molec
 - equation: NO2 + O => NO3
-  function: KUNKNOWN52
+  function: KUNKNOWN29
   pyfile: verification_rates.py
   ro2file: verification-ro2-sum.txt
   type: function-rate
@@ -453,7 +282,7 @@ atmosphere-reactions:
     length: cm
     quantity: molec
 - equation: NO2 + OH => HNO3
-  function: KUNKNOWN54
+  function: KUNKNOWN31
   pyfile: verification_rates.py
   ro2file: verification-ro2-sum.txt
   type: function-rate
@@ -462,7 +291,7 @@ atmosphere-reactions:
     length: cm
     quantity: molec
 - equation: O + SO2 => SO3
-  function: KUNKNOWN60
+  function: KUNKNOWN37
   pyfile: verification_rates.py
   ro2file: verification-ro2-sum.txt
   type: function-rate
@@ -472,7 +301,7 @@ atmosphere-reactions:
     quantity: molec
 - duplicate: true
   equation: O + O2 => O3
-  function: KUNKNOWN61
+  function: KUNKNOWN38
   pyfile: verification_rates.py
   ro2file: verification-ro2-sum.txt
   type: function-rate
@@ -482,7 +311,7 @@ atmosphere-reactions:
     quantity: molec
 - duplicate: true
   equation: O + O2 => O3
-  function: KUNKNOWN62
+  function: KUNKNOWN39
   pyfile: verification_rates.py
   ro2file: verification-ro2-sum.txt
   type: function-rate
@@ -492,7 +321,7 @@ atmosphere-reactions:
     quantity: molec
 - duplicate: true
   equation: O1D => O
-  function: KUNKNOWN63
+  function: KUNKNOWN40
   pyfile: verification_rates.py
   ro2file: verification-ro2-sum.txt
   type: function-rate
@@ -502,7 +331,7 @@ atmosphere-reactions:
     quantity: molec
 - duplicate: true
   equation: O1D => O
-  function: KUNKNOWN64
+  function: KUNKNOWN41
   pyfile: verification_rates.py
   ro2file: verification-ro2-sum.txt
   type: function-rate
@@ -511,7 +340,7 @@ atmosphere-reactions:
     length: cm
     quantity: molec
 - equation: O1D + H2O => OH + OH
-  function: KUNKNOWN65
+  function: KUNKNOWN42
   pyfile: verification_rates.py
   ro2file: verification-ro2-sum.txt
   type: function-rate
@@ -520,7 +349,7 @@ atmosphere-reactions:
     length: cm
     quantity: molec
 - equation: OH + SO2 => HSO3
-  function: KUNKNOWN69
+  function: KUNKNOWN46
   pyfile: verification_rates.py
   ro2file: verification-ro2-sum.txt
   type: function-rate
@@ -529,50 +358,10 @@ atmosphere-reactions:
     length: cm
     quantity: molec
 photolysis-reactions:
-- equation: CH3NO3 => CH3O + NO2
-  l: '1.588e-06'
-  m: '1.154'
-  n: '0.318'
-  scalar: '1'
-  type: zenith-angle-rate
-  units:
-    activation-energy: K
-    length: cm
-    quantity: molec
-- equation: CH3OOH => CH3O + OH
-  l: '7.649e-06'
-  m: '0.682'
-  n: '0.279'
-  scalar: '1'
-  type: zenith-angle-rate
-  units:
-    activation-energy: K
-    length: cm
-    quantity: molec
 - equation: H2O2 => OH + OH
   l: '1.041e-05'
   m: '0.723'
   n: '0.279'
-  scalar: '1'
-  type: zenith-angle-rate
-  units:
-    activation-energy: K
-    length: cm
-    quantity: molec
-- equation: HCHO => CO + H2
-  l: '6.853e-05'
-  m: '0.477'
-  n: '0.323'
-  scalar: '1'
-  type: zenith-angle-rate
-  units:
-    activation-energy: K
-    length: cm
-    quantity: molec
-- equation: HCHO + 2.0 O2 => CO + HO2 + HO2
-  l: '4.642e-05'
-  m: '0.762'
-  n: '0.353'
   scalar: '1'
   type: zenith-angle-rate
   units:

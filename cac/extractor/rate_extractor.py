@@ -51,6 +51,7 @@ def get_list_of_rate_data(prefix, dirname):
     with open(generic_file, "r") as f:
         gen_rates = f.read().split("\n")[:-1]
     gen_dict = {}
+    vars_dict = {}
     for gr in gen_rates:
         grn, gexp = gr.split(":")
         grn = grn.strip()
@@ -72,9 +73,14 @@ def get_list_of_rate_data(prefix, dirname):
         expr = re.sub("[D]", "E", expr)
         expr = re.sub("LOG10", "log10", expr)
         expr = re.sub("EXP", "exp", expr)
-        expr = re.sub("M", "(O2 + N2)", expr)
+        # expr = re.sub("M", "(O2 + N2)", expr)
         parsed = parse_expr(expr).simplify()
+        gen_vars = [str(sym) for sym in parsed.free_symbols]
+        if "T" not in gen_vars:
+            gen_vars.append("T")
+        gen_vars.sort(reverse=True)
         gen_dict[gn] = str(parsed)
+        vars_dict[gn] = gen_vars
     # now add generic expressions to all rates and simplify
     srates = []
     for r in rates:
@@ -89,7 +95,7 @@ def get_list_of_rate_data(prefix, dirname):
         cr = re.sub("[D]", "E", cr)
         cr = re.sub("LOG10", "log10", cr)
         cr = re.sub("EXP", "exp", cr)
-        cr = re.sub("M", "(O2 + N2)", cr)
+        # cr = re.sub("M", "(O2 + N2)", cr)
         cr = re.sub(r"J[<](\d+)[>]", r"J\1", cr)
         cr = parse_expr(cr).simplify()
         srates.append(str(cr))
@@ -97,9 +103,7 @@ def get_list_of_rate_data(prefix, dirname):
     arrhen_regex = r"((?P<A>[-]?\d+([.]\d+(e[+-]\d+)?)?)[*]?|T[*][*](?P<b>[-]?\d+([.]\d+(e[+-]\d+)?)?)[*]?|exp[\(](?P<EaR>[-]?\d+([.]\d+(e[+-]\d+)?)?)[/][T][\)][*]?)+"
     returns = []
     functions = []
-    pyrate_file = os.path.join(os.path.dirname(__file__), "mcm_complex_rates.py")
     pyprefix = prefix.replace("-", "_")
-    pypref_file = os.path.join(dirname, f"{pyprefix}_rates.py")
     fcn_template = "\ndef KUNKNOWN{}({}):\n    return {}\n"
     repl_exp = "KUNKNOWN{}"
     # add to returns
@@ -141,10 +145,15 @@ def get_list_of_rate_data(prefix, dirname):
         rate_data["units"] = {"length":"cm", "quantity":"molec", "activation-energy":"K"}
         returns.append(rate_data)
     # read in generic rates
-    with open(pyrate_file, "r") as f:
-        mcm_complex_content = f.read()
-    for fcn in functions:
-        mcm_complex_content += fcn
+    pypref_file = os.path.join(dirname, f"{pyprefix}_rates.py")
+    fcn_template = "\ndef {}({}):\n    return {}\n"
+    for k, v in gen_dict.items():
+        var_str = ", ".join(vars_dict[k])
+        rate_str = re.sub("log10", "math.log10", v)
+        rate_str = re.sub("exp", "math.exp", rate_str)
+        fcn = fcn_template.format(k, var_str, rate_str)
+        functions.append(fcn)
+    mcm_complex_content = "import math\n\n" + "".join(functions)
     # write out all function rates
     with open(pypref_file, "w") as f:
         f.write(mcm_complex_content)

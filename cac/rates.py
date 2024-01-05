@@ -44,14 +44,16 @@ class ZenithAngleRate(ct.ExtensibleRate):
         node["scalar"] = self.scalar
 
     def eval(self, data):
-        return self.conversion * self.ell * data.cza**self.m * np.exp(-self.n / data.cza) * self.scalar
+        rate = self.ell * data.cza**self.m * np.exp(-self.n / data.cza) * self.scalar * self.conversion
+        return rate
 
 
 class FunctionData(ct.ExtensibleRateData):
-    __slots__ = ("thermo")
+    __slots__ = ("thermo", "M")
 
     def __init__(self):
         self.thermo = None
+        self.M = None
 
     def update(self, gas):
         if self.thermo != gas:
@@ -62,10 +64,12 @@ class FunctionData(ct.ExtensibleRateData):
 
 @ct.extension(name="function-rate", data=FunctionData)
 class FunctionRate(ct.ExtensibleRate):
-    __slots__ = ("function", "pyfile", "ro2_species", "fargs", "conversion")
+    __slots__ = ("function", "pyfile", "ro2_species", "fargs", "conversion", "mspecies")
 
     def set_parameters(self, node, units):
         fcn_name = node["function"]
+        # species that are a function of M
+        self.mspecies = {"O2":0.21, "N2":0.79, "H2O":0.01}
         # get ro2_species
         ro2_sumfile = node.get("ro2file", "")
         prefix = ro2_sumfile.split("-")[0]
@@ -109,8 +113,12 @@ class FunctionRate(ct.ExtensibleRate):
                 built_args.append(data.thermo.T)
             elif "RO2" == a:
                 built_args.append(ro2_sum)
+            elif  "M" == a:
+                built_args.append(data.thermo.M)
+            elif a in self.mspecies:
+                built_args.append(data.thermo.M * self.mspecies[a])
             else:
                 built_args.append(data.thermo.concentrations[data.thermo.species_index(a)])
-        rate = self.function(*built_args)
-        # return the rate
-        return self.conversion * rate
+        rate = self.function(*built_args) * self.conversion
+        # print(rate, self.conversion)
+        return rate

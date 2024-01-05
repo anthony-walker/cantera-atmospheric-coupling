@@ -10,6 +10,7 @@ import pandas as pd
 import cantera as ct
 import multiprocessing as mp
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 from scipy.interpolate import interp1d
 from cac.constants import DATA_DIR, COLORS
 from cac.combustor import multizone_combustor
@@ -127,8 +128,8 @@ def combustor_verification(regenerate):
         os.mkdir(ver_dir)
     fuel, equiv_ratio, X_fuel, X_air = combustor_design_params()
     thrust_levels = numpy.linspace(0.1, 1.0, 10)
-    thrust_levels = [1.0]
-    # thrust_levels = numpy.array([0.07, 0.3, 0.65, 0.85, 1.0])
+    thrust_levels = numpy.array([0.07, 0.3, 0.65, 0.85, 1.0])
+    thrust_levels = [0.07, 1.0]
     if not os.path.isfile(cbs) or regenerate:
         # run in parallel
         with mp.Pool(os.cpu_count()) as pool:
@@ -154,10 +155,12 @@ def combustor_verification(regenerate):
     fig, ax = plt.subplots()
     for i, k in enumerate(yaml_data.keys()):
         ldata = yaml_data[k]
-        ax.plot(ldata["phi_distribution"], ldata["temperature_distribution"], color=COLORS[i], label=f"{float(k.split('-')[-1]):.2f}")
+        ax.plot(ldata["phi_distribution"], ldata["temperature_distribution"], color=COLORS[i], label=f"{float(k.split('-')[-1]):.2f}", marker="o")
     ax.legend(ncols=1, bbox_to_anchor=(1.2, 1.03))
+    ax.set_yticks(numpy.arange(500, 2500, 500))
     ax.set_ylabel("Temperature [K]")
     ax.set_xlabel("Equivalence Ratio")
+    plt.grid(visible=True)
     fig.savefig(os.path.join(ver_dir, f"T-profiles.pdf"), bbox_inches='tight')
     plt.close()
 
@@ -165,10 +168,13 @@ def combustor_verification(regenerate):
     fig, ax = plt.subplots()
     for i, k in enumerate(yaml_data.keys()):
         ldata = yaml_data[k]
-        ax.plot(ldata["phi_distribution"], ldata["mass_flow_fraction_distribution"], color=COLORS[i], label=f"{float(k.split('-')[-1]):.2f}")
+        ax.plot(ldata["phi_distribution"], ldata["mass_flow_fraction_distribution"], color=COLORS[i], label=f"{float(k.split('-')[-1]):.2f}", marker="o")
     ax.legend(ncols=1, bbox_to_anchor=(1.2, 1.03))
     ax.set_ylabel("Fraction of Total Mass Flow")
     ax.set_xlabel("Equivalence Ratio")
+    plt.grid(visible=True)
+    ax.set_xlim([0, 3.5])
+    ax.set_xticks(numpy.arange(0, 3.5, 0.5))
     fig.savefig(os.path.join(ver_dir, f"mass-flow-fraction-profiles.pdf"), bbox_inches='tight')
     plt.close()
 
@@ -246,20 +252,45 @@ def combustor_verification(regenerate):
         next(rdr)
         next(rdr)
         zfv, Tfv, zsv, Tsv = [list(map(float, filter(lambda x: x, k))) for k in zip(*[r for r in rdr ])]
+    with open (os.path.join(ver_dir, "sz-temps-7.csv")) as f:
+        rdr = csv.reader(f)
+        next(rdr)
+        next(rdr)
+        zfvs, Tfvs, zsvs, Tsvs = [list(map(float, filter(lambda x: x, k))) for k in zip(*[r for r in rdr ])]
+    # 100% thrust temperature profiles
     fig, ax = plt.subplots()
-    ax.plot(z_fast_data, T_fast_data, color=COLORS[0], label="fast - 100%")
-    ax.plot(z_slow_data, T_slow_data, color=COLORS[1], label="slow - 100%")
-    ax.plot(z_fast_data_s, T_fast_data_s, color=COLORS[0], label="fast - 7%")
-    ax.plot(z_slow_data_s, T_slow_data_s, color=COLORS[1], label="slow - 7 %")
-    ax.plot(zfv, Tfv, color=COLORS[0], linestyle="", marker="o", label="fast source")
-    ax.plot(zsv, Tsv, color=COLORS[1], linestyle="", marker="o", label="slow source")
-
+    ax.plot(z_fast_data, T_fast_data, color=COLORS[0])
+    ax.plot(z_slow_data, T_slow_data, color=COLORS[1])
+    ax.plot(zfv, Tfv, color=COLORS[0], marker="o", linestyle="")
+    ax.plot(zsv, Tsv, color=COLORS[1], marker="o", linestyle="")
+    plt.grid(visible=True)
+    ax.set_xticks(numpy.arange(0, 100, 20))
     ax.set_xlim([0, 100.0])
     ax.set_xlabel("Length [%]")
     ax.set_ylabel("Temperature [K]")
-    ax.legend()
-
-    plt.show()
+    custom_lines = [Line2D([0], [0], color=COLORS[0], lw=2),
+                Line2D([0], [0], color=COLORS[1], lw=2),
+                Line2D([0], [0], color="k", lw=0, marker="o"),]
+    ax.legend(custom_lines, ["fast", "slow", "Source Data"], loc="upper right")
+    fig.savefig(os.path.join(ver_dir, f"pfr-temperature-profile-100.pdf"), bbox_inches='tight')
+    plt.close()
+    # 7% thrust temperature profiles
+    fig, ax = plt.subplots()
+    ax.plot(z_fast_data_s, T_fast_data_s, color=COLORS[0])
+    ax.plot(z_slow_data_s, T_slow_data_s, color=COLORS[1])
+    ax.plot(zfvs, Tfvs, color=COLORS[0], marker="o", linestyle="")
+    ax.plot(zsvs, Tsvs, color=COLORS[1], marker="o", linestyle="")
+    plt.grid(visible=True)
+    ax.set_xticks(numpy.arange(0, 100, 20))
+    ax.set_xlim([0, 100.0])
+    ax.set_xlabel("Length [%]")
+    ax.set_ylabel("Temperature [K]")
+    custom_lines = [Line2D([0], [0], color=COLORS[0], lw=2),
+                Line2D([0], [0], color=COLORS[1], lw=2),
+                Line2D([0], [0], color="k", lw=0, marker="o"),]
+    ax.legend(custom_lines, ["fast", "slow", "Source Data"], loc="upper right")
+    fig.savefig(os.path.join(ver_dir, f"pfr-temperature-profile-7.pdf"), bbox_inches='tight')
+    plt.close()
 
 def convert_mission_out():
     ver_dir = os.path.join(DATA_DIR, "verification")
@@ -286,65 +317,91 @@ def check_thrust():
 def mcm_verification():
     ver_dir = os.path.join(DATA_DIR, "verification")
     gas = PlumeSolution(os.path.join(ver_dir, "verification.yaml"))
-    volume = 1e3
-    gas.TPX = 298, ct.one_atm, "O3:0.2, CO:0.2, O2:0.2, N2:0.2, H2O:0.2"
+    volume = 1e4
+    gas.TPX = 298, ct.one_atm, "O2:0.205, N2:0.785, H2O:0.5"
+    atm_air = ct.Reservoir(gas)
+    scale = 5000
+    gas.X = f"O3: {0.225}, CO:{2.23}, O2:{1.0*scale}, N2:{3.76*scale}, H2O:{0.01*scale}"
     # setup initial conditions as 30 ppbv O3 and 100 ppbv CO with 1% water vapor
-    r = PlumeReactor(gas, start_day=182)
+    r = PlumeReactor(gas, start_day=182, no_change_species=["H2O", "O2", "N2"])
     r.entrainment = False # Turn off entrainment
     r.volume = volume
+    r.energy_enabled = False
+    # mfc = ct.MassFlowController(atm_air, r, mdot=100)
     # setup reactor network
     net = ct.ReactorNet([r])
-    net.max_steps = 1e7
+    net.max_steps = 1e8
     net.preconditioner = ct.AdaptivePreconditioner()
-    test_solar_zenith_angle()
-    # # set tolerances
-    # # net.rtol = 1e-10
-    # # net.atol = 1e-16
-    # # setup time steps
-    # nsteps = 10
-    # ndays = 3
-    # seconds = ndays * 24 * 3600 # convert days to seconds
-    # steps = numpy.linspace(0, seconds, nsteps)
-    # # setup solution array
-    # arr = ct.SolutionArray(gas, extra=["t", "mass"])
-    # arr.append(r.thermo.state, t=0.0, mass=r.mass)
-    # # loop through all time steps
-    # for t in numpy.linspace(0, seconds, 500): #for t in steps:
-    #     loop = True
-    #     while loop:
-    #         try:
-    #             # print(f"Advancing to {t:0.2f}..")
-    #             net.advance(t)
-    #             net.max_time_step = 100
-    #             loop = False
-    #         except Exception as e:
-    #             print("Reducing max time step")
-    #             if net.max_time_step == 0:
-    #                 net.max_time_step == 1
-    #             else:
-    #                 net.max_time_step = net.max_time_step / 5
-    #     # append the state
-    #     arr.append(r.thermo.state, t=net.time, mass=r.mass)
-    # # save hdf5 file
-    # hdf5_file = os.path.join(ver_dir, "mcm.hdf5")
-    # arr.save(hdf5_file, overwrite=True, name="thermo")
-    # reformat_hdf5(hdf5_file)
-    # # verification data
-    # mcm_data = pd.read_csv(os.path.join(ver_dir, 'mcm-verification.csv'), engine="python")
-    # mcm_time = mcm_data['TIME'].values
-    # # print(gas.reactions()[0].rate_coeff_units)
-    # # plot from arr object
-    # fig, ax = plt.subplots()
-    # mcm_o3 = mcm_data["O3"].values
-    # o3_id = gas.species_index("O3")
-    # ax.plot(arr.t / 24 / 3600, arr.Y[:, o3_id] * arr.D / gas.molecular_weights[o3_id] * 1e9, color=COLORS[1])
-    # ax.set_xlim(0, 3)
-    # ax.set_xticks(numpy.linspace(0, 3, 4))
-    # # ax.set_xticklabels(labels)
-    # # ax.plot(mcm_time, mcm_o3, color=COLORS[0], linestyle="", marker="o")
-    # ax.set_xlabel("Time [days]")
-    # ax.set_ylabel("$O_3$")
-    # plt.show()
+    net.derivative_settings = {"skip-flow-devices":True}
+    # set tolerances
+    net.rtol = 1e-10
+    net.atol = 1e-16
+    # setup time steps
+    nsteps = 10
+    ndays = 3
+    seconds = ndays * 24 * 3600 # convert days to seconds
+    steps = numpy.linspace(0, seconds, nsteps)
+    # setup solution array
+    arr = ct.SolutionArray(gas, extra=["t", "mass", "volume"])
+    arr.append(r.thermo.state, t=0.0, mass=r.mass, volume=r.volume)
+    # loop through all time steps
+    times = numpy.linspace(0, seconds, 500)
+    for i, t in enumerate(times[1:]): #for t in steps:
+        loop = True
+        failures = 0
+        net.max_time_step = 1000
+        while loop:
+            try:
+                print(f"Advancing to {t:0.2f}..")
+                net.advance(t)
+                loop = False
+            except Exception as e:
+                print(f"Failure {failures}: reducing max time step")
+                # reset reactor and network
+                r.thermo.TDX = arr[-1].TDX
+                r.syncState()
+                r.volume = arr[-1].volume
+                net.initial_time = times[i]
+                net.max_time_step = net.max_time_step / 5
+                failures += 1
+                if failures >= 20:
+                    break
+        # append the state
+        arr.append(r.thermo.state, t=net.time, mass=r.mass, volume=r.volume)
+    # save hdf5 file
+    hdf5_file = os.path.join(ver_dir, "mcm.hdf5")
+    arr.save(hdf5_file, overwrite=True, name="thermo")
+    reformat_hdf5(hdf5_file)
+    # verification data
+    mcm_data = pd.read_csv(os.path.join(ver_dir, 'mcm-verification.csv'), engine="python")
+    mcm_time = mcm_data['TIME'].values
+    # print(gas.reactions()[0].rate_coeff_units)
+    # plot from arr object
+    fig, axes = plt.subplots(3, 3)
+    plt.subplots_adjust(wspace=1.25, hspace=0.5)
+    # closure to repeat plots
+    def plot_spec(ax, sp, ylabel="", scalar=1):
+        mct = mcm_time / 24 / 3600
+        mcs = 5
+        o3_id = gas.species_index(sp)
+        # ax.plot([mct[i] for i in range(0, len(mcm_data[sp].values), mcs)], [mcm_data[sp].values[i] for i in range(0, len(mcm_data[sp].values), mcs)], color=COLORS[0], linestyle="", marker="o", markerfacecolor="white")
+        ax.plot(arr.t / 24 / 3600, arr.Y[:, o3_id] * arr.mass , color=COLORS[1])
+        ax.set_xlim(0, 3)
+        ax.set_xticks(numpy.linspace(0, 3, 4))
+        ax.set_xlabel("Time [days]")
+        ax.set_ylabel(ylabel)
+    plot_spec(axes[0][0], "O3", "$O_3$", 1e6 * 1e9 / arr.density * gas.molecular_weights[gas.species_index("O3")])
+    plot_spec(axes[0][1], "CO", "$CO$", 1e6 * 1e9 / arr.density * gas.molecular_weights[gas.species_index("CO")])
+    plot_spec(axes[0][2], "NO2", "$NO_2$", 1e6 * 1e9 / arr.density * gas.molecular_weights[gas.species_index("NO2")])
+    plot_spec(axes[1][0], "OH", "$OH$", 1e6 * 1e19 / arr.density * gas.molecular_weights[gas.species_index("OH")])
+    plot_spec(axes[1][1], "HO2", "$HO_2$", 1e6 * 1e16 / arr.density * gas.molecular_weights[gas.species_index("HO2")])
+    plot_spec(axes[1][2], "H2O2", "$H_2O_2$", 1e6 * 1e9 / arr.density * gas.molecular_weights[gas.species_index("H2O2")])
+
+    plot_spec(axes[2][0], "O1D", "$O1D$", 1e6 * 1e4 / arr.density * gas.molecular_weights[gas.species_index("O1D")])
+    plot_spec(axes[2][1], "H2O", "$H_2O$", 1e6 * 1e13 / arr.density * gas.molecular_weights[gas.species_index("H2O")])
+    # plot_spec(axes[1][2], "CO2", "$CO_2$", 1e6 * 1e9 / arr.density * gas.molecular_weights[gas.species_index("CO2")])
+    plt.savefig(os.path.join(ver_dir, "mcm-verification.pdf"))
+    plt.show()
 
 def test_solar_zenith_angle():
     # setup reactor
