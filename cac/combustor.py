@@ -158,7 +158,7 @@ def adjust_volume_to_preserve_mass(r, tm):
 
 
 def get_prop_by_thrust_level(thrust_level, prop):
-    cycle_data = pd.read_csv(os.path.join(DATA_DIR, "verification", 'CFM56-7B-737.csv'), delimiter=",", engine="python")
+    cycle_data = pd.read_csv(os.path.join(DATA_DIR, "verification", 'CFM56_5B_EDB.csv'), delimiter=",", engine="python")
     propty = cycle_data[prop].values
     thrust = cycle_data['NetThrust[kN]']
     thrust_percents = thrust / numpy.amax(thrust)
@@ -173,7 +173,7 @@ def get_prop_by_thrust_level(thrust_level, prop):
 
 
 def get_mass_flow_thrust_data(thrust_level):
-    cycle_data = pd.read_csv(os.path.join(DATA_DIR, "verification", 'CFM56-7B-737.csv'), delimiter=",", engine="python")
+    cycle_data = pd.read_csv(os.path.join(DATA_DIR, "verification", 'CFM56_5B_EDB.csv'), delimiter=",", engine="python")
     ma = cycle_data['W3[kg/s]'].values
     mf = cycle_data['Wf[kg/s]'].values
     thrust = cycle_data['NetThrust[kN]']
@@ -233,6 +233,12 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     mdot_st = numpy.sum(mdot_fuel_st / fuel.Y[fkeys])
     mdot_air_st= numpy.sum(mdot_st * fuel.Y[akeys])
     FARst = mdot_fuel_st / mdot_air_st
+    # adjustments to airflow can better fit thesis data but overall behavior seems to
+    # mostly correct
+    if kwargs.get("madjust", False):
+        madjust = lambda x: x - x * 0.35 * (1 - thrust_level) ** 3
+        mdot_air = madjust(mdot_air)
+        mdot_air_takeoff = madjust(mdot_air_takeoff)
     # fraction of total air
     fuel_scalar = kwargs.get("fuel_scalar", lhv_data / lhv_model)
     f_air_pz = mdot_fuel_takeoff * fuel_scalar / (mdot_air_takeoff * equiv_pz * FARst)
@@ -247,9 +253,10 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     equiv_mean = mdot_fuel * fuel_scalar / (mdot_air * f_air_pz * FARst)
     # calculated parameters
     f_air_da = 1 - f_air_sa - f_air_pz
-    beta_sa_sm = f_air_sa * f_sm * mdot_air / (l_sa_sm * L_sz)
-    beta_sa_fm = f_air_sa * f_fm * mdot_air / (l_sa_fm * L_sz)
-    beta_da = f_air_da * mdot_air / (l_dae - l_das) / L_sz
+    beta_scalar = kwargs.get("beta_scalar", 0.7 * thrust_level)
+    beta_sa_sm = f_air_sa * f_sm * mdot_air / (l_sa_sm * L_sz) # * beta_scalar
+    beta_sa_fm = f_air_sa * f_fm * mdot_air / (l_sa_fm * L_sz) # * beta_scalar
+    beta_da = f_air_da * mdot_air / (l_dae - l_das) / L_sz # * beta_scalar * 0.75
     # calculate phi values
     sigma = mixing_param * equiv_mean
     equiv_min = 0.3 + thrust_level * 0.1
@@ -264,6 +271,7 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     # scale mass flow fractions to equal all of mdot
     mass_flow_fractions *= 1 / numpy.sum(mass_flow_fractions)
     mfs = mass_flow_fractions * mdot
+    assert numpy.isclose(numpy.sum(mfs), mdot)
     # add to thermo states
     thermo_states["mass_flow_fraction_distribution"] = [float(p) for p in mass_flow_fractions]
     thermo_states["mass_flow_distribution"] = [float(p) for p in mfs]
@@ -303,14 +311,14 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     mds = mds / mdot
     enthalpy /= mdot
     fuel.HPY = (enthalpy, pressure, mds)
+    # print(thrust_level, fuel.equivalence_ratio(X_fuel, X_air)) #TODO LOOK HERE
     print_state_TP(fuel.TP[0], fuel.TP[1], f"2pz:{thrust_level:0.2f}")
     # Instead of modeling as a PFR, converting dilution as a function of z
     # to dilution as a function of time
     # reactors
-    beta_scalar = kwargs.get("beta_scalar", 1)
-    fast_mixing = DilutionReactor(fuel, mdot=mdot/2, beta_da=beta_da, beta_mixing=beta_sa_fm*beta_scalar, mixing_scale=0.055)
-    slow_mixing = DilutionReactor(fuel, mdot=mdot/2, beta_da=beta_da, beta_mixing=beta_sa_sm*beta_scalar, mixing_scale=0.55)
-    fast_mixing.volume = 0.95
+    fast_mixing = DilutionReactor(fuel, mdot=mdot/2, beta_da=beta_da, beta_mixing=beta_sa_fm, mixing_scale=0.055)
+    slow_mixing = DilutionReactor(fuel, mdot=mdot/2, beta_da=beta_da, beta_mixing=beta_sa_sm, mixing_scale=0.55)
+    fast_mixing.volume = 0.925
     slow_mixing.volume = fast_mixing.volume
     # adjust volume to preserve mass
     total_mass = numpy.sum([r.mass for r in reactors])

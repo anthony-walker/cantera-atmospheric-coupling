@@ -124,6 +124,7 @@ def parallel_run_combustor(x):
 @click.command()
 @click.option('--regenerate', is_flag=True, help='Regenerate verification data')
 def combustor_verification(regenerate):
+    convert_mission_out("CFM56_5B_EDB.out")
     # curve_fit_thrust_data(test=True)
     ver_dir = os.path.join(DATA_DIR, "verification")
     cbs = os.path.join(ver_dir, f"combustor-verification.hdf5")
@@ -157,7 +158,7 @@ def combustor_verification(regenerate):
         yaml_data = yaml.load(f, Loader=yaml.SafeLoader)
     # Mean equivalence ratio from cycle output
     fig, ax = plt.subplots()
-    equiv_means = [get_prop_by_thrust_level(t, "FAR")/0.0175 for t in thrust_levels]
+    equiv_means = [get_prop_by_thrust_level(t, "FAR")/0.068 for t in thrust_levels]
     tls, phi = zip(*[(v["thrust_level"], v["phi_mean"]) for k, v in yaml_data.items()])
     ax.plot(tls, phi, color=COLORS[0])
     ax.plot(thrust_levels, equiv_means, linestyle="", marker="s", color=COLORS[0])
@@ -325,18 +326,18 @@ def combustor_verification(regenerate):
     fig.savefig(os.path.join(ver_dir, f"pfr-temperature-profile-7.pdf"), bbox_inches='tight')
     plt.close()
 
-def convert_mission_out():
+def convert_mission_out(mout_name="CFM56_5B_737Mission.out"):
     ver_dir = os.path.join(DATA_DIR, "verification")
-    fname = os.path.join(ver_dir, "CFM56_5B_737Mission.out")
+    fname = os.path.join(ver_dir, mout_name)
     with open(fname, "r") as f:
         lines = f.read().split("\n")
-        headers = ", ".join(re.split("\s+", lines[2])[1:-1])
+        headers = ",".join(re.split("\s+", lines[2])[1:-1])
         nls = [headers]
         for l in lines[3:]:
             r = re.split("\s+", l)[2:-1]
-            nls.append(", ".join(r))
+            nls.append(",".join(r))
         content = "\n".join(nls)
-    with open(os.path.join(ver_dir, "CFM56-5B-737.csv"), "w") as f:
+    with open(os.path.join(ver_dir, f"{mout_name.split('.')[0]}.csv"), "w") as f:
         f.write(content)
 
 def check_thrust():
