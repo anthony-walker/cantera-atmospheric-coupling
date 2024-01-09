@@ -364,7 +364,7 @@ def update_duplicates_combustor_mechanism():
     combustor_data = yaml.load(open("merged.yaml", "r"))
     cphase = combustor_data["phases"][0]
     cphase["name"] = "combustor"
-    cphase["reactions"] = ["farnesane-reactions", "sulfur-reactions"]
+    cphase["reactions"] = ["farnesane-reactions", "sulfur-reactions", "nox-reactions"]
     aphase = copy.deepcopy(cphase)
     aphase["name"] = "atmosphere"
     aphase["reactions"] = ["atmosphere-reactions", "aerosol-reactions", "photolysis-reactions"]

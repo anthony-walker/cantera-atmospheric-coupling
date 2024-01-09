@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from scipy.interpolate import interp1d
 from cac.constants import DATA_DIR, COLORS
-from cac.combustor import multizone_combustor
+from cac.combustor import multizone_combustor, get_prop_by_thrust_level
 from cac.combustor import curve_fit_thrust_data, reformat_hdf5
 from cac.reactors import PlumeSolution, PlumeReactor
 
@@ -84,10 +84,14 @@ def combustor_design_params():
     p_atm = 0.2 * ct.one_atm
     T_atm = 240 # K
     X_air = "O2:1.0, N2:3.76"
-    X_fuel = ", ".join([f'{k}:{v}'for k, v in {"NC10H22":0.4267, "IC8H18":0.3302, "C7H8":0.2431}.items()])
+    # X_fuel = "NC12H26:0.404, IC8H18:0.295, TMBENZ:0.073, NPBENZ:0.228"
+    # X_fuel = ", ".join([f'{k}:{v}'for k, v in {"N-C10H22":0.4267, "I-C8H18":0.3302, "C7H8":0.2431}.items()])
     X_fuel = "POSF10325:1.0"
     # create path to fuel model
+    # fuel_model = os.path.join(DATA_DIR, "verification", "jet-fuel.yaml")
+    # fuel_model = os.path.join(DATA_DIR, "farnesane", "farnesane.yaml")
     fuel_model = os.path.join(DATA_DIR, "A2NOx.yaml")
+    # fuel_model = os.path.join(DATA_DIR, "combustor.yaml")
     # fuel_model = "h2o2.yaml"
     # X_fuel = "H2:1.0"
     # creation of fuel thermo object
@@ -114,7 +118,7 @@ def parallel_run_combustor(x):
     #     print(f"Failed for Thrust-level: {x:.3f}")
     #     # print(e)
     #     return None
-    return (combustor.thermo.state, combustor.mass, thermo_states, x)
+    return (combustor.thermo.state, thermo_states, x)
 
 
 @click.command()
@@ -127,21 +131,21 @@ def combustor_verification(regenerate):
     if not os.path.isdir(ver_dir):
         os.mkdir(ver_dir)
     fuel, equiv_ratio, X_fuel, X_air = combustor_design_params()
-    thrust_levels = numpy.linspace(0.1, 1.0, 10)
-    thrust_levels = numpy.array([0.07, 0.3, 0.65, 0.85, 1.0])
-    thrust_levels = [0.07, 1.0]
+    thrust_levels = numpy.linspace(0.1, 1.0, 5)
+    thrust_levels = [0.07, 0.3, 0.65, 0.85, 1.0]
+    # thrust_levels = [1.0]
     if not os.path.isfile(cbs) or regenerate:
         # run in parallel
-        with mp.Pool(os.cpu_count()) as pool:
+        with mp.Pool(min(os.cpu_count(), len(thrust_levels))) as pool:
             res = pool.map(parallel_run_combustor, thrust_levels)
         # solution array
-        combustor_states = ct.SolutionArray(fuel, extra=["mass", "TL", "phi", "mdot", "fuel_mass"])
+        combustor_states = ct.SolutionArray(fuel, extra=["TL", "phi", "mdot_exhaust", "mdot_fuel"])
         verification_data = {}
         for r in res:
             if r is not None:
-                state, mass, thermo_states, tl = r
+                state, thermo_states, tl = r
                 verification_data[f"thrust-level-{tl}"] = thermo_states
-                combustor_states.append(state, mass=mass, TL=tl, phi=equiv_ratio, mdot=1.086*tl, fuel_mass=thermo_states["initial_fuel_mass"])
+                combustor_states.append(state, TL=tl, phi=equiv_ratio, mdot_fuel=thermo_states["mdot_fuel"], mdot_exhaust=thermo_states["mdot_out"])
         # dump verification data
         os.path.join("")
         with open(yfile, "w") as f:
@@ -151,6 +155,18 @@ def combustor_verification(regenerate):
     # create plots of profiles from yaml
     with open(yfile, "r") as f:
         yaml_data = yaml.load(f, Loader=yaml.SafeLoader)
+    # Mean equivalence ratio from cycle output
+    fig, ax = plt.subplots()
+    equiv_means = [get_prop_by_thrust_level(t, "FAR")/0.0175 for t in thrust_levels]
+    tls, phi = zip(*[(v["thrust_level"], v["phi_mean"]) for k, v in yaml_data.items()])
+    ax.plot(tls, phi, color=COLORS[0])
+    ax.plot(thrust_levels, equiv_means, linestyle="", marker="s", color=COLORS[0])
+    # ax.legend(ncols=1, bbox_to_anchor=(1.2, 1.03))
+    ax.set_ylabel("Mean Equivalence Ratio")
+    ax.set_xlabel("Thrust Percentage")
+    plt.grid(visible=True)
+    fig.savefig(os.path.join(ver_dir, f"mean-equiv-ratio.pdf"), bbox_inches='tight')
+    plt.close()
     # temperature profiles
     fig, ax = plt.subplots()
     for i, k in enumerate(yaml_data.keys()):
@@ -163,9 +179,22 @@ def combustor_verification(regenerate):
     plt.grid(visible=True)
     fig.savefig(os.path.join(ver_dir, f"T-profiles.pdf"), bbox_inches='tight')
     plt.close()
-
     # mass flow fraction profiles
+    with open (os.path.join(ver_dir, "mfeq-verification.csv")) as f:
+        rdr = csv.reader(f)
+        next(rdr)
+        next(rdr)
+        mfknown = [list(map(float, filter(lambda x: x, k))) for k in zip(*[r for r in rdr ])]
+    # mass fraction verification
     fig, ax = plt.subplots()
+    # plot all of the known lists
+    for j, i in enumerate(range(0, len(mfknown), 2)):
+        x = mfknown[i]
+        y = mfknown[i+1]
+        if i == 0:
+            ax.plot(x, y, linestyle=":", color="k", marker="*", label="Source data")
+        else:
+            ax.plot(x, y, linestyle=":", color="k", marker="*")
     for i, k in enumerate(yaml_data.keys()):
         ldata = yaml_data[k]
         ax.plot(ldata["phi_distribution"], ldata["mass_flow_fraction_distribution"], color=COLORS[i], label=f"{float(k.split('-')[-1]):.2f}", marker="o")
@@ -176,31 +205,31 @@ def combustor_verification(regenerate):
     ax.set_xlim([0, 3.5])
     ax.set_xticks(numpy.arange(0, 3.5, 0.5))
     fig.savefig(os.path.join(ver_dir, f"mass-flow-fraction-profiles.pdf"), bbox_inches='tight')
+    # plt.show()
     plt.close()
-
     # create plot with generated data
     with h5py.File(cbs, "r") as hf:
+        T_data = numpy.array(hf["thermo"]["data"]["T"])
         Y_data = hf["thermo"]["data"]["Y"]
-        mass_data = hf["thermo"]["data"]["mass"]
-        fuel_mass_data = hf["thermo"]["data"]["fuel_mass"]
-        mdot_data = hf["thermo"]["data"]["mdot"]
+        fuel_data = hf["thermo"]["data"]["mdot_fuel"]
+        exhaust_data = hf["thermo"]["data"]["mdot_exhaust"]
         thrust_levels = numpy.array(hf["thermo"]["data"]["TL"])
         # compute NOx
-        mass_nox = Y_data[:, fuel.species_index("NO")] * mass_data * 1000 # grams
-        nox_ratio = mass_nox / fuel_mass_data
-        mass_co = Y_data[:, fuel.species_index("CO")] * mass_data * 1000 # grams
-        co_ratio = mass_co / fuel_mass_data
-    # plots
-    fig, axes = plt.subplots(1, 2)
+        mass_nox = (Y_data[:, fuel.species_index("NO")] * exhaust_data) * 1000 # grams Y_data[:, fuel.species_index("NO2")] * exhaust_data
+        nox_ratio = mass_nox / fuel_data
+        mass_co = Y_data[:, fuel.species_index("CO")] * exhaust_data * 1000 # grams
+        co_ratio = mass_co / fuel_data
+
+    fig, axes = plt.subplots(1, 3)
     with open(os.path.join(ver_dir, "NOX-data.csv")) as f:
         reader = csv.reader(f)
         next(reader)
         next(reader)
         nox_x, nox_y = zip(*list(map(lambda x: (float(x[0])/100, float(x[1])), reader)))
     # plot
-    axes[0].plot(thrust_levels[::-1], nox_ratio, color=COLORS[0], label="Model prediction")
+    axes[0].plot(thrust_levels, nox_ratio, color=COLORS[0], label="Model prediction")
     axes[0].plot(nox_x, nox_y, color=COLORS[1], linestyle="", marker="o", label="EDB data")
-    axes[0].set_xlabel("Mass Flow Fraction")
+    axes[0].set_xlabel("Thrust Fraction")
     axes[0].set_ylabel("EI $\\text{NO}_x$ [g/$\\text{kg}_{\\text{fuel}}$]")
 
     with open(os.path.join(ver_dir, "CO-data.csv")) as f:
@@ -209,14 +238,18 @@ def combustor_verification(regenerate):
         next(reader)
         co_x, co_y = zip(*list(map(lambda x: (float(x[0])/100, float(x[1])), reader)))
     # plot
-    axes[1].plot(thrust_levels[::-1], co_ratio, color=COLORS[0], label="Model prediction")
+    axes[1].plot(thrust_levels, co_ratio, color=COLORS[0], label="Model prediction")
     axes[1].plot(co_x, co_y, color=COLORS[1], linestyle="", marker="o", label="EDB data")
-    axes[1].set_xlabel("Mass Flow Fraction")
+    axes[1].set_xlabel("Thrust Fraction")
     axes[1].set_ylabel("EI CO [g/$\\text{kg}_{\\text{fuel}}$]")
+    # plot
+    axes[2].plot(thrust_levels, T_data, color=COLORS[0], label="Model prediction")
+    axes[2].set_xlabel("Thrust Fraction")
+    axes[2].set_ylabel("Temperature [K]")
     plt.subplots_adjust(wspace=0.25)
     fig.savefig(os.path.join(ver_dir, f"emissions-indices.pdf"), bbox_inches='tight')
+    # plt.show()
     plt.close()
-
     # temperature as a function of z
     # fast mixing data
     fmh5 = os.path.join(ver_dir, "fast-mixing-states-verification-1.00.hdf5")
@@ -259,13 +292,13 @@ def combustor_verification(regenerate):
         zfvs, Tfvs, zsvs, Tsvs = [list(map(float, filter(lambda x: x, k))) for k in zip(*[r for r in rdr ])]
     # 100% thrust temperature profiles
     fig, ax = plt.subplots()
+    ax.plot(zfv, Tfv, color=COLORS[0], marker="o", linestyle="", markerfacecolor="white")
+    ax.plot(zsv, Tsv, color=COLORS[1], marker="o", linestyle="", markerfacecolor="white")
     ax.plot(z_fast_data, T_fast_data, color=COLORS[0])
     ax.plot(z_slow_data, T_slow_data, color=COLORS[1])
-    ax.plot(zfv, Tfv, color=COLORS[0], marker="o", linestyle="")
-    ax.plot(zsv, Tsv, color=COLORS[1], marker="o", linestyle="")
     plt.grid(visible=True)
-    ax.set_xticks(numpy.arange(0, 100, 20))
-    ax.set_xlim([0, 100.0])
+    ax.set_xticks(numpy.arange(0, 120, 20))
+    ax.set_xlim([-10, 110])
     ax.set_xlabel("Length [%]")
     ax.set_ylabel("Temperature [K]")
     custom_lines = [Line2D([0], [0], color=COLORS[0], lw=2),
