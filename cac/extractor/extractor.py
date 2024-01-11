@@ -25,8 +25,9 @@ def regenerate_files(facfile, dirname):
 
 @click.command()
 @click.argument('facfile', nargs=1)
-@click.option('--regenerate', default=True, help='Regenerate all needed files.')
-def main(facfile, regenerate=True):
+@click.option('--regenerate', is_flag=True, help='Regenerate all needed files.')
+@click.option('--copydir', is_flag=True, help='Turn off directory copying, for internal use')
+def main(facfile, regenerate=False, copydir=False):
     """ This file is the main file used to construct the completed mechanism.
 
         To run "python species_extractor.py" and "python reaction_extractor.py".
@@ -45,7 +46,7 @@ def main(facfile, regenerate=True):
     """
     prefix = facfile.split(".")[0]
     prefix_dir = os.path.join(DATA_DIR, prefix)
-    if regenerate or not os.path.exists(prefix_dir):
+    if not regenerate or not os.path.exists(prefix_dir):
         try:
             os.mkdir(prefix_dir)
         except Exception as e:
@@ -94,7 +95,8 @@ def main(facfile, regenerate=True):
     # for yk in aerosol_data:
     #     cmap[yk] = aerosol_data[yk]
     # dump again
-    with open(f"{prefix}.yaml", "w") as f:
+    yfile = os.path.join(prefix_dir, f"{prefix}.yaml")
+    with open(yfile, "w") as f:
         yaml.dump({"description":aerosol_data.pop("description", "")}, f)
         yaml.dump({"generator":aerosol_data.pop("generator", "")}, f)
         yaml.dump({"input-files":aerosol_data.pop("input-files", [])}, f)
@@ -108,7 +110,7 @@ def main(facfile, regenerate=True):
             yaml.dump({yk: aerosol_data[yk]}, f)
 
     # Format unruly lists like elements and species in phases to make more readable.
-    with open(f"{prefix}.yaml", "r") as f:
+    with open(yfile, "r") as f:
         content = f.read()
         content = re.sub(r"[']NO[']", "NO", content)
         content = re.sub(r"\n  [-] (([A-Z]+[a-z]*[0-9]*)+)", r", \1", content)
@@ -128,16 +130,18 @@ def main(facfile, regenerate=True):
             orig = f"[{orig}]"
             content = content.replace(rep, orig)
     # rewrite content
-    with open(f"{prefix}.yaml", "w") as f:
+    with open(yfile, "w") as f:
         f.write(content)
     pyprefix = prefix.replace("-", "_")
+    shutil.copyfile(facfile, os.path.join(prefix_dir, facfile))
     relevant = list(filter(lambda x: prefix in x or pyprefix in x, os.listdir(prefix_dir)))
-    try:
-        os.mkdir(prefix)
-    except Exception as e:
-        pass
-    for f in relevant:
-        shutil.copyfile(os.path.join(prefix_dir, f), os.path.join(prefix, f))
+    if not copydir:
+        try:
+            os.mkdir(prefix)
+        except Exception as e:
+            pass
+        for f in relevant:
+            shutil.copyfile(os.path.join(prefix_dir, f), os.path.join(prefix, f))
 
 
 if __name__ == "__main__":
