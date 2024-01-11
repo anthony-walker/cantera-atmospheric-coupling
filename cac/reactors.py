@@ -94,7 +94,7 @@ class PlumeReactor(ct.ExtensibleIdealGasConstPressureMoleReactor):
             self.zat = t
             self.thermo.zenith_angle = self.calculate_solar_zenith_angle(t)
         # update M value
-        self.thermo.M = self.pressure() / (self.T * ct.boltzmann)
+        self.thermo.M = self.pressure() / (self.T * ct.boltzmann) / (100**3) # molec / cm^3
         # evaluate original eval
         self.default_eval(t, LHS, RHS)
         # reduce change to 0 in no-change species

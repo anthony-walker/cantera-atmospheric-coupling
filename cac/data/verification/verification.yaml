@@ -13,7 +13,7 @@ description: 'Master Chemical Mechanism Translation from:
 generator: manual
 input-files: []
 cantera-version: 3.0.0
-date: 01/03/2024, 08:33:06
+date: 01/11/2024, 18:26:07
 units:
   activation-energy: cal/mol
   length: cm
@@ -1321,7 +1321,7 @@ photolysis-reactions:
   l: 1.041e-05
   m: 0.723
   n: 0.279
-  scalar: 1
+  scalar: 0.2
   type: zenith-angle-rate
   units:
     activation-energy: K
@@ -1331,7 +1331,7 @@ photolysis-reactions:
   l: 9.312e-07
   m: 1.230
   n: 0.307
-  scalar: 1
+  scalar: 0.2
   type: zenith-angle-rate
   units:
     activation-energy: K
@@ -1341,7 +1341,7 @@ photolysis-reactions:
   l: 2.644e-03
   m: 0.261
   n: 0.288
-  scalar: 1
+  scalar: 0.2
   type: zenith-angle-rate
   units:
     activation-energy: K
@@ -1351,7 +1351,7 @@ photolysis-reactions:
   l: 1.165e-02
   m: 0.244
   n: 0.267
-  scalar: 1
+  scalar: 0.2
   type: zenith-angle-rate
   units:
     activation-energy: K
@@ -1361,7 +1361,7 @@ photolysis-reactions:
   l: 2.485e-02
   m: 0.168
   n: 0.108
-  scalar: 1
+  scalar: 0.2
   type: zenith-angle-rate
   units:
     activation-energy: K
@@ -1371,7 +1371,7 @@ photolysis-reactions:
   l: 1.747e-01
   m: 0.155
   n: 0.125
-  scalar: 1
+  scalar: 0.2
   type: zenith-angle-rate
   units:
     activation-energy: K
@@ -1381,7 +1381,7 @@ photolysis-reactions:
   l: 4.775e-04
   m: 0.298
   n: 0.080
-  scalar: 1
+  scalar: 0.2
   type: zenith-angle-rate
   units:
     activation-energy: K
@@ -1391,7 +1391,7 @@ photolysis-reactions:
   l: 6.073e-05
   m: 1.743
   n: 0.474
-  scalar: 1
+  scalar: 0.2
   type: zenith-angle-rate
   units:
     activation-energy: K

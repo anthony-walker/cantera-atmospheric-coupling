@@ -10,6 +10,7 @@ import pandas as pd
 import cantera as ct
 import multiprocessing as mp
 import matplotlib.pyplot as plt
+from scipy.optimize import fsolve
 from matplotlib.lines import Line2D
 from scipy.interpolate import interp1d
 from cac.constants import DATA_DIR, COLORS
@@ -348,14 +349,21 @@ def check_thrust():
     for i, j, k in zip(ma, mf, thrust):
         print(i, j, k)
 
+def initial_conditions_solver(Y):
+    density = 1.2
+    Y[0] = 30 * 48 / density / 1e6 # O3
+    Y[1] = 100 * 28.01 / density / 1e6 # CO
+    Y[2] = 1 - numpy.sum(Y[:2])
+    return Y
+
 def mcm_verification():
     ver_dir = os.path.join(DATA_DIR, "verification")
     gas = PlumeSolution(os.path.join(ver_dir, "verification.yaml"))
     volume = 1e4
     gas.TPX = 298, ct.one_atm, "O2:0.205, N2:0.785, H2O:0.5"
     atm_air = ct.Reservoir(gas)
-    scale = 5000
-    gas.X = f"O3: {0.225}, CO:{2.23}, O2:{1.0*scale}, N2:{3.76*scale}, H2O:{0.01*scale}"
+    Y = fsolve(initial_conditions_solver, [0.1, 0.1, 0.8])
+    gas.Y = f"O3: {Y[0]}, CO:{Y[1]}, O2:{0.205*Y[2]}, N2:{0.785*Y[2]}, H2O:{0.01*Y[2]}"
     # setup initial conditions as 30 ppbv O3 and 100 ppbv CO with 1% water vapor
     r = PlumeReactor(gas, start_day=182, no_change_species=["H2O", "O2", "N2"])
     r.entrainment = False # Turn off entrainment
@@ -365,43 +373,55 @@ def mcm_verification():
     # setup reactor network
     net = ct.ReactorNet([r])
     net.max_steps = 1e8
-    net.preconditioner = ct.AdaptivePreconditioner()
+    # The atmospheric integration struggles with the preconditioner.
+    # Perhaps best to exclude preconditioning from the application for now
+    # net.preconditioner = ct.AdaptivePreconditioner()
     net.derivative_settings = {"skip-flow-devices":True}
     # set tolerances
-    net.rtol = 1e-10
-    net.atol = 1e-16
+    net.rtol = 1e-12
+    net.atol = 1e-20
+    net.initialize()
+    net.step()
     # setup time steps
-    nsteps = 10
     ndays = 3
     seconds = ndays * 24 * 3600 # convert days to seconds
-    steps = numpy.linspace(0, seconds, nsteps)
     # setup solution array
     arr = ct.SolutionArray(gas, extra=["t", "mass", "volume"])
     arr.append(r.thermo.state, t=0.0, mass=r.mass, volume=r.volume)
     # loop through all time steps
-    times = numpy.linspace(0, seconds, 500)
+    times = numpy.linspace(0, seconds, 5000)
+    failed = False
     for i, t in enumerate(times[1:]): #for t in steps:
-        loop = True
         failures = 0
-        net.max_time_step = 1000
-        while loop:
+        t_target = t
+        net.max_time_step = 10
+        while net.time < t:
             try:
                 print(f"Advancing to {t:0.2f}..")
-                net.advance(t)
-                loop = False
+                former_time = net.time
+                net.advance(t_target)
+                # reset targeted time and time step
+                t_target = t
+                failures = 0
+                net.max_time_step = 10
+                # append the state so last state is always available
+                arr.append(r.thermo.state, t=net.time, mass=r.mass, volume=r.volume)
             except Exception as e:
                 print(f"Failure {failures}: reducing max time step")
                 # reset reactor and network
                 r.thermo.TDX = arr[-1].TDX
                 r.syncState()
                 r.volume = arr[-1].volume
-                net.initial_time = times[i]
-                net.max_time_step = net.max_time_step / 5
+                net.initial_time = former_time
+                net.max_time_step = net.max_time_step / 10
+                net.initialize()
+                t_target = former_time + 1 # 10 seconds
                 failures += 1
                 if failures >= 20:
+                    failed = True
                     break
-        # append the state
-        arr.append(r.thermo.state, t=net.time, mass=r.mass, volume=r.volume)
+        if failed:
+            break
     # save hdf5 file
     hdf5_file = os.path.join(ver_dir, "mcm.hdf5")
     arr.save(hdf5_file, overwrite=True, name="thermo")
@@ -409,33 +429,44 @@ def mcm_verification():
     # verification data
     mcm_data = pd.read_csv(os.path.join(ver_dir, 'mcm-verification.csv'), engine="python")
     mcm_time = mcm_data['TIME'].values
-    # print(gas.reactions()[0].rate_coeff_units)
     # plot from arr object
-    fig, axes = plt.subplots(3, 3)
+    fig, axes = plt.subplots(2, 3)
     plt.subplots_adjust(wspace=1.25, hspace=0.5)
     # closure to repeat plots
     def plot_spec(ax, sp, ylabel="", scalar=1):
         mct = mcm_time / 24 / 3600
-        mcs = 5
-        o3_id = gas.species_index(sp)
-        # ax.plot([mct[i] for i in range(0, len(mcm_data[sp].values), mcs)], [mcm_data[sp].values[i] for i in range(0, len(mcm_data[sp].values), mcs)], color=COLORS[0], linestyle="", marker="o", markerfacecolor="white")
-        ax.plot(arr.t / 24 / 3600, arr.Y[:, o3_id] * arr.mass , color=COLORS[1])
+        mcs = 1
+        mcmx = numpy.array([mct[i] for i in range(0, len(mcm_data[sp].values), mcs)])
+        mcmy = numpy.array([mcm_data[sp].values[i] for i in range(0, len(mcm_data[sp].values), mcs)]);
+        mcmy = mcmy / numpy.amax(mcmy)
+        sp_id = gas.species_index(sp)
+        model_data = arr.Y[:, sp_id] * arr.density / gas.molecular_weights[sp_id]
+        model_data = model_data / numpy.amax(model_data)
+        # plots
+        ax.plot(mcmx, mcmy, color=COLORS[0], linestyle="", marker="o", markerfacecolor="white")
+        ax.plot(arr.t / 24 / 3600, model_data , color=COLORS[1])
         ax.set_xlim(0, 3)
+        ax.set_ylim(0, 1.2)
+        ax.grid(True)
+        ax.set_xticks(numpy.linspace(0, 1, 4))
         ax.set_xticks(numpy.linspace(0, 3, 4))
         ax.set_xlabel("Time [days]")
         ax.set_ylabel(ylabel)
-    plot_spec(axes[0][0], "O3", "$O_3$", 1e6 * 1e9 / arr.density * gas.molecular_weights[gas.species_index("O3")])
-    plot_spec(axes[0][1], "CO", "$CO$", 1e6 * 1e9 / arr.density * gas.molecular_weights[gas.species_index("CO")])
-    plot_spec(axes[0][2], "NO2", "$NO_2$", 1e6 * 1e9 / arr.density * gas.molecular_weights[gas.species_index("NO2")])
-    plot_spec(axes[1][0], "OH", "$OH$", 1e6 * 1e19 / arr.density * gas.molecular_weights[gas.species_index("OH")])
-    plot_spec(axes[1][1], "HO2", "$HO_2$", 1e6 * 1e16 / arr.density * gas.molecular_weights[gas.species_index("HO2")])
-    plot_spec(axes[1][2], "H2O2", "$H_2O_2$", 1e6 * 1e9 / arr.density * gas.molecular_weights[gas.species_index("H2O2")])
-
-    plot_spec(axes[2][0], "O1D", "$O1D$", 1e6 * 1e4 / arr.density * gas.molecular_weights[gas.species_index("O1D")])
-    plot_spec(axes[2][1], "H2O", "$H_2O$", 1e6 * 1e13 / arr.density * gas.molecular_weights[gas.species_index("H2O")])
-    # plot_spec(axes[1][2], "CO2", "$CO_2$", 1e6 * 1e9 / arr.density * gas.molecular_weights[gas.species_index("CO2")])
+    plot_spec(axes[0][0], "O3", "$O_3$", arr.density / gas.molecular_weights[gas.species_index("O3")])
+    plot_spec(axes[0][1], "CO", "$CO$", arr.density / gas.molecular_weights[gas.species_index("CO")])
+    plot_spec(axes[0][2], "O1D", "$O_{1D}$", arr.density / gas.molecular_weights[gas.species_index("O1D")])
+    plot_spec(axes[1][0], "OH", "$OH$", arr.density / gas.molecular_weights[gas.species_index("OH")])
+    plot_spec(axes[1][1], "HO2", "$HO_2$", arr.density / gas.molecular_weights[gas.species_index("HO2")])
+    plot_spec(axes[1][2], "H2O2", "$H_2O_2$", arr.density / gas.molecular_weights[gas.species_index("H2O2")])
     plt.savefig(os.path.join(ver_dir, "mcm-verification.pdf"))
-    plt.show()
+    plt.close()
+
+    # mcm temperature plot
+    fig, ax = plt.subplots()
+    ax.plot(mcm_time / 24 / 3600, mcm_data["TEMP"].values, color=COLORS[0], linestyle="", marker="o", markerfacecolor="white")
+    ax.plot(arr.t / 24 / 3600, arr.T , color=COLORS[1])
+    plt.savefig(os.path.join(ver_dir, "mcm-temp.pdf"))
+    plt.close()
 
 def test_solar_zenith_angle():
     # setup reactor

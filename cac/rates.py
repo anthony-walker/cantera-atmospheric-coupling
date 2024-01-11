@@ -10,6 +10,46 @@ from cac.constants import DATA_DIR
 mcm_complex_rates = None
 mcm_complex_funcs = None
 
+
+class ScaledArrheniusData(ct.ExtensibleRateData):
+    __slots__ = ("M", "T")
+
+    def __init__(self):
+        self.M = None
+        self.T = None
+
+    def update(self, gas):
+        if self.M != gas.M or self.T != gas.T:
+            self.M = gas.M
+            self.T = gas.T
+            return True
+        else:
+            return False
+
+
+
+@ct.extension(name="scaled-arrhenius", data=ScaledArrheniusData)
+class ScaledArrheniusRate(ct.ExtensibleRate):
+    __slots__ = ("A", "b", "Ea", "scalar", "conversion")
+
+    def set_parameters(self, node, units):
+        system = ct.UnitSystem(node.get("units"))
+        self.A = node["A"]
+        self.b = node["b"]
+        self.Ea = node["Ea"]
+        self.scalar = node.get("scalar", 1)
+        self.conversion = system.convert_rate_coeff_to(1, units)
+
+    def get_parameters(self, node):
+        node["A"] = self.A
+        node["b"] = self.b
+        node["Ea"] = self.Ea
+        node["scalar"] = self.scalar
+
+    def eval(self, data):
+        return self.A * np.exp(-self.Ea / data.T) * self.conversion
+
+
 class ZenithAngleData(ct.ExtensibleRateData):
     __slots__ = ("zenith_angle", "cza")
 
@@ -49,11 +89,10 @@ class ZenithAngleRate(ct.ExtensibleRate):
 
 
 class FunctionData(ct.ExtensibleRateData):
-    __slots__ = ("thermo", "M")
+    __slots__ = ("thermo")
 
     def __init__(self):
         self.thermo = None
-        self.M = None
 
     def update(self, gas):
         if self.thermo != gas:
@@ -68,8 +107,6 @@ class FunctionRate(ct.ExtensibleRate):
 
     def set_parameters(self, node, units):
         fcn_name = node["function"]
-        # species that are a function of M
-        self.mspecies = {"O2":0.21, "N2":0.79, "H2O":0.01}
         # get ro2_species
         ro2_sumfile = node.get("ro2file", "")
         prefix = ro2_sumfile.split("-")[0]
@@ -102,23 +139,21 @@ class FunctionRate(ct.ExtensibleRate):
 
     def eval(self, data):
         # set ro2 sum to 0
-        ro2_sum = 0
+        ro2_frac = 0
         if "RO2" in self.fargs:
             for sp in self.ro2_species:
-                ro2_sum += data.thermo.concentrations[data.thermo.species_index(sp)]
+                ro2_frac += data.thermo.Y[data.thermo.species_index(sp)]
         # evaluate the function
         built_args = []
         for a in self.fargs:
             if "T" == a:
                 built_args.append(data.thermo.T)
             elif "RO2" == a:
-                built_args.append(ro2_sum)
+                built_args.append(ro2_frac * data.thermo.M)
             elif  "M" == a:
                 built_args.append(data.thermo.M)
-            elif a in self.mspecies:
-                built_args.append(data.thermo.M * self.mspecies[a])
             else:
-                built_args.append(data.thermo.concentrations[data.thermo.species_index(a)])
+                built_args.append(data.thermo.Y[data.thermo.species_index(a)] * data.thermo.M)
+        # convert based on argument length
         rate = self.function(*built_args) * self.conversion
-        # print(rate, self.conversion)
         return rate
