@@ -18,6 +18,7 @@ class PlumeReactor(ct.ExtensibleIdealGasConstPressureMoleReactor):
         self.longitude = kwargs.pop("longitude", 0)
         self.start_day = kwargs.pop("start_day", 0)
         self.start_time = kwargs.pop("start_time", 0) # hours
+        self.altitude = kwargs.pop("altitude", 0) # hours
         self.no_change_species = kwargs.pop("no_change_species", [])
         super(PlumeReactor, self).__init__(label, *args, **kwargs)
         self.state_air = []
@@ -80,9 +81,11 @@ class PlumeReactor(ct.ExtensibleIdealGasConstPressureMoleReactor):
         # Calculate the solar hour angle
         solar_hour_angle = 15 * (time - 12) + time_correction
         # Calculate the solar zenith angle
-        solar_zenith_angle = np.clip(np.mod(np.arccos(
-            np.sin(np.radians(latitude_rad)) * np.sin(np.radians(declination)) +
-            np.cos(np.radians(latitude_rad)) * np.cos(np.radians(declination)) * np.cos(np.radians(solar_hour_angle))), 2*np.pi), 0, np.pi / 2)
+        solar_zenith_angle = np.arccos(np.sin(np.radians(latitude_rad)) * np.sin(np.radians(declination)) + np.cos(np.radians(latitude_rad)) * np.cos(np.radians(declination)) * np.cos(np.radians(solar_hour_angle)))
+        # adjust sza for altitude
+        altitude_angle = self.altitude / (6.371e6) # divide by earths radius
+        solar_zenith_angle = np.arccos(np.sin(latitude_rad) * np.sin(solar_zenith_angle) + np.cos(latitude_rad) * np.cos(solar_zenith_angle) * np.cos(altitude_angle))
+        solar_zenith_angle = np.clip(np.mod(solar_zenith_angle, 2*np.pi), 0, np.pi / 2)
         return solar_zenith_angle
 
     def pressure(self):

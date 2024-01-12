@@ -30,6 +30,7 @@ combustor = "cac.combustor:run_combustor_atm_sim"
 verify_box_model = "cac.verification:mixing_box_model_verification"
 verify_combustor = "cac.verification:combustor_verification"
 verify_atmosphere = "cac.verification:mcm_verification"
+verify_tester = "cac.verification:function_tester"
 
 [project.urls]
 repository = "https://github.com/anthony-walker/cantera-atmospheric-coupling"

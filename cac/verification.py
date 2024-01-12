@@ -386,7 +386,7 @@ def mcm_verification():
     Y = fsolve(initial_conditions_solver, [0.1, 0.1, 0.8])
     gas.Y = f"O3: {Y[0]}, CO:{Y[1]}, O2:{0.205*Y[2]}, N2:{0.785*Y[2]}, H2O:{0.01*Y[2]}"
     # setup initial conditions as 30 ppbv O3 and 100 ppbv CO with 1% water vapor
-    r = PlumeReactor(gas, start_day=182, no_change_species=["H2O", "O2", "N2"])
+    r = PlumeReactor(gas, start_day=182, altitude=1e3, no_change_species=["H2O", "O2", "N2"])
     r.entrainment = False # Turn off entrainment
     r.volume = volume
     r.energy_enabled = False
@@ -502,20 +502,52 @@ def test_solar_zenith_angle():
     # setup reactor
     ver_dir = os.path.join(DATA_DIR, "verification")
     gas = PlumeSolution(os.path.join(ver_dir, "verification.yaml"))
+    sd = 0
     # setup initial conditions as 30 ppbv O3 and 100 ppbv CO with 1% water vapor
-    r = PlumeReactor(gas, start_day=180)
+    r = PlumeReactor(gas, start_day=sd, altitude=1e3)
     # one week
-    hours = 168
+    ndays = 365
+    hours = ndays * 24
     times = list(range(hours))
     angles = [numpy.rad2deg(r.calculate_solar_zenith_angle(t*3600)) for t in times] # a week of angles
     fig, ax = plt.subplots()
-    stimes = [t*3600 for t in times]
+    stimes = [t / 24 + sd for t in times]
     ax.plot(stimes, angles)
-    ax.set_xticks([i * 3600 for i in range(0, 169, 24)])
-    ax.set_xticklabels([str(i) for i in range(168//24 + 1)])
+    ax.set_ylim([-10, 190])
+    ax.set_yticks(numpy.arange(0, 190, 20))
+    days = numpy.linspace(0+sd, ndays+sd, 10)
+    days = [int(day) for day in days]
+    ax.set_xticks(days)
+    plt.savefig(os.path.join(ver_dir, "zenith-angles.pdf"))
+    plt.show()
+    plt.close()
+    # plot solar zenith maximums
+    fig, ax = plt.subplots()
+    times = numpy.arange(12, hours, 24)
+    angles = [numpy.rad2deg(r.calculate_solar_zenith_angle(t*3600)) for t in times]
+    stimes = [t / 24 + sd for t in times]
+    ax.plot(stimes, angles)
+    ax.set_ylim([-10, 190])
+    ax.set_yticks(numpy.arange(0, 190, 20))
+    days = numpy.linspace(0+sd, ndays+sd, 10)
+    days = [int(day) for day in days]
+    ax.set_xticks(days)
+    plt.savefig(os.path.join(ver_dir, "zenith-angles-maximums.pdf"))
+    plt.show()
+    # plot solar zenith minimums
+    fig, ax = plt.subplots()
+    times = numpy.arange(0, hours, 24)
+    angles = [numpy.rad2deg(r.calculate_solar_zenith_angle(t*3600)) for t in times]
+    stimes = [t / 24 + sd for t in times]
+    ax.plot(stimes, angles)
+    ax.set_ylim([-10, 190])
+    ax.set_yticks(numpy.arange(0, 190, 20))
+    days = numpy.linspace(0+sd, ndays+sd, 10)
+    days = [int(day) for day in days]
+    ax.set_xticks(days)
+    plt.savefig(os.path.join(ver_dir, "zenith-angles-minimums.pdf"))
     plt.show()
 
-
-if __name__ == "__main__":
-    # get_mass_flow_thrust_data(0.5)
-    check_thrust()
+def function_tester():
+    print("Replace me with whatever function you want to test and run verify_tester")
+    test_solar_zenith_angle()
