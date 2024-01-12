@@ -13,11 +13,30 @@ import matplotlib.pyplot as plt
 from scipy.optimize import fsolve
 from matplotlib.lines import Line2D
 from scipy.interpolate import interp1d
+from sklearn.metrics import mean_squared_error
 from cac.constants import DATA_DIR, COLORS
 from cac.combustor import multizone_combustor, get_prop_by_thrust_level
 from cac.combustor import curve_fit_thrust_data, reformat_hdf5
 from cac.reactors import PlumeSolution, PlumeReactor
 
+
+def rms_deviation_values(name, xF, yF, xV, yV):
+    rms_file = os.path.join(DATA_DIR, "verification", "rmse.yaml")
+    if os.path.isfile(rms_file):
+        with open(rms_file, "r") as f:
+            yaml_data = yaml.load(f, Loader=yaml.SafeLoader)
+    else:
+        yaml_data = {}
+    yfunc = interp1d(xV, yV)
+    keep = numpy.logical_and(xF>numpy.amin(xV), xF<numpy.amax(xV))
+    points = list(filter(lambda x: keep[x], range(len(keep))))
+    xF = xF[points[0]:points[-1]]
+    yF = yF[points[0]:points[-1]]
+    yvals = yfunc(xF)
+    yaml_data[name] = float(mean_squared_error(yF, yvals, squared=False))
+    with open(rms_file, "w") as f:
+        yaml.dump(yaml_data, f)
+    return yaml_data[name]
 
 def mixing_box_model_verification():
     # setup plume reactor
@@ -74,8 +93,10 @@ def mixing_box_model_verification():
     plt.xlabel("Time [s]")
     plt.legend()
     fname = os.path.join(DATA_DIR, "verification", "box-model-verification.pdf")
-    # add RMS error file
     plt.savefig(fname)
+    # find rms error
+    rms_deviation_values("box-moles", times, normalized_Xh2o, xX, yX)
+    rms_deviation_values("box-temp", times, normalized_temp, xT, yT)
 
 
 def combustor_design_params():
@@ -467,6 +488,15 @@ def mcm_verification():
     ax.plot(arr.t / 24 / 3600, arr.T , color=COLORS[1])
     plt.savefig(os.path.join(ver_dir, "mcm-temp.pdf"))
     plt.close()
+
+    # RMSE
+    for sp in ["O3", "O1D", "OH", "H2O2", "HO2", "CO"]:
+        mcmy = mcm_data[sp].values
+        mcmy = mcmy / numpy.amax(mcmy)
+        sp_id = gas.species_index(sp)
+        model_data = arr.Y[:, sp_id] * arr.density / gas.molecular_weights[sp_id]
+        model_data = model_data / numpy.amax(model_data)
+        rms_deviation_values(f"mcm-{sp}", arr.t, model_data, mcm_time, mcmy)
 
 def test_solar_zenith_angle():
     # setup reactor
