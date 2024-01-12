@@ -464,8 +464,8 @@ def mcm_verification():
         model_data = arr.Y[:, sp_id] * arr.density / gas.molecular_weights[sp_id]
         model_data = model_data / numpy.amax(model_data)
         # plots
-        ax.plot(mcmx, mcmy, color=COLORS[0], linestyle="", marker="o", markerfacecolor="white")
-        ax.plot(arr.t / 24 / 3600, model_data , color=COLORS[1])
+        ax.plot(mcmx, mcmy, color=COLORS[0], linestyle="", marker="o", markerfacecolor="white", label="MCM")
+        ax.plot(arr.t / 24 / 3600, model_data , color=COLORS[1], label="Cantera")
         ax.set_xlim(0, 3)
         ax.set_ylim(0, 1.2)
         ax.grid(True)
@@ -479,6 +479,8 @@ def mcm_verification():
     plot_spec(axes[1][0], "OH", "$OH$", arr.density / gas.molecular_weights[gas.species_index("OH")])
     plot_spec(axes[1][1], "HO2", "$HO_2$", arr.density / gas.molecular_weights[gas.species_index("HO2")])
     plot_spec(axes[1][2], "H2O2", "$H_2O_2$", arr.density / gas.molecular_weights[gas.species_index("H2O2")])
+    handles, labels = axes[0][0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc='upper center', ncols=2)
     plt.savefig(os.path.join(ver_dir, "mcm-verification.pdf"))
     plt.close()
 
