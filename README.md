@@ -1,5 +1,6 @@
 ## Cantera Atmospheric Coupling Documentation
 In this repository is all the code I have used to test and develop my couplings of atmospheric chemistry to Cantera.
+All saved or stored results for studies can be found in the `study` directory.
 
 ### Getting Started
 The easiest way to repeat or use my analyses is to install this package with
