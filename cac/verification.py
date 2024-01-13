@@ -18,7 +18,7 @@ from cac.constants import DATA_DIR, COLORS
 from cac.combustor import multizone_combustor, get_prop_by_thrust_level
 from cac.combustor import curve_fit_thrust_data, reformat_hdf5
 from cac.reactors import PlumeSolution, PlumeReactor
-
+from cac.rates import ZenithAngleRate, ZenithAngleData
 
 def rms_deviation_values(name, xF, yF, xV, yV):
     rms_file = os.path.join(DATA_DIR, "verification", "rmse.yaml")
@@ -409,6 +409,7 @@ def mcm_verification():
     # setup solution array
     arr = ct.SolutionArray(gas, extra=["t", "mass", "volume"])
     arr.append(r.thermo.state, t=0.0, mass=r.mass, volume=r.volume)
+    rates = numpy.hstack([[0], r.kinetics.forward_rate_constants])
     # loop through all time steps
     times = numpy.linspace(0, seconds, 5000)
     failed = False
@@ -427,6 +428,8 @@ def mcm_verification():
                 net.max_time_step = 10
                 # append the state so last state is always available
                 arr.append(r.thermo.state, t=net.time, mass=r.mass, volume=r.volume)
+                trts = numpy.hstack([[net.time], r.kinetics.forward_rate_constants])
+                rates = numpy.vstack([rates, trts])
             except Exception as e:
                 print(f"Failure {failures}: reducing max time step")
                 # reset reactor and network
@@ -445,8 +448,17 @@ def mcm_verification():
             break
     # save hdf5 file
     hdf5_file = os.path.join(ver_dir, "mcm.hdf5")
+    csv_file = os.path.join(ver_dir, "mcm.csv")
     arr.save(hdf5_file, overwrite=True, name="thermo")
+    arr.save(csv_file, overwrite=True)
     reformat_hdf5(hdf5_file)
+    # save rates file
+    rates_file = os.path.join(ver_dir, "rates.csv")
+    with open(rates_file, "w") as f:
+        cwriter = csv.writer(f, delimiter=",")
+        cwriter.writerow(["time"]+r.kinetics.reactions())
+        for rt in rates:
+            cwriter.writerow(rt)
     # verification data
     mcm_data = pd.read_csv(os.path.join(ver_dir, 'mcm-verification.csv'), engine="python")
     mcm_time = mcm_data['TIME'].values
@@ -504,7 +516,7 @@ def test_solar_zenith_angle():
     # setup reactor
     ver_dir = os.path.join(DATA_DIR, "verification")
     gas = PlumeSolution(os.path.join(ver_dir, "verification.yaml"))
-    sd = 0
+    sd = 182
     # setup initial conditions as 30 ppbv O3 and 100 ppbv CO with 1% water vapor
     r = PlumeReactor(gas, start_day=sd, altitude=1e3)
     # one week
@@ -521,7 +533,6 @@ def test_solar_zenith_angle():
     days = [int(day) for day in days]
     ax.set_xticks(days)
     plt.savefig(os.path.join(ver_dir, "zenith-angles.pdf"))
-    plt.show()
     plt.close()
     # plot solar zenith maximums
     fig, ax = plt.subplots()
@@ -535,7 +546,7 @@ def test_solar_zenith_angle():
     days = [int(day) for day in days]
     ax.set_xticks(days)
     plt.savefig(os.path.join(ver_dir, "zenith-angles-maximums.pdf"))
-    plt.show()
+    plt.close()
     # plot solar zenith minimums
     fig, ax = plt.subplots()
     times = numpy.arange(0, hours, 24)
@@ -548,7 +559,30 @@ def test_solar_zenith_angle():
     days = [int(day) for day in days]
     ax.set_xticks(days)
     plt.savefig(os.path.join(ver_dir, "zenith-angles-minimums.pdf"))
-    plt.show()
+    plt.close()
+    # output of J1OD and JNO2 at local solar noon
+    photo_rates = {}
+    gas.zenith_angle = r.calculate_solar_zenith_angle(12*3600)
+    # custom zenith data
+    zdata = ZenithAngleData()
+    zdata.update(gas)
+    # setup yaml
+    photo_rates["day"] = sd
+    photo_rates["altitude"] = float(r.altitude)
+    photo_rates["zenith-angle"] = float(numpy.rad2deg(r.thermo.zenith_angle))
+    photo_rates["rates"] = {}
+    # loop over photo reactions
+    for i, cr in enumerate(r.kinetics.reactions()):
+        if isinstance(cr.rate, ZenithAngleRate):
+            photo_rates["rates"][str(cr)] = {}
+            photo_rates["rates"][str(cr)]["J"] = float(cr.rate.eval(zdata))
+            params = {}
+            cr.rate.get_parameters(params)
+            params = {k:float(p) for k,p in params.items()}
+            photo_rates["rates"][str(cr)].update(params)
+    with open(os.path.join(ver_dir, "J-rates.yaml"), "w") as f:
+        yaml.dump(photo_rates, f)
+
 
 def function_tester():
     print("Replace me with whatever function you want to test and run verify_tester")
