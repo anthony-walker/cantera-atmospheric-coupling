@@ -1,6 +1,4 @@
-import re
 import os
-import sys
 import inspect
 import numpy as np
 import cantera as ct

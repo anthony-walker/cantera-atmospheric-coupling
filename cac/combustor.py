@@ -194,6 +194,17 @@ def get_mass_flow_thrust_data(thrust_level):
     mdot_air_to = ma[-1]
     return mdot_fuel, mdot_air, mdot_fuel_to, mdot_air_to
 
+def get_interpolated_property(v1, prop1, prop2):
+    cycle_data = pd.read_csv(os.path.join(DATA_DIR, "verification", 'CFM56_5B_EDB.csv'), delimiter=",", engine="python")
+    p1 = cycle_data[prop1].values
+    p2 = cycle_data[prop2].values
+    zipped = list(zip(p1, p2))
+    p1, p2 = zip(*sorted(zipped, key=lambda x: x[0]))
+    for i in range(len(p1)):
+        if numpy.isclose(v1, p1[i], rtol=1e-2):
+            return p2[i]
+    interp_func = interp1d(p1, p2)
+    return interp_func(v1)
 
 def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     # default parameters
@@ -201,9 +212,7 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     n_pz = kwargs.get("n_pz", 9)
     n_pz += 1 if n_pz % 2 == 0  else 0 # ensure always odd
     mixing_param = kwargs.get("mixing_param", 0.39) # mixing parameter
-    equiv_min = kwargs.get("equiv_min", 0.25)
     volume = kwargs.get("volume", 0.0023) # m^3
-    BPR = kwargs.get("BPR", 5.2)
     mdot_fuel, mdot_air, mdot_fuel_takeoff, mdot_air_takeoff = get_mass_flow_thrust_data(thrust_level)
     # initial pressure and temperature
     P_i = get_prop_by_thrust_level(thrust_level, "Pt3[kPa]") * 1000
@@ -216,6 +225,7 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     lhv_data = kwargs.get("lhv_data", 43.5e6) # Lower heating value of fuel in data set J/kg
     lhv_model = kwargs.get("lhv_model", 43.1e6)
     # fixed params from study
+    A_sz = kwargs.pop("A_sz", 0.15) # meters squared
     L_sz = 0.075 # m
     f_sm = 0.5 # fraction of mass flow in slow mixing
     f_fm = 1 - f_sm
@@ -233,6 +243,9 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     mdot_st = numpy.sum(mdot_fuel_st / fuel.Y[fkeys])
     mdot_air_st= numpy.sum(mdot_st * fuel.Y[akeys])
     FARst = mdot_fuel_st / mdot_air_st
+    # minimum equivalence ratio
+    equiv_min = kwargs.get("equiv_min", 0.25)
+    equiv_max = kwargs.get("equiv_max", 3.6)
     # adjustments to airflow can better fit thesis data but overall behavior seems to
     # mostly correct
     if kwargs.get("madjust", False):
@@ -243,6 +256,7 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     fuel_scalar = kwargs.get("fuel_scalar", lhv_data / lhv_model)
     f_air_pz = mdot_fuel_takeoff * fuel_scalar / (mdot_air_takeoff * equiv_pz * FARst)
     f_air_sa = mdot_fuel_takeoff / (equiv_sec_zone * FARst * mdot_air_takeoff)
+    print(thrust_level, FARst, f_air_pz, f_air_sa)
     # update mass flow rates
     mdot = mdot_air * f_air_pz + mdot_fuel * fuel_scalar
     thermo_states["mdot_fuel"] = float(fuel_scalar * mdot_fuel)
@@ -253,15 +267,17 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     equiv_mean = mdot_fuel * fuel_scalar / (mdot_air * f_air_pz * FARst)
     # calculated parameters
     f_air_da = 1 - f_air_sa - f_air_pz
-    beta_scalar = kwargs.get("beta_scalar", 0.7 * thrust_level)
-    beta_sa_sm = f_air_sa * f_sm * mdot_air / (l_sa_sm * L_sz) # * beta_scalar
-    beta_sa_fm = f_air_sa * f_fm * mdot_air / (l_sa_fm * L_sz) # * beta_scalar
-    beta_da = f_air_da * mdot_air / (l_dae - l_das) / L_sz # * beta_scalar * 0.75
+    if f_air_da < 0:
+        print("Not enough dilution air, f_air_da set to 0")
+        f_air_da = 0
+    beta_scalar = kwargs.get("beta_scalar", 1.0)
+    beta_sa_sm = f_air_sa * f_sm * mdot_air / (l_sa_sm * L_sz) * beta_scalar
+    beta_sa_fm = f_air_sa * f_fm * mdot_air / (l_sa_fm * L_sz) * beta_scalar
+    beta_da = f_air_da * mdot_air / (l_dae - l_das) / L_sz * beta_scalar
     # calculate phi values
     sigma = mixing_param * equiv_mean
-    equiv_min = 0.3 + thrust_level * 0.1
-    equiv_min = max(equiv_min, equiv_mean - 3 * sigma)
-    coeff = (equiv_mean - equiv_min) / sigma
+    coeff = min([abs(equiv_mean - equiv_min) / sigma, abs(equiv_max - equiv_mean) / sigma, 2])
+    thermo_states["n-deviations"] = float(coeff)
     phis = numpy.linspace(equiv_mean - coeff * sigma, equiv_mean + coeff * sigma, n_pz)
     thermo_states["phi_mean"] = float(equiv_mean)
     thermo_states["thrust_level"] = float(thrust_level)
@@ -282,23 +298,44 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
         # reset fuel object
         fuel.TP = T_i, P_i
         fuel.set_equivalence_ratio(phis[i], X_fuel, X_air, basis="mole")
-        fuel.equilibrate("HP")
         # create reservoirs
         inlet = ct.Reservoir(fuel)
         outlet = ct.Reservoir(fuel)
+        tres = split_volume / fuel.density / mfs[i]
         # create reactor
+        fuel.equilibrate("HP")
         reactors.append(ct.IdealGasConstPressureMoleReactor(fuel))
         reactors[i].volume = split_volume
         # connect
-        mfc = ct.MassFlowController(inlet, reactors[i], mdot=mfs[i])
+        mfc = ct.MassFlowController(inlet, reactors[i], mdot=lambda t: reactors[i].mass / tres)
         ct.PressureController(reactors[i], outlet, primary=mfc)
     # create network and advance to steady state to simulate well stirred reactors
     net = new_network(reactors)
-    # # calculate residence time
-    # tres = [reactors[i].thermo.density * reactors[i].volume / (mass_flow_fractions[i]) for i in range(len(reactors))]
-    # tres = numpy.amin(tres)
-    # net.advance(tres)
-    net.advance_to_steady_state(residual_threshold=1e-2)
+    net.rtol = 1e-12
+    net.atol = 1e-20
+    if not kwargs.get("test", False):
+        net.max_time_step=1e-6 # limiting maximum step provides better convergence
+        net.max_steps=1e9
+        net.advance(0.1) # achieve steady state - value used by lukas
+    else:
+        # net.max_time_step = 1e-4
+        net.advance_to_steady_state(residual_threshold=1e-2)
+    # EI closure
+    def find_EI(r, i, sp):
+        return r.Y[r.component_index(sp)] * mfs[i] * 1000 / (mass_flow_fractions[i] * mdot_fuel)
+    # record EI of CO and of NOx
+    if "CO" in fuel.species_names:
+        ei_co = []
+        for i, r in enumerate(reactors):
+            ei_co.append(float(find_EI(r, i, "CO")))
+        thermo_states["EI_CO_pz"] = ei_co
+    if "NO" and "NO2" in fuel.species_names:
+        ei_nox = []
+        for i, r in enumerate(reactors):
+            cei = find_EI(r, i, "NO")
+            cei += find_EI(r, i, "NO2")
+            ei_nox.append(float(cei))
+        thermo_states["EI_NOx_pz"] = ei_nox
     # temperature distribution
     thermo_states["temperature_distribution"] = [r.T for r in reactors]
     # mix together at constant enthalpy and pressure
@@ -311,14 +348,14 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     mds = mds / mdot
     enthalpy /= mdot
     fuel.HPY = (enthalpy, pressure, mds)
-    # print(thrust_level, fuel.equivalence_ratio(X_fuel, X_air)) #TODO LOOK HERE
+    thermo_states["sz_init_phi"] = float(fuel.equivalence_ratio(X_fuel, X_air))
     print_state_TP(fuel.TP[0], fuel.TP[1], f"2pz:{thrust_level:0.2f}")
     # Instead of modeling as a PFR, converting dilution as a function of z
     # to dilution as a function of time
     # reactors
     fast_mixing = DilutionReactor(fuel, mdot=mdot/2, beta_da=beta_da, beta_mixing=beta_sa_fm, mixing_scale=0.055)
     slow_mixing = DilutionReactor(fuel, mdot=mdot/2, beta_da=beta_da, beta_mixing=beta_sa_sm, mixing_scale=0.55)
-    fast_mixing.volume = 0.925
+    fast_mixing.volume = 1.0 # A_sz * L_sz / 2
     slow_mixing.volume = fast_mixing.volume
     # adjust volume to preserve mass
     total_mass = numpy.sum([r.mass for r in reactors])
@@ -333,18 +370,19 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     # create network
     net = new_network([slow_mixing, fast_mixing], precon=False)
     net.max_time_step = 1e-2
+    net.initialize()
     # solution array for combustor
-    fast_mixing_states = ct.SolutionArray(fast_mixing.thermo, extra=["z", "mdot", "t"])
-    slow_mixing_states = ct.SolutionArray(slow_mixing.thermo, extra=["z", "mdot", "t"])
+    fast_mixing_states = ct.SolutionArray(fast_mixing.thermo, extra=["z", "mdot", "t", "phi"])
+    slow_mixing_states = ct.SolutionArray(slow_mixing.thermo, extra=["z", "mdot", "t", "phi"])
     while fast_mixing.zloc < L_sz or slow_mixing.zloc < L_sz:
-        slow_mixing_states.append(slow_mixing.thermo.state, z=slow_mixing.zloc, t=0.0, mdot=slow_mixing.mass_flow_rate)
-        fast_mixing_states.append(fast_mixing.thermo.state, z=fast_mixing.zloc, t=0.0, mdot=fast_mixing.mass_flow_rate)
+        slow_mixing_states.append(slow_mixing.thermo.state, z=slow_mixing.zloc, t=0.0, mdot=slow_mixing.mass_flow_rate, phi=slow_mixing.thermo.equivalence_ratio(X_fuel, X_air))
+        fast_mixing_states.append(fast_mixing.thermo.state, z=fast_mixing.zloc, t=0.0, mdot=fast_mixing.mass_flow_rate, phi=fast_mixing.thermo.equivalence_ratio(X_fuel, X_air))
         # take 10 steps before every record
         for i in range(50):
             net.step()
     # write last state
-    slow_mixing_states.append(slow_mixing.thermo.state, z=slow_mixing.zloc, t=0.0, mdot=slow_mixing.mass_flow_rate)
-    fast_mixing_states.append(fast_mixing.thermo.state, z=fast_mixing.zloc, t=0.0, mdot=fast_mixing.mass_flow_rate)
+    slow_mixing_states.append(slow_mixing.thermo.state, z=slow_mixing.zloc, t=0.0, mdot=slow_mixing.mass_flow_rate, phi=slow_mixing.thermo.equivalence_ratio(X_fuel, X_air))
+    fast_mixing_states.append(fast_mixing.thermo.state, z=fast_mixing.zloc, t=0.0, mdot=fast_mixing.mass_flow_rate, phi=fast_mixing.thermo.equivalence_ratio(X_fuel, X_air))
     # write out state and reformat
     fm5 = os.path.join(outdir, f"fast-mixing-states{name_id}.hdf5")
     fast_mixing_states.save(fm5, overwrite=True, name="thermo")
@@ -399,7 +437,7 @@ def combustor_atm_sim(equiv_ratio, nsteps, farnesane, sulfur, outdir, fmodel="co
     thermo_states["X_fuel"] = X_fuel
     thermo_states["X_air"] =  X_air
     # design parameters
-    EPR = 25 # engine pressure ratio
+    EPR = 32.8 # engine pressure ratio
     EGT = 800 # K, exhaust gas temperatures
     p_atm = 0.2 * ct.one_atm
     T_atm = 240 # K
