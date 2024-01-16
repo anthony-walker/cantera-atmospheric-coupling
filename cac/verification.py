@@ -20,7 +20,6 @@ from cac.combustor import curve_fit_thrust_data, reformat_hdf5
 from cac.reactors import PlumeSolution, PlumeReactor
 from cac.rates import ZenithAngleRate, ZenithAngleData
 
-
 def rms_deviation_values(name, xF, yF, xV, yV):
     rms_file = os.path.join(DATA_DIR, "verification", "rmse.yaml")
     if os.path.isfile(rms_file):
@@ -117,7 +116,7 @@ def combustor_design_params():
     EPR = 32.6 # engine pressure ratio
     p_atm = 0.2 * ct.one_atm
     T_atm = 240 # K
-    X_air = "O2:1.0, N2:3.76"
+    X_air = "O2:0.21, N2:0.79"
     # create path to fuel model
     X_fuel, fuel_model = polimi_model()
     # creation of fuel thermo object
@@ -133,13 +132,12 @@ def combustor_design_params():
     fuel.set_equivalence_ratio(equiv_ratio, X_fuel, X_air, basis="mole")
     return fuel, equiv_ratio, X_fuel, X_air
 
-
 def parallel_run_combustor(x):
     fuel, equiv_ratio, X_fuel, X_air = combustor_design_params()
-    out_dir = ver_dir = os.path.join(DATA_DIR, "verification")
+    out_dir = os.path.join(DATA_DIR, "verification")
     try:
         print(f"Running thrust-level: {x:.3f}")
-        combustor, thermo_states = multizone_combustor(fuel, x, equiv_ratio, X_fuel, X_air, n_pz=21, name_id=f"-verification-{x:0.2f}", outdir=out_dir, test=True)
+        combustor, thermo_states = multizone_combustor(fuel, x, equiv_ratio, X_fuel, X_air, n_pz=21, name_id=f"-verification-{x:0.2f}", outdir=out_dir)
     except Exception as e:
         print(f"Failed for Thrust-level: {x:.3f}")
         print(e)
@@ -211,7 +209,7 @@ def generate_ei_chart(EI, fuel, cbs):
     fig, ax = plt.subplots()
     ax.plot(thrust_levels, ei_ratio, color=COLORS[0], label="Model prediction")
     # plot experimental data
-    icao_data = pd.read_csv(os.path.join(DATA_DIR, "verification", 'icao-verify.csv'), delimiter=",", engine="python")
+    icao_data = pd.read_csv(os.path.join(DATA_DIR, "verification", 'icao-verify-7B.csv'), delimiter=",", engine="python")
     max_thrust = get_prop_by_thrust_level(1.0, 'NetThrust[kN]')
     thrusts = numpy.array([get_interpolated_property(v, 'Wf[kg/s]', 'NetThrust[kN]') for v in icao_data["mdotf"].values]) / max_thrust
     # plot
@@ -274,7 +272,6 @@ def generate_mean_equiv_ratio_plot():
     fig.savefig(os.path.join(ver_dir, f"mean-equiv-ratio.pdf"), bbox_inches='tight')
     plt.close()
 
-
 @click.command()
 @click.option('--regenerate', is_flag=True, help='Regenerate verification data')
 def combustor_verification(regenerate):
@@ -287,7 +284,7 @@ def combustor_verification(regenerate):
     fuel, equiv_ratio, X_fuel, X_air = combustor_design_params()
     thrust_levels = numpy.linspace(0.07, 1.0, 20)
     thrust_levels = [0.07, 0.3, 0.65, 0.85, 1.0]
-    thrust_levels = [0.07, 1.0]
+    # thrust_levels = [0.07, 1.0]
     if not os.path.isfile(cbs) or regenerate:
         # run in parallel
         with mp.Pool(min(os.cpu_count(), len(thrust_levels))) as pool:
@@ -322,8 +319,7 @@ def combustor_verification(regenerate):
     generate_mixing_zone_plot(1.0, variable="phi", label="Equivalence Ratio")
     generate_mixing_zone_plot(0.07, variable="phi", label="Equivalence Ratio")
 
-
-def convert_mission_out(mout_name="CFM56_5B_737Mission.out"):
+def convert_mission_out(mout_name="CFM56_7B_737Mission.out"):
     ver_dir = os.path.join(DATA_DIR, "verification")
     fname = os.path.join(ver_dir, mout_name)
     with open(fname, "r") as f:
@@ -337,7 +333,6 @@ def convert_mission_out(mout_name="CFM56_5B_737Mission.out"):
     with open(os.path.join(ver_dir, f"{mout_name.split('.')[0]}.csv"), "w") as f:
         f.write(content)
 
-
 def check_thrust():
     cycle_data = pd.read_csv(os.path.join(DATA_DIR, "verification", 'CFM56-7B-737.csv'), delimiter=",", engine="python")
     ma = cycle_data['W3[kg/s]'].values
@@ -345,7 +340,6 @@ def check_thrust():
     thrust = cycle_data['NetThrust[kN]'].values
     for i, j, k in zip(ma, mf, thrust):
         print(i, j, k)
-
 
 def initial_conditions_solver(Y):
     density = 1.2
@@ -357,7 +351,6 @@ def initial_conditions_solver(Y):
     Y[4] = 0.01 * remainder
     Y[5] = 1 - numpy.sum(Y)
     return Y
-
 
 def mcm_verification():
     ver_dir = os.path.join(DATA_DIR, "verification")
@@ -565,7 +558,8 @@ def test_solar_zenith_angle():
     with open(os.path.join(ver_dir, "J-rates.yaml"), "w") as f:
         yaml.dump(photo_rates, f)
 
-
 def function_tester():
     print("Replace me with whatever function you want to test and run verify_tester")
-    test_solar_zenith_angle()
+    max_thrust = get_prop_by_thrust_level(0.18, 'NetThrust[kN]')
+    print(max_thrust)
+    # test_solar_zenith_angle()

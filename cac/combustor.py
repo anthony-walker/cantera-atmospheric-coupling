@@ -158,7 +158,7 @@ def adjust_volume_to_preserve_mass(r, tm):
 
 
 def get_prop_by_thrust_level(thrust_level, prop):
-    cycle_data = pd.read_csv(os.path.join(DATA_DIR, "verification", 'CFM56_5B_EDB.csv'), delimiter=",", engine="python")
+    cycle_data = pd.read_csv(os.path.join(DATA_DIR, "verification", 'CFM56-7B-737.csv'), delimiter=",", engine="python")
     propty = cycle_data[prop].values
     thrust = cycle_data['NetThrust[kN]']
     thrust_percents = thrust / numpy.amax(thrust)
@@ -173,7 +173,7 @@ def get_prop_by_thrust_level(thrust_level, prop):
 
 
 def get_mass_flow_thrust_data(thrust_level):
-    cycle_data = pd.read_csv(os.path.join(DATA_DIR, "verification", 'CFM56_5B_EDB.csv'), delimiter=",", engine="python")
+    cycle_data = pd.read_csv(os.path.join(DATA_DIR, "verification", 'CFM56-7B-737.csv'), delimiter=",", engine="python")
     ma = cycle_data['W3[kg/s]'].values
     mf = cycle_data['Wf[kg/s]'].values
     thrust = cycle_data['NetThrust[kN]']
@@ -195,7 +195,7 @@ def get_mass_flow_thrust_data(thrust_level):
     return mdot_fuel, mdot_air, mdot_fuel_to, mdot_air_to
 
 def get_interpolated_property(v1, prop1, prop2):
-    cycle_data = pd.read_csv(os.path.join(DATA_DIR, "verification", 'CFM56_5B_EDB.csv'), delimiter=",", engine="python")
+    cycle_data = pd.read_csv(os.path.join(DATA_DIR, "verification", 'CFM56-7B-737.csv'), delimiter=",", engine="python")
     p1 = cycle_data[prop1].values
     p2 = cycle_data[prop2].values
     zipped = list(zip(p1, p2))
@@ -233,17 +233,8 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     l_sa_fm = 0.055
     l_dae = 1
     l_das = 0.95
-    # calculate total mass flow rate
-    akeys = [fuel.species_index(x.split(":")[0].strip()) for x in X_air.split(",")]
-    fkeys = [fuel.species_index(x.split(":")[0].strip()) for x in X_fuel.split(",")]
-    # stoichiometric values
-    fuel.TP = T_i, P_i
-    fuel.set_equivalence_ratio(1.0, X_fuel, X_air)
-    mdot_fuel_st = mdot_fuel_takeoff
-    mdot_st = numpy.sum(mdot_fuel_st / fuel.Y[fkeys])
-    mdot_air_st= numpy.sum(mdot_st * fuel.Y[akeys])
-    FARst = mdot_fuel_st / mdot_air_st
     # minimum equivalence ratio
+    FARst = kwargs.get("FARst", 0.068) # This value substantially impacts EIs
     equiv_min = kwargs.get("equiv_min", 0.25)
     equiv_max = kwargs.get("equiv_max", 3.6)
     # adjustments to airflow can better fit thesis data but overall behavior seems to
@@ -254,9 +245,15 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
         mdot_air_takeoff = madjust(mdot_air_takeoff)
     # fraction of total air
     fuel_scalar = kwargs.get("fuel_scalar", lhv_data / lhv_model)
-    f_air_pz = mdot_fuel_takeoff * fuel_scalar / (mdot_air_takeoff * equiv_pz * FARst)
-    f_air_sa = mdot_fuel_takeoff / (equiv_sec_zone * FARst * mdot_air_takeoff)
-    print(thrust_level, FARst, f_air_pz, f_air_sa)
+    fpz= kwargs.get("fpz", 1) # 0.915
+    fsz= kwargs.get("fsz", 1) # 0.75
+    fda = kwargs.get("fda", 1) # 0.3
+    f_air_pz = mdot_fuel_takeoff * fuel_scalar / (mdot_air_takeoff * equiv_pz * FARst) * fpz
+    f_air_sa = mdot_fuel_takeoff / (equiv_sec_zone * FARst * mdot_air_takeoff) * fsz
+    f_air_da = (1 - f_air_sa - f_air_pz) * fda
+    if f_air_da < 0:
+        print("Not enough dilution air, f_air_da set to 0")
+        f_air_da = 0
     # update mass flow rates
     mdot = mdot_air * f_air_pz + mdot_fuel * fuel_scalar
     thermo_states["mdot_fuel"] = float(fuel_scalar * mdot_fuel)
@@ -266,10 +263,6 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     # now determine mean equiv ratio with takeoff air and mdot fuel
     equiv_mean = mdot_fuel * fuel_scalar / (mdot_air * f_air_pz * FARst)
     # calculated parameters
-    f_air_da = 1 - f_air_sa - f_air_pz
-    if f_air_da < 0:
-        print("Not enough dilution air, f_air_da set to 0")
-        f_air_da = 0
     beta_scalar = kwargs.get("beta_scalar", 1.0)
     beta_sa_sm = f_air_sa * f_sm * mdot_air / (l_sa_sm * L_sz) * beta_scalar
     beta_sa_fm = f_air_sa * f_fm * mdot_air / (l_sa_fm * L_sz) * beta_scalar
@@ -311,18 +304,12 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
         ct.PressureController(reactors[i], outlet, primary=mfc)
     # create network and advance to steady state to simulate well stirred reactors
     net = new_network(reactors)
-    net.rtol = 1e-12
-    net.atol = 1e-20
-    if not kwargs.get("test", False):
-        net.max_time_step=1e-6 # limiting maximum step provides better convergence
-        net.max_steps=1e9
-        net.advance(0.1) # achieve steady state - value used by lukas
-    else:
-        # net.max_time_step = 1e-4
-        net.advance_to_steady_state(residual_threshold=1e-2)
+    net.rtol = 1e-10
+    net.atol = 1e-16
+    net.advance_to_steady_state()
     # EI closure
     def find_EI(r, i, sp):
-        return r.Y[r.component_index(sp)] * mfs[i] * 1000 / (mass_flow_fractions[i] * mdot_fuel)
+        return r.Y[r.component_index(sp)] * 1000 * mfs[i] * 1000 / (mass_flow_fractions[i] * mdot_fuel)
     # record EI of CO and of NOx
     if "CO" in fuel.species_names:
         ei_co = []
@@ -355,13 +342,12 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     # reactors
     fast_mixing = DilutionReactor(fuel, mdot=mdot/2, beta_da=beta_da, beta_mixing=beta_sa_fm, mixing_scale=0.055)
     slow_mixing = DilutionReactor(fuel, mdot=mdot/2, beta_da=beta_da, beta_mixing=beta_sa_sm, mixing_scale=0.55)
-    fast_mixing.volume = 1.0 # A_sz * L_sz / 2
+    fast_mixing.volume = 0.86 # A_sz * L_sz / 2
     slow_mixing.volume = fast_mixing.volume
     # adjust volume to preserve mass
     total_mass = numpy.sum([r.mass for r in reactors])
     # create dilution reservoir
-    fuel.TP = T_i, P_i
-    fuel.set_equivalence_ratio(0, X_fuel, X_air)
+    fuel.TPX = T_i, P_i, X_air
     # set needed dilution values
     for r in [fast_mixing, slow_mixing]:
         r.mass_fractions_air = fuel.Y
@@ -369,7 +355,8 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
         r.enthalpy_mass_air = fuel.enthalpy_mass
     # create network
     net = new_network([slow_mixing, fast_mixing], precon=False)
-    net.max_time_step = 1e-2
+    net.rtol = 1e-10
+    net.atol = 1e-16
     net.initialize()
     # solution array for combustor
     fast_mixing_states = ct.SolutionArray(fast_mixing.thermo, extra=["z", "mdot", "t", "phi"])
