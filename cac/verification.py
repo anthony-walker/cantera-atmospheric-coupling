@@ -558,8 +558,72 @@ def test_solar_zenith_angle():
     with open(os.path.join(ver_dir, "J-rates.yaml"), "w") as f:
         yaml.dump(photo_rates, f)
 
+def mcm_arrhenius_rate():
+    ver_dir = os.path.join(DATA_DIR, "verification")
+    gas = PlumeSolution(os.path.join(ver_dir, "verification.yaml"))
+    volume = 1e4
+    T1 = 298
+    P1 = ct.one_atm
+    gas.TPX = T1, P1, "O2:0.205, N2:0.785, H2O:0.5"
+    atm_air = ct.Reservoir(gas)
+    Y = fsolve(initial_conditions_solver, [0.1, 0.1, 0.2, 0.7, 0.01, 1])
+    gas.Y = f"O3: {Y[0]}, CO:{Y[1]}, O2:{Y[2]}, N2:{Y[3]}, H2O:{Y[4]}"
+    r = PlumeReactor(gas, start_day=182, altitude=1e3, no_change_species=["H2O", "O2", "N2"])
+    r.entrainment = False # Turn off entrainment
+    r.volume = volume
+    r.energy_enabled = False
+    # setup reactor network
+    net = ct.ReactorNet([r])
+    net.advance(12*2600)
+    # Reaction 15: O + O3 => 2 O2
+    for i, rt in enumerate(r.kinetics.reactions()):
+        if rt.__str__() == "O + O3 => 2 O2":
+            reaction = rt
+            rid = i
+    Mvalue = r.pressure() / (r.T * ct.boltzmann) / (100**3)
+    cantera_rate = r.kinetics.forward_rate_constants[rid] * 100 ** 3 / ct.avogadro
+    # calculated rate - 8.0D-12*EXP(-2060/TEMP) from fac file
+    calc_rate = 8e-12 * numpy.exp(-2060 / T1)
+    # cantera_rate = reaction.rate
+    assert numpy.isclose(calc_rate, cantera_rate)
+
+def mcm_kunknown_rate():
+    ver_dir = os.path.join(DATA_DIR, "verification")
+    gas = PlumeSolution(os.path.join(ver_dir, "verification.yaml"))
+    volume = 1e4
+    T1 = 298
+    P1 = ct.one_atm
+    gas.TPX = T1, P1, "O2:0.205, N2:0.785, H2O:0.5"
+    atm_air = ct.Reservoir(gas)
+    Y = fsolve(initial_conditions_solver, [0.1, 0.1, 0.2, 0.7, 0.01, 1])
+    gas.Y = f"O3: {Y[0]}, CO:{Y[1]}, O2:{Y[2]}, N2:{Y[3]}, H2O:{Y[4]}"
+    r = PlumeReactor(gas, start_day=182, altitude=1e3, no_change_species=["H2O", "O2", "N2"])
+    r.entrainment = False # Turn off entrainment
+    r.volume = volume
+    r.energy_enabled = False
+    # setup reactor network
+    net = ct.ReactorNet([r])
+    net.advance(12*2600)
+    # both reactions of interest
+    reactions = list(filter(lambda x: x[1].__str__() == "O + O2 => O3", enumerate(r.kinetics.reactions())))
+    for er in reactions:
+        print(er)
+    conv = 100 ** 3 / ct.avogadro
+    kfs = [r.kinetics.forward_rate_constants[i] * conv for i, rt in reactions]
+    Mvalue = r.pressure() / (r.T * ct.boltzmann) / (100**3)
+    N2 = 0.785 * Mvalue
+    O2 = 0.205 * Mvalue
+    # calculated rates
+    # % 5.6D-34*N2*(TEMP/300)@(-2.6)*O2 : O = O3 ;
+    # % 6.0D-34*O2*(TEMP/300)@(-2.6)*O2 : O = O3 ;
+    calc_rates = [5.6e-34 * N2 * (T1 / 300) ** (-2.6) * O2, 6.0e-34 * O2 * (T1 / 300) ** (-2.6) * O2]
+    calc_rates.sort()
+    kfs.sort()
+    assert numpy.allclose(kfs, calc_rates, rtol=1e-4)
+    print(calc_rates)
+    print(kfs)
+    print(gas.concentrations[gas.species_index("O2")])
+
 def function_tester():
     print("Replace me with whatever function you want to test and run verify_tester")
-    max_thrust = get_prop_by_thrust_level(0.18, 'NetThrust[kN]')
-    print(max_thrust)
-    # test_solar_zenith_angle()
+    mcm_kunknown_rate()

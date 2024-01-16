@@ -45,7 +45,7 @@ class ScaledArrheniusRate(ct.ExtensibleRate):
         node["scalar"] = self.scalar
 
     def eval(self, data):
-        return self.A * np.exp(-self.Ea / data.T) * self.conversion
+        return self.A * np.exp(-self.Ea / data.T) * (data.T ** self.b) * self.conversion
 
 
 class ZenithAngleData(ct.ExtensibleRateData):
@@ -101,7 +101,7 @@ class FunctionData(ct.ExtensibleRateData):
 
 @ct.extension(name="function-rate", data=FunctionData)
 class FunctionRate(ct.ExtensibleRate):
-    __slots__ = ("function", "pyfile", "ro2_species", "fargs", "conversion", "mspecies")
+    __slots__ = ("function", "pyfile", "ro2_species", "fargs", "conversion")
 
     def set_parameters(self, node, units):
         fcn_name = node["function"]

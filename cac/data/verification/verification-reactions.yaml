@@ -21,7 +21,7 @@ atmosphere-reactions:
 - equation: H2 + OH + O2 => HO2 + H2O
   rate-constant:
     A: 7.7e-12
-    Ea: -2100.0
+    Ea: 2100.0
     b: 0
   units:
     activation-energy: K
@@ -30,7 +30,7 @@ atmosphere-reactions:
 - equation: H2O2 + OH => HO2 + H2O
   rate-constant:
     A: 2.9e-12
-    Ea: -160.0
+    Ea: 160.0
     b: 0
   units:
     activation-energy: K
@@ -39,7 +39,7 @@ atmosphere-reactions:
 - equation: HO2 + NO => NO2 + OH
   rate-constant:
     A: 3.45e-12
-    Ea: 270.0
+    Ea: -270.0
     b: 0
   units:
     activation-energy: K
@@ -57,7 +57,7 @@ atmosphere-reactions:
 - equation: HO2 + O3 => OH + 2.0 O2
   rate-constant:
     A: 9.70625962752295e-28
-    Ea: 693.0
+    Ea: -693.0
     b: 4.57
   units:
     activation-energy: K
@@ -66,7 +66,7 @@ atmosphere-reactions:
 - equation: HO2 + OH => H2O + O2
   rate-constant:
     A: 4.8e-11
-    Ea: 250.0
+    Ea: -250.0
     b: 0
   units:
     activation-energy: K
@@ -75,7 +75,7 @@ atmosphere-reactions:
 - equation: HO2NO2 + OH => NO2 + H2O + O2
   rate-constant:
     A: 3.2e-13
-    Ea: 690.0
+    Ea: -690.0
     b: 0
   units:
     activation-energy: K
@@ -84,7 +84,7 @@ atmosphere-reactions:
 - equation: HONO + OH => NO2 + H2O
   rate-constant:
     A: 2.5e-12
-    Ea: 260.0
+    Ea: -260.0
     b: 0
   units:
     activation-energy: K
@@ -93,7 +93,7 @@ atmosphere-reactions:
 - equation: NO + NO3 => NO2 + NO2
   rate-constant:
     A: 1.8e-11
-    Ea: 110.0
+    Ea: -110.0
     b: 0
   units:
     activation-energy: K
@@ -102,7 +102,7 @@ atmosphere-reactions:
 - equation: NO + O3 => NO2 + O2
   rate-constant:
     A: 1.4e-12
-    Ea: -1310.0
+    Ea: 1310.0
     b: 0
   units:
     activation-energy: K
@@ -111,7 +111,7 @@ atmosphere-reactions:
 - equation: NO2 + NO3 => NO + NO2 + O2
   rate-constant:
     A: 4.5e-14
-    Ea: -1260.0
+    Ea: 1260.0
     b: 0
   units:
     activation-energy: K
@@ -120,7 +120,7 @@ atmosphere-reactions:
 - equation: NO2 + O => NO + O2
   rate-constant:
     A: 5.5e-12
-    Ea: 188.0
+    Ea: -188.0
     b: 0
   units:
     activation-energy: K
@@ -129,7 +129,7 @@ atmosphere-reactions:
 - equation: NO2 + O3 => NO3 + O2
   rate-constant:
     A: 1.4e-13
-    Ea: -2470.0
+    Ea: 2470.0
     b: 0
   units:
     activation-energy: K
@@ -147,7 +147,7 @@ atmosphere-reactions:
 - equation: O + O3 => 2.0 O2
   rate-constant:
     A: 8e-12
-    Ea: -2060.0
+    Ea: 2060.0
     b: 0
   units:
     activation-energy: K
@@ -156,7 +156,7 @@ atmosphere-reactions:
 - equation: O3 + OH => HO2 + O2
   rate-constant:
     A: 1.7e-12
-    Ea: -940.0
+    Ea: 940.0
     b: 0
   units:
     activation-energy: K

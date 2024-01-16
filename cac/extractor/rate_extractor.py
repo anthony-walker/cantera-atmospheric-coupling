@@ -120,7 +120,7 @@ def get_list_of_rate_data(prefix, dirname):
             EaR = match.group("EaR")
             rate_data["rate-constant"]["A"] *= float(A) if A is not None else 1
             rate_data["rate-constant"]["b"] = float(b) if b is not None else 0
-            rate_data["rate-constant"]["Ea"] =  float(EaR) if EaR is not None else 0
+            rate_data["rate-constant"]["Ea"] =  -1 * float(EaR) if EaR is not None else 0
         else:
             cplx_rate = parse_expr(rate)
             cplx_rate = cplx_rate.simplify()
