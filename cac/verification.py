@@ -356,16 +356,15 @@ def mcm_verification():
     ver_dir = os.path.join(DATA_DIR, "verification")
     gas = PlumeSolution(os.path.join(ver_dir, "verification.yaml"))
     volume = 1e4
-    gas.TPX = 298, ct.one_atm, "O2:0.205, N2:0.785, H2O:0.5"
+    gas.TPX = 298, ct.one_atm, "O2:0.205, N2:0.785, H2O:0.01"
     atm_air = ct.Reservoir(gas)
     Y = fsolve(initial_conditions_solver, [0.1, 0.1, 0.2, 0.7, 0.01, 1])
-    gas.Y = f"O3: {Y[0]}, CO:{Y[1]}, O2:{Y[2]}, N2:{Y[3]}, H2O:{Y[4]}"
+    gas.Y = f"O3: {Y[0]}, CO:{Y[1]}, O2:{Y[2]}, N2:{Y[3]}, H2O:{0.026}"
     # setup initial conditions as 30 ppbv O3 and 100 ppbv CO with 1% water vapor
-    r = PlumeReactor(gas, start_day=182, altitude=1e3, no_change_species=["H2O", "O2", "N2"])
+    r = PlumeReactor(gas, start_day=25, altitude=1e3, no_change_species=["H2O", "O2", "N2"])
     r.entrainment = False # Turn off entrainment
     r.volume = volume
     r.energy_enabled = False
-    # mfc = ct.MassFlowController(atm_air, r, mdot=100)
     # setup reactor network
     net = ct.ReactorNet([r])
     net.max_steps = 1e8
@@ -453,11 +452,17 @@ def mcm_verification():
         # plots
         ax.plot(mcmx, mcmy, color=COLORS[0], linestyle="", marker="o", markerfacecolor="white", label="MCM")
         ax.plot(arr.t / 24 / 3600, model_data , color=COLORS[1], label="Cantera")
-        ax.set_xlim(0, 3)
-        ax.set_ylim(0, 1.2)
+        ax.set_xlim(0, ndays)
         ax.grid(True)
-        ax.set_xticks(numpy.linspace(0, 1, 4))
-        ax.set_xticks(numpy.linspace(0, 3, 4))
+        if numpy.amin(model_data) >= 0.5:
+            ax.set_ylim(0.5, 1.2)
+            ax.set_yticks(numpy.linspace(0.5, 1, 4))
+            ax.set_yticklabels([f"{i:0.2f}" for i in numpy.linspace(0.5, 1, 4)])
+        else:
+            ax.set_ylim(0, 1.2)
+            ax.set_yticks(numpy.linspace(0, 1, 4))
+            ax.set_yticklabels([f"{i:0.2f}" for i in numpy.linspace(0, 1, 4)])
+        ax.set_xticks(numpy.linspace(0, ndays, 4))
         ax.set_xlabel("Time [days]")
         ax.set_ylabel(ylabel)
     plot_spec(axes[0][0], "O3", "$O_3$", arr.density / gas.molecular_weights[gas.species_index("O3")])
@@ -571,10 +576,10 @@ def mcm_arrhenius_rate():
     r = PlumeReactor(gas, start_day=182, altitude=1e3, no_change_species=["H2O", "O2", "N2"])
     r.entrainment = False # Turn off entrainment
     r.volume = volume
-    r.energy_enabled = False
+    r.energy_enabled = True
     # setup reactor network
     net = ct.ReactorNet([r])
-    net.advance(12*2600)
+    net.advance(12*3600)
     # Reaction 15: O + O3 => 2 O2
     for i, rt in enumerate(r.kinetics.reactions()):
         if rt.__str__() == "O + O3 => 2 O2":
@@ -597,13 +602,13 @@ def mcm_kunknown_rate():
     atm_air = ct.Reservoir(gas)
     Y = fsolve(initial_conditions_solver, [0.1, 0.1, 0.2, 0.7, 0.01, 1])
     gas.Y = f"O3: {Y[0]}, CO:{Y[1]}, O2:{Y[2]}, N2:{Y[3]}, H2O:{Y[4]}"
-    r = PlumeReactor(gas, start_day=182, altitude=1e3, no_change_species=["H2O", "O2", "N2"])
+    r = PlumeReactor(gas, start_day=190, altitude=1e3, no_change_species=["H2O", "O2", "N2"])
     r.entrainment = False # Turn off entrainment
     r.volume = volume
     r.energy_enabled = False
     # setup reactor network
     net = ct.ReactorNet([r])
-    net.advance(12*2600)
+    net.advance(12*3600)
     # both reactions of interest
     reactions = list(filter(lambda x: x[1].__str__() == "O + O2 => O3", enumerate(r.kinetics.reactions())))
     for er in reactions:

@@ -1,5 +1,6 @@
 import os
 import re
+import copy
 import ruamel.yaml
 import cac.extractor.rate_extractor as rate_extractor
 
@@ -28,7 +29,7 @@ def get_merged_reaction(reactants, products):
     return " + ".join(reactants) + " => " + " + ".join(products)
 
 
-def balance_by_comps(species, react, prod, total_rcomp, total_pcomp, comp_elem, all_elems):
+def balance_by_comps(species, react, prod, total_rcomp, total_pcomp, comp_elem, all_elems, orders):
     elem_diff = total_rcomp.get(comp_elem, 0) - total_pcomp.get(comp_elem, 0)
     elem_fraction = elem_diff / all_elems.get(comp_elem)
 
@@ -49,6 +50,7 @@ def balance_by_comps(species, react, prod, total_rcomp, total_pcomp, comp_elem, 
             react.append(species)
         for ele, amt in all_elems.items():
             total_rcomp[ele] = elem_fraction * amt + total_rcomp[ele] if ele in total_rcomp.keys() else elem_fraction * amt
+        orders[species] = 0
 
 
 def get_balanced_reaction_list(prefix, dirname):
@@ -61,6 +63,7 @@ def get_balanced_reaction_list(prefix, dirname):
     # replace r
     # split reactions
     balanced_reactions = []
+    orders = []
     for r in reactions:
         react, prod = get_reactants_products(r)
         prod = list(filter(lambda x: bool(x), prod))
@@ -68,27 +71,27 @@ def get_balanced_reaction_list(prefix, dirname):
         pcomp = [species[p]["composition"] for p in prod]
         total_rcomp = get_composition_sum(rcomp)
         total_pcomp = get_composition_sum(pcomp)
+        corders = {}
         # check if balanced
         if total_pcomp != total_rcomp:
             # check for missing H2O, HCL, CO2, O2
             # print(react, prod, total_rcomp, total_pcomp)
-            balance_by_comps("HCL", react, prod, total_rcomp, total_pcomp, "Cl", {'H':1, 'Cl':1})
-            balance_by_comps("HBR", react, prod, total_rcomp, total_pcomp, "Br", {'H':1, 'Br':1})
-            balance_by_comps("H2O", react, prod, total_rcomp, total_pcomp, "H", {'H':2, 'O':1})
-            balance_by_comps("CO2", react, prod, total_rcomp, total_pcomp, "C", {'C':1, 'O':2})
-            balance_by_comps("O2", react, prod, total_rcomp, total_pcomp, "O", {'O':2})
-
-            balance_by_comps("N2", react, prod, total_rcomp, total_pcomp, "N", {'N':2})
-
+            balance_by_comps("HCL", react, prod, total_rcomp, total_pcomp, "Cl", {'H':1, 'Cl':1}, corders)
+            balance_by_comps("HBR", react, prod, total_rcomp, total_pcomp, "Br", {'H':1, 'Br':1}, corders)
+            balance_by_comps("H2O", react, prod, total_rcomp, total_pcomp, "H", {'H':2, 'O':1}, corders)
+            balance_by_comps("CO2", react, prod, total_rcomp, total_pcomp, "C", {'C':1, 'O':2}, corders)
+            balance_by_comps("O2", react, prod, total_rcomp, total_pcomp, "O", {'O':2}, corders)
+            balance_by_comps("N2", react, prod, total_rcomp, total_pcomp, "N", {'N':2}, corders)
+        orders.append(copy.deepcopy(corders))
         # assert they are the same now
         assert total_pcomp == total_rcomp
         balanced_reactions.append(get_merged_reaction(react, prod))
-    return balanced_reactions
+    return balanced_reactions, orders
 
 
 def write_balanced_reaction_list(prefix, dirname):
     rate_data = rate_extractor.get_list_of_rate_data(prefix, dirname)
-    reaction_data = get_balanced_reaction_list(prefix, dirname)
+    reaction_data, orders_data = get_balanced_reaction_list(prefix, dirname)
     # merge into reaction yaml data
     reacts = []
     aero_reacts = []
@@ -96,12 +99,17 @@ def write_balanced_reaction_list(prefix, dirname):
     aero_species = ["NA", "SA"]
     ctr = 1
     # count and add duplicate reactions
-    sorted_rate_data = sorted(list(zip(reaction_data, rate_data)), key=lambda x: x[1].get("type", ""))
-    reaction_data, rate_data = zip(*sorted_rate_data)
+    sorted_rate_data = sorted(list(zip(reaction_data, rate_data, orders_data)), key=lambda x: x[1].get("type", ""))
+    reaction_data, rate_data, orders_data = zip(*sorted_rate_data)
     dups = [reaction_data.count(r) > 1 for r in reaction_data]
-    for cdup, reaction, rate in zip(dups, reaction_data, rate_data):
+    for cdup, reaction, rate, odr in zip(dups, reaction_data, rate_data, orders_data):
         temp = {"equation": reaction}
         temp.update(rate)
+        if odr:
+            temp.update({"orders":odr})
+        # # add all species to the rate
+        # reactants = [rct.strip() for rct in reaction.split("=>")[0].split("+")]
+        # temp.update({"reactants": reactants})
         if cdup:
             temp.update({"duplicate": True})
         non_aero = True

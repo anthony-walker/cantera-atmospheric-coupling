@@ -9,6 +9,8 @@ aerosol-reactions:
     length: cm
     quantity: molec
 - equation: N2O5 + H2O => NA + NA
+  orders:
+    H2O: 0
   rate-constant:
     A: 0.0004
     Ea: 0
@@ -19,6 +21,8 @@ aerosol-reactions:
     quantity: molec
 atmosphere-reactions:
 - equation: H2 + OH + O2 => HO2 + H2O
+  orders:
+    O2: 0
   rate-constant:
     A: 7.7e-12
     Ea: 2100.0
@@ -164,6 +168,8 @@ atmosphere-reactions:
     quantity: molec
 - equation: CO + OH + O2 => HO2 + CO2
   function: KUNKNOWN0
+  orders:
+    O2: 0
   pyfile: verification_rates.py
   ro2file: verification-ro2-sum.txt
   type: function-rate
@@ -220,6 +226,8 @@ atmosphere-reactions:
     quantity: molec
 - equation: HSO3 + O2 => HO2 + SO3
   function: KUNKNOWN18
+  orders:
+    O2: 0
   pyfile: verification_rates.py
   ro2file: verification-ro2-sum.txt
   type: function-rate
@@ -238,6 +246,8 @@ atmosphere-reactions:
     quantity: molec
 - equation: NO + NO + O2 => NO2 + NO2
   function: KUNKNOWN21
+  orders:
+    O2: 0
   pyfile: verification_rates.py
   ro2file: verification-ro2-sum.txt
   type: function-rate
@@ -302,6 +312,8 @@ atmosphere-reactions:
 - duplicate: true
   equation: O + O2 => O3
   function: KUNKNOWN38
+  orders:
+    O2: 0
   pyfile: verification_rates.py
   ro2file: verification-ro2-sum.txt
   type: function-rate
@@ -312,6 +324,8 @@ atmosphere-reactions:
 - duplicate: true
   equation: O + O2 => O3
   function: KUNKNOWN39
+  orders:
+    O2: 0
   pyfile: verification_rates.py
   ro2file: verification-ro2-sum.txt
   type: function-rate
@@ -341,6 +355,8 @@ atmosphere-reactions:
     quantity: molec
 - equation: O1D + H2O => OH + OH
   function: KUNKNOWN42
+  orders:
+    H2O: 0
   pyfile: verification_rates.py
   ro2file: verification-ro2-sum.txt
   type: function-rate
