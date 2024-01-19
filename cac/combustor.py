@@ -3,7 +3,6 @@ import sys
 import csv
 import h5py
 import yaml
-import copy
 import click
 import numpy
 import warnings
@@ -86,7 +85,7 @@ def new_network(r, precon=True):
                             "skip-electrochemistry": True,
                             "skip-flow-devices": True,
                             "skip-walls": True}
-    net.max_steps = 100000
+    net.max_steps = 1e9
     # setup preconditioner
     if precon:
         net.preconditioner = ct.AdaptivePreconditioner()
@@ -98,10 +97,10 @@ def new_network(r, precon=True):
 @click.option('--equiv_ratio', default=1.0, help='Equivalence ratio for the fuel')
 @click.option('--nsteps', default=100, help='The number of steps to take between records')
 @click.option("--farnesane", default=0.1, help="Farnesane blend percentage")
-@click.option("--sulfur", default=0.0001, help="Sulfur amount in mole fraction")
 @click.option("--outdir", default=DATA_DIR, help="Output directory for data")
-def run_combustor_atm_sim(equiv_ratio, nsteps, farnesane, sulfur, outdir):
-    combustor_atm_sim(equiv_ratio, nsteps, farnesane, sulfur, outdir)
+@click.option("--thrust", default=DATA_DIR, help="Percentage of thrust to use")
+def run_combustor_atm_sim(equiv_ratio, nsteps, farnesane, outdir, thrust):
+    combustor_atm_sim(equiv_ratio, nsteps, farnesane, outdir, thrust_level=thrust)
 
 
 def print_state_TP(T, P, i):
@@ -206,10 +205,22 @@ def get_interpolated_property(v1, prop1, prop2):
     interp_func = interp1d(p1, p2)
     return interp_func(v1)
 
+def get_mean_equivalence_ratio_from_data(thrust_level):
+    cycle_data = pd.read_csv(os.path.join(DATA_DIR, "verification", 'equiv_mean.csv'), delimiter=",", engine="python")
+    phi_values = cycle_data["phi_mean"].values
+    thrust_values = cycle_data["thrust_level"].values
+    zipped = list(zip(thrust_values, phi_values))
+    thrust_values, phi_values = zip(*sorted(zipped, key=lambda x: x[0]))
+    for i in range(len(thrust_values)):
+        if numpy.isclose(thrust_level, thrust_values[i], rtol=1e-2):
+            return phi_values[i]
+    interp_func = interp1d(thrust_values, phi_values)
+    return interp_func(thrust_level)
+
 def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     # default parameters
     thermo_states = kwargs.get("thermo_states", {"T":[], "P":[]})
-    n_pz = kwargs.get("n_pz", 9)
+    n_pz = kwargs.get("n_pz", 21)
     n_pz += 1 if n_pz % 2 == 0  else 0 # ensure always odd
     mixing_param = kwargs.get("mixing_param", 0.39) # mixing parameter
     volume = kwargs.get("volume", 0.0023) # m^3
@@ -218,12 +229,18 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     P_i = get_prop_by_thrust_level(thrust_level, "Pt3[kPa]") * 1000
     T_i = get_prop_by_thrust_level(thrust_level, "Tt3[K]")
     print_state_TP(T_i, P_i, f"cst:{thrust_level:0.2f}")
+    thermo_states["T"] = thermo_states.get("T", []) + [f"{T_i:0.2f}"]
+    thermo_states["P"] = thermo_states.get("P", []) + [f"{P_i:0.2f}"]
     assert thrust_level <= 1.0
     equiv_sec_zone = kwargs.get("equiv_sz", 0.7)
     outdir = kwargs.get("outdir", "./")
     name_id = kwargs.get("name_id", "")
     lhv_data = kwargs.get("lhv_data", 43.5e6) # Lower heating value of fuel in data set J/kg
     lhv_model = kwargs.get("lhv_model", 43.1e6)
+    fuel_scalar = kwargs.get("fuel_scalar", lhv_data / lhv_model)
+    FARst = kwargs.get("FARst", 0.068) # This value substantially impacts EIs
+    # adjustments to airflow can better fit thesis data but overall behavior seems
+    # to mostly correct
     # fixed params from study
     A_sz = kwargs.pop("A_sz", 0.15) # meters squared
     L_sz = 0.075 # m
@@ -233,18 +250,12 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     l_sa_fm = 0.055
     l_dae = 1
     l_das = 0.95
-    # minimum equivalence ratio
-    FARst = kwargs.get("FARst", 0.068) # This value substantially impacts EIs
-    equiv_min = kwargs.get("equiv_min", 0.25)
-    equiv_max = kwargs.get("equiv_max", 3.6)
-    # adjustments to airflow can better fit thesis data but overall behavior seems to
-    # mostly correct
-    if kwargs.get("madjust", False):
-        madjust = lambda x: x - x * 0.35 * (1 - thrust_level) ** 3
-        mdot_air = madjust(mdot_air)
-        mdot_air_takeoff = madjust(mdot_air_takeoff)
+    # This mode calc
+    if kwargs.get("mode", "data") == "verification":
+        equiv_mean = get_mean_equivalence_ratio_from_data(thrust_level)
+        # adjust mdot air to meet mean equiv ratio from thesis
+        mdot_air = (equiv_pz * mdot_fuel * mdot_air_takeoff) / (equiv_mean * mdot_fuel_takeoff)
     # fraction of total air
-    fuel_scalar = kwargs.get("fuel_scalar", lhv_data / lhv_model)
     fpz= kwargs.get("fpz", 1) # 0.915
     fsz= kwargs.get("fsz", 1) # 0.75
     fda = kwargs.get("fda", 1) # 0.3
@@ -256,10 +267,6 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
         f_air_da = 0
     # update mass flow rates
     mdot = mdot_air * f_air_pz + mdot_fuel * fuel_scalar
-    thermo_states["mdot_fuel"] = float(fuel_scalar * mdot_fuel)
-    thermo_states["mdot_air"] = float(mdot_air)
-    thermo_states["f_air_pz"] = float(f_air_pz)
-    thermo_states["f_air_sa"] = float(f_air_sa)
     # now determine mean equiv ratio with takeoff air and mdot fuel
     equiv_mean = mdot_fuel * fuel_scalar / (mdot_air * f_air_pz * FARst)
     # calculated parameters
@@ -268,13 +275,11 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     beta_sa_fm = f_air_sa * f_fm * mdot_air / (l_sa_fm * L_sz) * beta_scalar
     beta_da = f_air_da * mdot_air / (l_dae - l_das) / L_sz * beta_scalar
     # calculate phi values
+    equiv_min = kwargs.get("equiv_min", 0.3)
+    equiv_max = kwargs.get("equiv_max", 3.6)
     sigma = mixing_param * equiv_mean
     coeff = min([abs(equiv_mean - equiv_min) / sigma, abs(equiv_max - equiv_mean) / sigma, 2])
-    thermo_states["n-deviations"] = float(coeff)
     phis = numpy.linspace(equiv_mean - coeff * sigma, equiv_mean + coeff * sigma, n_pz)
-    thermo_states["phi_mean"] = float(equiv_mean)
-    thermo_states["thrust_level"] = float(thrust_level)
-    thermo_states["phi_distribution"] = [float(p) for p in phis]
     # calculate mass flows
     mass_flow_fractions = (1 / (sigma * numpy.sqrt(2*numpy.pi))) * numpy.exp(- (phis - equiv_mean) ** 2 / (2 * sigma ** 2 )) * (phis[1] - phis[0])
     # scale mass flow fractions to equal all of mdot
@@ -282,34 +287,47 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     mfs = mass_flow_fractions * mdot
     assert numpy.isclose(numpy.sum(mfs), mdot)
     # add to thermo states
+    split_volumes = volume * mass_flow_fractions # split over zones
+    # add all calculated parameters to output
+    thermo_states["mdot_fuel"] = float(fuel_scalar * mdot_fuel)
+    thermo_states["mdot_air"] = float(mdot_air)
+    thermo_states["f_air_pz"] = float(f_air_pz)
+    thermo_states["f_air_sa"] = float(f_air_sa)
+    thermo_states["phi_mean"] = float(equiv_mean)
+    thermo_states["thrust_level"] = float(thrust_level)
+    thermo_states["phi_distribution"] = [float(p) for p in phis]
     thermo_states["mass_flow_fraction_distribution"] = [float(p) for p in mass_flow_fractions]
     thermo_states["mass_flow_distribution"] = [float(p) for p in mfs]
-    split_volume = volume / n_pz # split over zones
+    thermo_states["n-deviations"] = float(coeff)
     # create number of reactors
     reactors = []
     for i in range(n_pz):
         # reset fuel object
         fuel.TP = T_i, P_i
-        fuel.set_equivalence_ratio(phis[i], X_fuel, X_air, basis="mole")
+        fuel.set_equivalence_ratio(phis[i], X_fuel, X_air)
         # create reservoirs
         inlet = ct.Reservoir(fuel)
         outlet = ct.Reservoir(fuel)
-        tres = split_volume / fuel.density / mfs[i]
         # create reactor
         fuel.equilibrate("HP")
         reactors.append(ct.IdealGasConstPressureMoleReactor(fuel))
-        reactors[i].volume = split_volume
+        reactors[i].volume = split_volumes[i]
+        tres = split_volumes[i] / reactors[i].thermo.density / mfs[i]
         # connect
-        mfc = ct.MassFlowController(inlet, reactors[i], mdot=lambda t: reactors[i].mass / tres)
+        mfc = ct.MassFlowController(inlet, reactors[i], mdot=lambda t: mfs[i])
         ct.PressureController(reactors[i], outlet, primary=mfc)
     # create network and advance to steady state to simulate well stirred reactors
     net = new_network(reactors)
-    net.rtol = 1e-10
-    net.atol = 1e-16
-    net.advance_to_steady_state()
+    if not kwargs.get("test", False):
+        net.rtol = 1e-10
+        net.atol = 1e-16
+        net.max_time_step = 1e-4
+        net.advance(tres * 10)
+    else:
+        net.advance_to_steady_state(residual_threshold=1e-2)
     # EI closure
     def find_EI(r, i, sp):
-        return r.Y[r.component_index(sp)] * 1000 * mfs[i] * 1000 / (mass_flow_fractions[i] * mdot_fuel)
+        return r.Y[r.component_index(sp)] * mfs[i] * 1000 / (mdot_fuel * mass_flow_fractions[i])
     # record EI of CO and of NOx
     if "CO" in fuel.species_names:
         ei_co = []
@@ -337,15 +355,13 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     fuel.HPY = (enthalpy, pressure, mds)
     thermo_states["sz_init_phi"] = float(fuel.equivalence_ratio(X_fuel, X_air))
     print_state_TP(fuel.TP[0], fuel.TP[1], f"2pz:{thrust_level:0.2f}")
+    thermo_states.get("T", []).append(f"{fuel.TP[0]:0.2f}"])
+    thermo_states.get("P", []).append(f"{fuel.TP[1]:0.2f}"])
     # Instead of modeling as a PFR, converting dilution as a function of z
     # to dilution as a function of time
     # reactors
     fast_mixing = DilutionReactor(fuel, mdot=mdot/2, beta_da=beta_da, beta_mixing=beta_sa_fm, mixing_scale=0.055)
     slow_mixing = DilutionReactor(fuel, mdot=mdot/2, beta_da=beta_da, beta_mixing=beta_sa_sm, mixing_scale=0.55)
-    fast_mixing.volume = 0.86 # A_sz * L_sz / 2
-    slow_mixing.volume = fast_mixing.volume
-    # adjust volume to preserve mass
-    total_mass = numpy.sum([r.mass for r in reactors])
     # create dilution reservoir
     fuel.TPX = T_i, P_i, X_air
     # set needed dilution values
@@ -397,24 +413,17 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     thermo_states["mdot_out"] = slow_mixing.mass_flow_rate + fast_mixing.mass_flow_rate
     # make and return combustor reactor
     combustor = ct.IdealGasConstPressureMoleReactor(fuel)
-    total_mass = slow_mixing.mass + fast_mixing.mass
-    combustor.volume = slow_mixing.volume + fast_mixing.volume
-    adjust_volume_to_preserve_mass(combustor, total_mass)
-    assert numpy.isclose(combustor.mass, total_mass)
     return combustor, thermo_states
 
 
-def combustor_atm_sim(equiv_ratio, nsteps, farnesane, sulfur, outdir, fmodel="combustor-min.yaml"):
-    thermo_states = {"farnesane": f"{farnesane:.2f}", "sulfur": f"{sulfur:.4f}", "equivalence_ratio": f"{equiv_ratio:.1f}"}
+def combustor_atm_sim(equiv_ratio, nsteps, farnesane, outdir, fmodel="combustor-min.yaml", thrust_level=1.0):
+    thermo_states = {"farnesane": f"{farnesane:.2f}", "equivalence_ratio": f"{equiv_ratio:.1f}"}
     # append appropriate directories
     sys.path.append(DATA_DIR)
     # create initial fuel setting
     X_fuel = {"N-C10H22":0.4267, "I-C8H18":0.3302, "C7H8":0.2431}
-    # add H2S
-    if sulfur > 0:
-        X_fuel.update({"H2S":sulfur})
     # adjust fuels for farnesane blend
-    X_fuel = {k:v * (1-farnesane-sulfur) for k,v in X_fuel.items()}
+    X_fuel = {k:v * (1-farnesane) for k,v in X_fuel.items()}
     # add farnesane blend
     Xfarne = 1 - numpy.sum([v for k,v in X_fuel.items()])
     if Xfarne > 0:
@@ -424,10 +433,8 @@ def combustor_atm_sim(equiv_ratio, nsteps, farnesane, sulfur, outdir, fmodel="co
     thermo_states["X_fuel"] = X_fuel
     thermo_states["X_air"] =  X_air
     # design parameters
-    EPR = 32.8 # engine pressure ratio
-    EGT = 800 # K, exhaust gas temperatures
-    p_atm = 0.2 * ct.one_atm
-    T_atm = 240 # K
+    p_atm = get_prop_by_thrust_level(thrust_level, "Pt0[kPa]") * 1000
+    T_atm = get_prop_by_thrust_level(thrust_level, "Tt[K]")
     print_state_TP(T_atm, p_atm, 0)
     thermo_states["T"] = [f"{T_atm:0.2f}"]
     thermo_states["P"] = [f"{p_atm:0.2f}"]
@@ -436,23 +443,10 @@ def combustor_atm_sim(equiv_ratio, nsteps, farnesane, sulfur, outdir, fmodel="co
     # creation of fuel thermo object
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        fuel = ct.Solution(fuel_model, name="combustor", transport_model=None, basis="mole")
+        fuel = ct.Solution(fuel_model, name="combustor", transport_model=None)
     fuel.TPX = T_atm, p_atm, X_air
-    # isentropic compression
-    p1 = p_atm * EPR
-    T1 = T_atm * (p1 / p_atm) ** (ct.gas_constant / fuel.cp_mole)
-    thermo_states["T"].append(f"{T1:0.2f}")
-    thermo_states["P"].append(f"{p1:0.2f}")
-    print_state_TP(T1, p1, 1)
-    # set input fuel conditions
-    fuel.TP = T1, p1
-    fuel.set_equivalence_ratio(equiv_ratio, X_fuel, X_air, basis="mole")
-    # run braggs combustor
-    combustor, combustor_states, wsr, wsr_states. ss_data = braggs_combustor(fuel, thermo_states=thermo_states)
-    # write data
-    ch5 = os.path.join(outdir, "combustor", f"combustor-pfr-states-{equiv_ratio:.1f}-{farnesane:.2f}-{sulfur:.4f}.hdf5")
-    combustor_states.save(ch5, overwrite=True, name="thermo")
-    reformat_hdf5(ch5)
+    # compression is achieved in data file during multizone-combustor run
+    combustor, ____ = multizone_combustor(fuel, thrust_level, thermo_states=thermo_states)
     # continue
     T2, p2 = combustor.thermo.TP
     print_state_TP(T2, p2, 2)
@@ -503,7 +497,7 @@ def combustor_atm_sim(equiv_ratio, nsteps, farnesane, sulfur, outdir, fmodel="co
     exhaust = ct.Reservoir(fuel)
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        atms = PlumeSolution(fuel_model, name="atmosphere", transport_model=None, basis="mole")
+        atms = PlumeSolution(fuel_model, name="atmosphere", transport_model=None)
     atms.TPX = T_atm, p_atm, X_air
     air_state = atms.TPX
     air_enthalpy = atms.partial_molar_enthalpies
@@ -562,11 +556,11 @@ def combustor_atm_sim(equiv_ratio, nsteps, farnesane, sulfur, outdir, fmodel="co
     thermo_states["P"].append(f"{p4:0.2f}")
     print_state_TP(atmosphere.T, p4, 5)
     # write out thermo yaml
-    states_file = os.path.join(outdir, "combustor", f"thermo-states-{equiv_ratio:.1f}-{farnesane:.2f}-{sulfur:.4f}.yaml")
+    states_file = os.path.join(outdir, "combustor", f"thermo-states-{equiv_ratio:.1f}-{farnesane:.2f}.yaml")
     with open(states_file, "w") as f:
         yaml.dump(thermo_states, f)
     # write out hdf5 data
-    ah5 = os.path.join(outdir, "combustor", f"atms-states-{equiv_ratio:.1f}-{farnesane:.2f}-{sulfur:.4f}.hdf5")
+    ah5 = os.path.join(outdir, "combustor", f"atms-states-{equiv_ratio:.1f}-{farnesane:.2f}.hdf5")
     atms_states.save(ah5, overwrite=True, name="thermo")
     reformat_hdf5(ah5)
 
