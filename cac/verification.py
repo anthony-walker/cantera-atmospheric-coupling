@@ -104,8 +104,30 @@ def ANOx_model():
 def creck_model():
     return "NC12H26:0.404, IC8H18:0.295, TMBENZ:0.073, NPBENZ:0.228", os.path.join(DATA_DIR, "verification", "jet-fuel.yaml")
 
-def polimi_model():
-    return "NC12H26:0.404, IC8H18:0.295, TMBENZ:0.073, NPBENZ:0.228", os.path.join(DATA_DIR, "verification", "polimi.yaml")
+def polimi_model(choice=0):
+    if (choice == 0):
+        xfuel = "NC12H26:0.404, IC8H18:0.295, TMBENZ:0.073, NPBENZ:0.228"
+    elif (choice == 1):
+        xfuel = "NC12H26:0.303, MCYC6:0.485, XYLENE:0.212"
+    elif (choice == 2):
+        xfuel = "NC12H26:0.384, MCYC6:0.234, IC16H34:0.148, C7H8:0.234"
+    elif (choice == 3):
+        xfuel = "NC12H26:0.290, IC16H34:0.142, C7H8:0.249, DECALIN:0.319"
+    elif (choice == 4):
+        xfuel = "NC12H26:0.371, IC8H18:0.020, IC16H34:0.206, C7H8:0.259, DECALIN:0.145"
+    # napthalene calc
+    items = []
+    sum = 0
+    for fc in xfuel.split(", "):
+        n,v = fc.split(":")
+        items.append(fc)
+        sum += float(v)
+    if not numpy.isclose((1-sum), 0) and 1-sum > 0:
+        items.append(f"C10H8:{1-sum:.3f}")
+    return ", ".join(items), os.path.join(DATA_DIR, "verification", "polimi.yaml")
+
+def gri_model():
+    return "CH4:1.0", "gri30.yaml"
 
 def hydogen_model():
     return "H2:1.0", "h2o2.yaml"
@@ -118,18 +140,18 @@ def combustor_design_params():
     T_atm = 240 # K
     X_air = "O2:0.21, N2:0.79"
     # create path to fuel model
-    X_fuel, fuel_model = polimi_model()
+    X_fuel, fuel_model = polimi_model(choice=0)
     # creation of fuel thermo object
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        fuel = ct.Solution(fuel_model, transport_model=None, basis="mole")
+        fuel = ct.Solution(fuel_model, transport_model=None)
     fuel.TPX = T_atm, p_atm, X_air
     # isentropic compression
     p1 = p_atm * EPR
     T1 = T_atm * (p1 / p_atm) ** (ct.gas_constant / fuel.cp_mole)
     # set input fuel conditions
     fuel.TP = T1, p1
-    fuel.set_equivalence_ratio(equiv_ratio, X_fuel, X_air, basis="mole")
+    fuel.set_equivalence_ratio(equiv_ratio, X_fuel, X_air)
     return fuel, equiv_ratio, X_fuel, X_air
 
 def parallel_run_combustor(x):
@@ -137,7 +159,7 @@ def parallel_run_combustor(x):
     out_dir = os.path.join(DATA_DIR, "verification")
     try:
         print(f"Running thrust-level: {x:.3f}")
-        combustor, thermo_states = multizone_combustor(fuel, x, equiv_ratio, X_fuel, X_air, n_pz=21, name_id=f"-verification-{x:0.2f}", outdir=out_dir)
+        combustor, thermo_states = multizone_combustor(fuel, x, equiv_ratio, X_fuel, X_air, n_pz=21, name_id=f"-verification-{x:0.2f}", outdir=out_dir, mode="data", test=False)
     except Exception as e:
         print(f"Failed for Thrust-level: {x:.3f}")
         print(e)
@@ -245,7 +267,10 @@ def generate_pz_phi_plot(variable, label, add_source=False):
         fig, ax = plt.subplots()
     for i, k in enumerate(yaml_data.keys()):
         ldata = yaml_data[k]
-        ax.plot(ldata["phi_distribution"], ldata[variable], color=COLORS[i], label=f"{float(k.split('-')[-1]):.2f}", marker="o")
+        if i < len(COLORS):
+            ax.plot(ldata["phi_distribution"], ldata[variable], color=COLORS[i], label=f"{float(k.split('-')[-1]):.2f}", marker="o")
+        else:
+            ax.plot(ldata["phi_distribution"], ldata[variable], label=f"{float(k.split('-')[-1]):.2f}", marker="o")
     ax.legend(ncols=1, bbox_to_anchor=(1.2, 1.03))
     ax.set_ylabel(label)
     ax.set_xlabel("Equivalence Ratio")
@@ -282,9 +307,9 @@ def combustor_verification(regenerate):
     if not os.path.isdir(ver_dir):
         os.mkdir(ver_dir)
     fuel, equiv_ratio, X_fuel, X_air = combustor_design_params()
-    thrust_levels = numpy.linspace(0.07, 1.0, 20)
     thrust_levels = [0.07, 0.3, 0.65, 0.85, 1.0]
-    # thrust_levels = [0.07, 1.0]
+    thrust_levels = numpy.linspace(0.07, 1.0, 30)
+
     if not os.path.isfile(cbs) or regenerate:
         # run in parallel
         with mp.Pool(min(os.cpu_count(), len(thrust_levels))) as pool:
@@ -305,11 +330,6 @@ def combustor_verification(regenerate):
         combustor_states.save(cbs, overwrite=True, name="thermo")
     # functions to generate plots
     generate_mean_equiv_ratio_plot()
-    # primary zone EI
-    generate_pz_phi_plot("mass_flow_fraction_distribution", "Mass Flow Fraction", add_source=True)
-    generate_pz_phi_plot("temperature_distribution", "Temperature [K]")
-    generate_pz_phi_plot("EI_CO_pz", "EI CO $g / kg_{fuel}$")
-    generate_pz_phi_plot("EI_NOx_pz", "EI NOx $g / kg_{fuel}$")
     # Total emissions indices
     generate_ei_chart("NOx", fuel, cbs)
     generate_ei_chart("CO", fuel, cbs)
@@ -318,6 +338,11 @@ def combustor_verification(regenerate):
     generate_mixing_zone_plot(0.07, "sz-T-7.csv")
     generate_mixing_zone_plot(1.0, variable="phi", label="Equivalence Ratio")
     generate_mixing_zone_plot(0.07, variable="phi", label="Equivalence Ratio")
+    # primary zone EI
+    generate_pz_phi_plot("mass_flow_fraction_distribution", "Mass Flow Fraction", add_source=True)
+    generate_pz_phi_plot("temperature_distribution", "Temperature [K]")
+    generate_pz_phi_plot("EI_CO_pz", "EI CO $g / kg_{fuel}$")
+    generate_pz_phi_plot("EI_NOx_pz", "EI NOx $g / kg_{fuel}$")
 
 def convert_mission_out(mout_name="CFM56_7B_737Mission.out"):
     ver_dir = os.path.join(DATA_DIR, "verification")
@@ -360,8 +385,13 @@ def mcm_verification():
     atm_air = ct.Reservoir(gas)
     Y = fsolve(initial_conditions_solver, [0.1, 0.1, 0.2, 0.7, 0.01, 1])
     gas.Y = f"O3: {Y[0]}, CO:{Y[1]}, O2:{Y[2]}, N2:{Y[3]}, H2O:{0.026}"
+    # get mfstr
+    Xact = ""
+    for sp in ["O3", "CO", "O2", "N2", "H2O"]:
+        Xact += f" {sp}:{gas.Y[gas.species_index(sp)]:0.3e}"
+    open(os.path.join(ver_dir, "Xatms.txt"), "w").write(Xact)
     # setup initial conditions as 30 ppbv O3 and 100 ppbv CO with 1% water vapor
-    r = PlumeReactor(gas, start_day=25, altitude=1e3, no_change_species=["H2O", "O2", "N2"])
+    r = PlumeReactor(gas, start_day=182, altitude=1e3, no_change_species=["H2O", "O2", "N2"])
     r.entrainment = False # Turn off entrainment
     r.volume = volume
     r.energy_enabled = False
@@ -450,7 +480,7 @@ def mcm_verification():
         model_data = arr.Y[:, sp_id] * arr.density / gas.molecular_weights[sp_id]
         model_data = model_data / numpy.amax(model_data)
         # plots
-        ax.plot(mcmx, mcmy, color=COLORS[0], linestyle="", marker="o", markerfacecolor="white", label="MCM")
+        ax.plot(mcmx, mcmy, color=COLORS[0], linestyle="", marker="o", markerfacecolor="white", label="AtChem Online")
         ax.plot(arr.t / 24 / 3600, model_data , color=COLORS[1], label="Cantera")
         ax.set_xlim(0, ndays)
         ax.grid(True)

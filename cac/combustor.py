@@ -304,7 +304,7 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     for i in range(n_pz):
         # reset fuel object
         fuel.TP = T_i, P_i
-        fuel.set_equivalence_ratio(phis[i], X_fuel, X_air)
+        fuel.set_equivalence_ratio(phis[i], X_fuel, X_air, basis="mole")
         # create reservoirs
         inlet = ct.Reservoir(fuel)
         outlet = ct.Reservoir(fuel)
@@ -316,15 +316,12 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
         # connect
         mfc = ct.MassFlowController(inlet, reactors[i], mdot=lambda t: mfs[i])
         ct.PressureController(reactors[i], outlet, primary=mfc)
-    # create network and advance to steady state to simulate well stirred reactors
-    net = new_network(reactors)
-    if not kwargs.get("test", False):
+        # create a network and integrate the reactor to residence time
+        # it is faster and more stable to integrate them all separately than together
+        net = new_network([reactors[i]])
         net.rtol = 1e-10
         net.atol = 1e-16
-        net.max_time_step = 1e-4
-        net.advance(tres * 10)
-    else:
-        net.advance_to_steady_state(residual_threshold=1e-2)
+        net.advance(tres * 100)
     # EI closure
     def find_EI(r, i, sp):
         return r.Y[r.component_index(sp)] * mfs[i] * 1000 / (mdot_fuel * mass_flow_fractions[i])
@@ -355,8 +352,8 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     fuel.HPY = (enthalpy, pressure, mds)
     thermo_states["sz_init_phi"] = float(fuel.equivalence_ratio(X_fuel, X_air))
     print_state_TP(fuel.TP[0], fuel.TP[1], f"2pz:{thrust_level:0.2f}")
-    thermo_states.get("T", []).append(f"{fuel.TP[0]:0.2f}"])
-    thermo_states.get("P", []).append(f"{fuel.TP[1]:0.2f}"])
+    thermo_states.get("T", []).append(f"{fuel.TP[0]:0.2f}")
+    thermo_states.get("P", []).append(f"{fuel.TP[1]:0.2f}")
     # Instead of modeling as a PFR, converting dilution as a function of z
     # to dilution as a function of time
     # reactors

@@ -201,7 +201,6 @@ class DilutionReactor(ct.ExtensibleIdealGasConstPressureMoleReactor):
     def after_update_state(self, y):
         self.zloc = y[self.i_z]
         self.mass_flow_rate = y[self.i_mdot]
-        # mass should be updated interanlly already
 
     def replace_eval(self, t, LHS, RHS):
         if len(self.partial_enthalpy_air) == 0:
