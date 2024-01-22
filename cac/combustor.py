@@ -222,8 +222,8 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     thermo_states = kwargs.get("thermo_states", {"T":[], "P":[]})
     n_pz = kwargs.get("n_pz", 21)
     n_pz += 1 if n_pz % 2 == 0  else 0 # ensure always odd
-    mixing_param = kwargs.get("mixing_param", 0.39) # mixing parameter
-    volume = kwargs.get("volume", 0.0023) # m^3
+    mixing_param = kwargs.get("mixing_param", 0.55) # mixing parameter 0.3
+    volume = kwargs.get("volume", 0.05) # m^3 0.043
     mdot_fuel, mdot_air, mdot_fuel_takeoff, mdot_air_takeoff = get_mass_flow_thrust_data(thrust_level)
     # initial pressure and temperature
     P_i = get_prop_by_thrust_level(thrust_level, "Pt3[kPa]") * 1000
@@ -246,8 +246,8 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     L_sz = 0.075 # m
     f_sm = 0.5 # fraction of mass flow in slow mixing
     f_fm = 1 - f_sm
-    l_sa_sm = 0.55
-    l_sa_fm = 0.055
+    l_sa_sm = 0.94 # 0.75
+    l_sa_fm = 0.015 # 0.09
     l_dae = 1
     l_das = 0.95
     # This mode calc
@@ -321,7 +321,7 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
         net = new_network([reactors[i]])
         net.rtol = 1e-10
         net.atol = 1e-16
-        net.advance(tres * 100)
+        net.advance(0.1)
     # EI closure
     def find_EI(r, i, sp):
         return r.Y[r.component_index(sp)] * mfs[i] * 1000 / (mdot_fuel * mass_flow_fractions[i])
@@ -357,8 +357,8 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     # Instead of modeling as a PFR, converting dilution as a function of z
     # to dilution as a function of time
     # reactors
-    fast_mixing = DilutionReactor(fuel, mdot=mdot/2, beta_da=beta_da, beta_mixing=beta_sa_fm, mixing_scale=0.055)
-    slow_mixing = DilutionReactor(fuel, mdot=mdot/2, beta_da=beta_da, beta_mixing=beta_sa_sm, mixing_scale=0.55)
+    fast_mixing = DilutionReactor(fuel, mdot=mdot/2, beta_da=beta_da, beta_mixing=beta_sa_fm, mixing_scale=l_sa_fm)
+    slow_mixing = DilutionReactor(fuel, mdot=mdot/2, beta_da=beta_da, beta_mixing=beta_sa_sm, mixing_scale=l_sa_sm)
     # create dilution reservoir
     fuel.TPX = T_i, P_i, X_air
     # set needed dilution values

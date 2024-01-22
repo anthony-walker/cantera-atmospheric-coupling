@@ -33,7 +33,7 @@ def rms_deviation_values(name, xF, yF, xV, yV):
     xF = xF[points[0]:points[-1]]
     yF = yF[points[0]:points[-1]]
     yvals = yfunc(xF)
-    yaml_data[name] = float(mean_squared_error(yF, yvals, squared=False))
+    yaml_data[name] = float(mean_squared_error(yF, yvals, squared=False) / numpy.mean(yV) * 100)
     with open(rms_file, "w") as f:
         yaml.dump(yaml_data, f)
     return yaml_data[name]
@@ -212,7 +212,7 @@ def generate_mixing_zone_plot(thrust_level, source_file=None, variable="T", labe
     fig.savefig(os.path.join(ver_dir, f"pfr-{variable}-profile-{thrust_level*100:.0f}.pdf"), bbox_inches='tight')
     plt.close()
 
-def generate_ei_chart(EI, fuel, cbs):
+def generate_ei_chart(EI, fuel, cbs, icao=True):
     # create plot with generated data
     ver_dir = os.path.join(DATA_DIR, "verification")
     with h5py.File(cbs, "r") as hf:
@@ -229,15 +229,24 @@ def generate_ei_chart(EI, fuel, cbs):
             ei_ratio = mass_ei / fuel_data
     # plot
     fig, ax = plt.subplots()
-    ax.plot(thrust_levels, ei_ratio, color=COLORS[0], label="Model prediction")
     # plot experimental data
-    icao_data = pd.read_csv(os.path.join(DATA_DIR, "verification", 'icao-verify-7B.csv'), delimiter=",", engine="python")
-    max_thrust = get_prop_by_thrust_level(1.0, 'NetThrust[kN]')
-    thrusts = numpy.array([get_interpolated_property(v, 'Wf[kg/s]', 'NetThrust[kN]') for v in icao_data["mdotf"].values]) / max_thrust
-    # plot
-    ax.plot(thrusts, icao_data[EI].values, color=COLORS[1], linestyle="", marker="o", label="EDB data", markerfacecolor="white")
+    if icao:
+        icao_data = pd.read_csv(os.path.join(DATA_DIR, "verification", 'icao-verify-7B.csv'), delimiter=",", engine="python")
+        max_thrust = get_prop_by_thrust_level(1.0, 'NetThrust[kN]')
+        thrusts = numpy.array([get_interpolated_property(v, 'Wf[kg/s]', 'NetThrust[kN]') for v in icao_data["mdotf"].values]) / max_thrust
+        ax.plot(thrusts, icao_data[EI].values, color=COLORS[1], linestyle="", marker="o", label="EDB data", markerfacecolor="white")
+        rms_deviation_values(f"EI_{EI}", thrust_levels, ei_ratio, thrusts, icao_data[EI].values)
+    else:
+        icao_data = pd.read_csv(os.path.join(DATA_DIR, "verification", 'EDB.csv'), delimiter=",", engine="python")
+        # plot
+        ax.plot(icao_data[f"{EI}x"]/100, icao_data[f"{EI}y"].values, color=COLORS[1], linestyle="", marker="o", label="EDB data", markerfacecolor="white")
+    ax.plot(thrust_levels, ei_ratio, color=COLORS[0], label="Model prediction", marker="s")
+
+
+
     ax.set_xlabel("Thrust Fraction")
     ax.set_ylabel(f"EI {EI} "+" [g/$\\text{kg}_{\\text{fuel}}$]")
+    plt.grid(visible=True)
     fig.savefig(os.path.join(ver_dir, f"EI-{EI}.pdf"), bbox_inches='tight')
     plt.close()
 
@@ -307,9 +316,10 @@ def combustor_verification(regenerate):
     if not os.path.isdir(ver_dir):
         os.mkdir(ver_dir)
     fuel, equiv_ratio, X_fuel, X_air = combustor_design_params()
-    thrust_levels = [0.07, 0.3, 0.65, 0.85, 1.0]
-    thrust_levels = numpy.linspace(0.07, 1.0, 30)
-
+    thrust_levels = numpy.linspace(0.07, 1.0, 25)
+    icao_data = pd.read_csv(os.path.join(DATA_DIR, "verification", 'icao-verify-7B.csv'), delimiter=",", engine="python")
+    max_thrust = get_prop_by_thrust_level(1.0, 'NetThrust[kN]')
+    thrust_levels = numpy.array([get_interpolated_property(v, 'Wf[kg/s]', 'NetThrust[kN]') for v in icao_data["mdotf"].values]) / max_thrust
     if not os.path.isfile(cbs) or regenerate:
         # run in parallel
         with mp.Pool(min(os.cpu_count(), len(thrust_levels))) as pool:
@@ -661,4 +671,14 @@ def mcm_kunknown_rate():
 
 def function_tester():
     print("Replace me with whatever function you want to test and run verify_tester")
-    mcm_kunknown_rate()
+    ver_dir = os.path.join(DATA_DIR, "verification")
+
+    a = pd.read_csv(os.path.join(ver_dir, "edb-brink.csv"))
+    b = pd.read_csv(os.path.join(ver_dir, "edb-brink-2.csv"))
+    b = b.iloc[::-1]
+    b.reset_index(drop=True, inplace=True)
+    # Combine the two DataFrames along rows (axis=0)
+    combined_df = pd.concat([a, b], axis=1)
+
+    # Save the combined DataFrame to a new CSV file
+    combined_df.to_csv('combined_file.csv', index=False)

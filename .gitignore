@@ -161,3 +161,4 @@ cython_debug/
 study/rmg/*
 !study/rmg/input_rmg.py
 *mixing*.hdf5
+cac/data/verification/mcm.hdf5
