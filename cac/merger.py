@@ -150,7 +150,6 @@ def semi_structural_to_smiles(semi_structural, functional_group_list):
     return smiles
 
 
-
 def update_mechanism_with_smiles_and_inchi(filename):
     try:
         # open all data
@@ -506,3 +505,24 @@ def update_atmospheric_mechanism_species(atmos_mech):
                 nsp.append(sp)
                 sp = species.pop(0)
 
+@click.command()
+@click.argument('model1')
+@click.argument('model2')
+def map_models(model1, model2):
+    yaml = ruamel.yaml.YAML()
+    model1_species, model2_species = [yaml.load(open(m, "r"))["species"] for m in [model1, model2]]
+    m1n, m2n = [m.split(".")[0].strip() for m in [model1, model2]]
+    sp_map = {}
+    for sp2 in model2_species:
+        for sp1 in model1_species:
+            if spmatch(sp1, sp2):
+                print(f"{sp1['name']} and {sp2['name']} match")
+                # transfer any missing keys
+                for k in sp2.keys():
+                    if k not in sp1.keys():
+                        sp1[k] = sp2[k]
+                sp_map[sp1["name"]] = sp2["name"]
+                break
+    # write out species map
+    with open(f"{m1n}_to_{m2n}.yaml", "w") as f:
+        yaml.dump(sp_map, f)

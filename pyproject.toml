@@ -25,6 +25,7 @@ dynamic = ["version"]
 
 [project.scripts]
 merger = "cac.merger:merge_commandline"
+map_models = "cac.merger:map_models"
 extractor = "cac.extractor.extractor:main"
 combustor = "cac.combustor:run_combustor_atm_sim"
 verify_box_model = "cac.verification:mixing_box_model_verification"
