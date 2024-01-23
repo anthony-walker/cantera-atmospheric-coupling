@@ -97,12 +97,11 @@ def new_network(r, precon=True):
 
 @click.command()
 @click.option('--equiv_ratio', default=1.0, help='Equivalence ratio for the fuel')
-@click.option('--nsteps', default=100, help='The number of steps to take between records')
 @click.option("--farnesane", default=0.1, help="Farnesane blend percentage")
 @click.option("--outdir", default=DATA_DIR, help="Output directory for data")
 @click.option("--thrust", default=1.0, help="Percentage of thrust to use")
-def run_combustor_atm_sim(equiv_ratio, nsteps, farnesane, outdir, thrust):
-    combustor_atm_sim(equiv_ratio, nsteps, farnesane, outdir, thrust_level=thrust)
+def run_combustor_atm_sim(equiv_ratio, farnesane, outdir, thrust):
+    combustor_atm_sim(equiv_ratio, farnesane, outdir, thrust_level=thrust)
 
 
 def print_state_TP(T, P, i):
@@ -234,7 +233,7 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     thermo_states["T"] = thermo_states.get("T", []) + [f"{T_i:0.2f}"]
     thermo_states["P"] = thermo_states.get("P", []) + [f"{P_i:0.2f}"]
     assert thrust_level <= 1.0
-    equiv_sec_zone = kwargs.get("equiv_sz", 0.7)
+    equiv_sec_zone = kwargs.get("equiv_sz", 0.4 * equiv_pz)
     outdir = kwargs.get("outdir", "./")
     name_id = kwargs.get("name_id", "")
     lhv_data = kwargs.get("lhv_data", 43.5e6) # Lower heating value of fuel in data set J/kg
@@ -311,7 +310,9 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
         inlet = ct.Reservoir(fuel)
         outlet = ct.Reservoir(fuel)
         # create reactor
-        fuel.equilibrate("HP")
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            fuel.equilibrate("HP")
         reactors.append(ct.IdealGasConstPressureMoleReactor(fuel))
         reactors[i].volume = split_volumes[i]
         tres = split_volumes[i] / reactors[i].thermo.density / mfs[i]
@@ -411,7 +412,7 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     return combustor, thermo_states
 
 
-def combustor_atm_sim(equiv_ratio, nsteps, farnesane, outdir, thrust_level=1.0):
+def combustor_atm_sim(equiv_ratio, farnesane, outdir, thrust_level=1.0):
     thermo_states = {"farnesane": f"{farnesane:.2f}", "equivalence_ratio": f"{equiv_ratio:.1f}"}
     # append appropriate directories
     sys.path.append(DATA_DIR)
@@ -524,7 +525,7 @@ def combustor_atm_sim(equiv_ratio, nsteps, farnesane, outdir, thrust_level=1.0):
     short_states.append(atmosphere.thermo.state, time=net.time, moles=moles, mass=atmosphere.mass, volume=atmosphere.volume)
     # setup times to safely integrate too and store data for because storing mass model
     # species data is expensive
-    times = numpy.linspace(0, 0.005, 30)
+    times = numpy.linspace(0, 0.005, 100)
     failed = False
     for t in times[1:]: #for t in steps:
         failures = 0
@@ -577,7 +578,7 @@ def combustor_atm_sim(equiv_ratio, nsteps, farnesane, outdir, thrust_level=1.0):
     # setup times to safely integrate too and store data for because storing mass model
     # species data is expensive
     ndays = 3
-    times = numpy.linspace(0, ndays * 24 * 3600, 30)
+    times = numpy.linspace(0, ndays * 24 * 3600, 100)
     failed = False
     for t in times[1:]: #for t in steps:
         failures = 0

@@ -242,10 +242,10 @@ def generate_ei_chart(EI, fuel, cbs, icao=True):
         ax.plot(icao_data[f"{EI}x"]/100, icao_data[f"{EI}y"].values, color=COLORS[1], linestyle="", marker="o", label="EDB data", markerfacecolor="white")
     ax.plot(thrust_levels, ei_ratio, color=COLORS[0], label="Model prediction", marker="s")
 
-
-
     ax.set_xlabel("Thrust Fraction")
+    ax.set_xticks(numpy.linspace(0, 1.0, 5))
     ax.set_ylabel(f"EI {EI} "+" [g/$\\text{kg}_{\\text{fuel}}$]")
+    fig.legend(loc='upper center', ncols=2)
     plt.grid(visible=True)
     fig.savefig(os.path.join(ver_dir, f"EI-{EI}.pdf"), bbox_inches='tight')
     plt.close()

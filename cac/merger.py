@@ -33,9 +33,11 @@ def spmatch(spone, sptwo):
     res3 = spone.get("name") == sptwo.get("name")
     res4 = spone.get("name") == sptwo.get("alias", "TWO")
     res5 = spone.get("alias", "ONE") == sptwo.get("name", "TWO")
-    res = res1 or res2 or res3 or res4 or res5
-    res = res and (spone["composition"] == sptwo["composition"])
-    return res
+    res = res1 or res2 or res3 or res4 or res5 or (spone["composition"] == sptwo["composition"])
+    if (spone["composition"] == sptwo["composition"]):
+        return res
+    else:
+        return False
 
 
 def merge_all_mechanisms(*mechanisms):
@@ -515,7 +517,7 @@ def map_models(model1, model2):
     sp_map = {}
     for sp2 in model2_species:
         for sp1 in model1_species:
-            if spmatch(sp1, sp2):
+            if spmatch(sp1, sp2) and (sp1["name"] not in sp_map.keys()):
                 print(f"{sp1['name']} and {sp2['name']} match")
                 # transfer any missing keys
                 for k in sp2.keys():
