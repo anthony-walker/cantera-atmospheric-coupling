@@ -616,13 +616,25 @@ def combustor_atm_sim(equiv_ratio, nsteps, farnesane, outdir, thrust_level=1.0):
     with open(states_file, "w") as f:
         yaml.dump(thermo_states, f)
     # write out hdf5 data - short term
-    ah5 = os.path.join(outdir, f"short-term-states-{equiv_ratio:.1f}-{farnesane:.2f}.hdf5")
-    short_states.save(ah5, overwrite=True, name="thermo")
-    reformat_hdf5(ah5)
+    try:
+        ah5 = os.path.join(outdir, f"short-term-states-{equiv_ratio:.1f}-{farnesane:.2f}.hdf5")
+        short_states.save(ah5, overwrite=True, name="thermo", sub="data")
+        reformat_hdf5(ah5)
+    except Exception as e:
+        os.remove(ah5)
+        print(f"Failed to save {ah5}, writing to csv...")
+        ah5 = os.path.join(outdir, f"short-term-states-{equiv_ratio:.1f}-{farnesane:.2f}.csv")
+        short_states.save(ah5, overwrite=True)
     # write out hdf5 data - longterm
-    ah5 = os.path.join(outdir, f"long-term-states-{equiv_ratio:.1f}-{farnesane:.2f}.hdf5")
-    long_states.save(ah5, overwrite=True, name="thermo")
-    reformat_hdf5(ah5)
+    try:
+        ah5 = os.path.join(outdir, f"long-term-states-{equiv_ratio:.1f}-{farnesane:.2f}.hdf5")
+        long_states.save(ah5, overwrite=True, name="thermo")
+        reformat_hdf5(ah5)
+    except Exception as e:
+        os.remove(ah5)
+        print(f"Failed to save {ah5}, writing to csv...")
+        ah5 = os.path.join(outdir, f"long-term-states-{equiv_ratio:.1f}-{farnesane:.2f}.csv")
+        long_states.save(ah5, overwrite=True)
 
 def curve_fit_thrust_data(xval=0, mdot=1.086, test=False):
     with open(os.path.join(DATA_DIR, "thrust-data.csv"), "r")  as f:
