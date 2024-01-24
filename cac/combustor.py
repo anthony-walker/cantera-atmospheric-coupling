@@ -317,8 +317,27 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
         # create a network and integrate the reactor to residence time
         # it is faster and more stable to integrate them all separately than together
         net = new_network([reactors[i]])
+        net.max_time_step = 0.1
+        startState = reactors[i].thermo.TPX
         # setup some restarts for failed cases
-        net.advance(0.1)
+        success = False
+        for i in range(10):
+            try:
+                net.advance(0.1)
+                success = True
+                break
+            except Exception as e:
+                print("Failed PZ integration, reducing timestep...")
+                reactors[i].thermo.TPX = startState
+                reactors[i].syncState()
+                reactors[i].volume = split_volumes[i]
+                net.initial_time = 0 # reset time to 0
+                net.max_time_step = net.max_time_step / 10
+                net.initialize()
+        # throw error if it does not make it through the last time
+        if not success:
+            raise Exception("Primary zone integration failure.")
+
     # EI closure
     def find_EI(r, i, sp):
         return r.Y[r.component_index(sp)] * mfs[i] * 1000 / (mdot_fuel * mass_flow_fractions[i])
