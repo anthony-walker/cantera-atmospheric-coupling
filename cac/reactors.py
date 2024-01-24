@@ -1,6 +1,5 @@
 import os
 import csv
-import ephem
 import datetime
 import cantera as ct
 import numpy as np

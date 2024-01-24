@@ -513,7 +513,7 @@ def update_atmospheric_mechanism_species(atmos_mech):
 def map_models(model1, model2):
     yaml = ruamel.yaml.YAML()
     model1_species, model2_species = [yaml.load(open(m, "r"))["species"] for m in [model1, model2]]
-    m1n, m2n = [m.split(".")[0].strip() for m in [model1, model2]]
+    m1n, m2n = [os.path.basename(m).split(".")[0].strip() for m in [model1, model2]]
     sp_map = {}
     for sp2 in model2_species:
         for sp1 in model1_species:
@@ -526,5 +526,5 @@ def map_models(model1, model2):
                 sp_map[sp1["name"]] = sp2["name"]
                 break
     # write out species map
-    with open(f"{m1n}_to_{m2n}.yaml", "w") as f:
+    with open(os.path.join(os.path.dirname(model1), f"{m1n}_to_{m2n}.yaml"), "w") as f:
         yaml.dump(sp_map, f)

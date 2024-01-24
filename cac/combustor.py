@@ -13,6 +13,7 @@ from scipy.optimize import fsolve
 from scipy.optimize import curve_fit
 from scipy.interpolate import interp1d
 import matplotlib.pyplot as plt
+from cac.merger import map_models
 from cac.constants import DATA_DIR
 from cac.reactors import PlumeSolution, PlumeReactor, DilutionReactor
 
@@ -93,15 +94,6 @@ def new_network(r, precon=True):
         net.preconditioner = ct.AdaptivePreconditioner()
     net.initialize()
     return net
-
-
-@click.command()
-@click.option('--equiv_ratio', default=1.0, help='Equivalence ratio for the fuel')
-@click.option("--farnesane", default=0.1, help="Farnesane blend percentage")
-@click.option("--outdir", default=DATA_DIR, help="Output directory for data")
-@click.option("--thrust", default=1.0, help="Percentage of thrust to use")
-def run_combustor_atm_sim(equiv_ratio, farnesane, outdir, thrust):
-    combustor_atm_sim(equiv_ratio, farnesane, outdir, thrust_level=thrust)
 
 
 def print_state_TP(T, P, i):
@@ -194,6 +186,7 @@ def get_mass_flow_thrust_data(thrust_level):
     mdot_air_to = ma[-1]
     return mdot_fuel, mdot_air, mdot_fuel_to, mdot_air_to
 
+
 def get_interpolated_property(v1, prop1, prop2):
     cycle_data = pd.read_csv(os.path.join(DATA_DIR, "verification", 'CFM56-7B-737.csv'), delimiter=",", engine="python")
     p1 = cycle_data[prop1].values
@@ -206,6 +199,7 @@ def get_interpolated_property(v1, prop1, prop2):
     interp_func = interp1d(p1, p2)
     return interp_func(v1)
 
+
 def get_mean_equivalence_ratio_from_data(thrust_level):
     cycle_data = pd.read_csv(os.path.join(DATA_DIR, "verification", 'equiv_mean.csv'), delimiter=",", engine="python")
     phi_values = cycle_data["phi_mean"].values
@@ -217,6 +211,7 @@ def get_mean_equivalence_ratio_from_data(thrust_level):
             return phi_values[i]
     interp_func = interp1d(thrust_values, phi_values)
     return interp_func(thrust_level)
+
 
 def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     # default parameters
@@ -322,6 +317,7 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
         # create a network and integrate the reactor to residence time
         # it is faster and more stable to integrate them all separately than together
         net = new_network([reactors[i]])
+        # setup some restarts for failed cases
         net.advance(0.1)
     # EI closure
     def find_EI(r, i, sp):
@@ -412,7 +408,18 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     return combustor, thermo_states
 
 
-def combustor_atm_sim(equiv_ratio, farnesane, outdir, thrust_level=1.0):
+@click.command()
+@click.option('--equiv_ratio', default=1.0, help='Equivalence ratio for the fuel')
+@click.option("--farnesane", default=0.1, help="Farnesane blend percentage")
+@click.option("--outdir", default=DATA_DIR, help="Output directory for data")
+@click.option("--thrust", default=1.0, help="Percentage of thrust to use")
+@click.option("--fmodel", default=os.path.join(DATA_DIR, "combustor.yaml"), help="Fuel model used")
+@click.option("--amodel", default=os.path.join(DATA_DIR, "atmosphere.yaml"), help="Atmospheric model used")
+def run_combustor_atm_sim(equiv_ratio, farnesane, outdir, thrust, fmodel, amodel):
+    combustor_atm_sim(equiv_ratio, farnesane, outdir, fmodel=fmodel, amodel=amodel, thrust_level=thrust)
+
+
+def combustor_atm_sim(equiv_ratio, farnesane, outdir, fmodel=None, amodel=None, thrust_level=1.0):
     thermo_states = {"farnesane": f"{farnesane:.2f}", "equivalence_ratio": f"{equiv_ratio:.1f}"}
     # append appropriate directories
     sys.path.append(DATA_DIR)
@@ -435,7 +442,7 @@ def combustor_atm_sim(equiv_ratio, farnesane, outdir, thrust_level=1.0):
     thermo_states["T"] = [f"{T_atm:0.2f}"]
     thermo_states["P"] = [f"{p_atm:0.2f}"]
     # create path to fuel model
-    fuel_model = os.path.join(DATA_DIR, "combustor.yaml")
+    fuel_model = os.path.join(DATA_DIR, "combustor.yaml") if fmodel is None else fmodel
     # creation of fuel thermo object
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
@@ -481,7 +488,7 @@ def combustor_atm_sim(equiv_ratio, farnesane, outdir, thrust_level=1.0):
     print_state_TP(T4, p4, 4)
     # create atmosphere model
     exhaust = ct.Reservoir(fuel)
-    atms_model = os.path.join(DATA_DIR, "atmosphere.yaml")
+    atms_model = os.path.join(DATA_DIR, "atmosphere.yaml") if amodel is None else amodel
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         atms = PlumeSolution(atms_model, name="atmosphere", transport_model=None)
@@ -498,7 +505,11 @@ def combustor_atm_sim(equiv_ratio, farnesane, outdir, thrust_level=1.0):
     # create atmosphere reactor
     atmosphere = PlumeReactor(atms, energy="off")
     # open model mapping
-    with open(os.path.join(DATA_DIR, "combustor_to_atmosphere.yaml"), "r") as f:
+    mapfile = f'{os.path.basename(fmodel).split(".")[0]}_to_{os.path.basename(amodel).split(".")[0]}.yaml'
+    mapfile = os.path.join(os.path.dirname(fmodel), mapfile)
+    if not os.path.exists(mapfile):
+        map_models(fmodel, amodel)
+    with open(mapfile, "r") as f:
         mapping = yaml.load(f, Loader=yaml.SafeLoader)
     Y_mapped = numpy.zeros(len(atmosphere.Y))
     cstate = combustor.Y

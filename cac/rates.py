@@ -126,7 +126,7 @@ class FunctionRate(ct.ExtensibleRate):
             mcm_complex_funcs = dict(inspect.getmembers(mcm_complex_rates, inspect.isfunction))
         # assign function
         self.function = mcm_complex_funcs[fcn_name]
-        self.fargs = inspect.getargspec(self.function).args
+        self.fargs = inspect.getfullargspec(self.function).args
         system = ct.UnitSystem(node.get("units"))
         self.conversion = system.convert_rate_coeff_to(1, units)
 
