@@ -70,18 +70,19 @@ def run_combustion_study(run_missing=True):
     with Pool(numpy.amin([os.cpu_count(), len(vals_list)])) as p:
         p.map(wrapped, vals_list)
 
-def make_species_contour(unformatted, sp, index=-1):
-    equiv_ratios = numpy.arange(0.5, 3.0, 0.25)
+def make_species_contour(unformatted, sp, index=-1, path="fullmcm", name=""):
+    equiv_ratios = numpy.arange(0.5, 3.25, 0.25)
     farnesane_percents = numpy.arange(0, 0.21, 0.01)
     masses = numpy.zeros((len(farnesane_percents), len(equiv_ratios)))
     for i, eq in enumerate(equiv_ratios):
         for j, fs in enumerate(farnesane_percents):
-            if os.path.exists(os.path.join("combustor", unformatted.format(eq, fs))):
-                short_data = pd.read_csv(os.path.join("combustor", unformatted.format(eq, fs)), delimiter=",", engine="python", usecols=["mass", "time", f'Y_{sp}'])
+            if os.path.exists(os.path.join(path, unformatted.format(eq, fs))):
+                short_data = pd.read_csv(os.path.join(path, unformatted.format(eq, fs)), delimiter=",", engine="python", usecols=["mass", "time", f'Y_{sp}'])
                 masses[j][i] = short_data[f'Y_{sp}'].iloc[index] * short_data["mass"].iloc[index]
             else:
                 masses[j][i] = numpy.NAN
     # make contour
+    # print(masses)
     X, Y = numpy.meshgrid(equiv_ratios, farnesane_percents)
     plt.contourf(X, Y, masses, cmap='inferno')
     plt.xlabel('Equivalence Ratio')
@@ -89,10 +90,11 @@ def make_species_contour(unformatted, sp, index=-1):
     plt.colorbar(label='Mass [kg]')
     if not os.path.exists("figures"):
         os.mkdir("figures")
-    plt.savefig(f"figures/{sp}-contour.pdf")
+    plt.savefig(f"figures/{name}-contour.pdf")
+    plt.close()
 
-def short_term_states_plots(species):
-    short_data = pd.read_csv(os.path.join("combustor", 'short-term-states-1.0-0.00.csv'), delimiter=",", engine="python")
+def short_term_states_plots(species, path="fullmcm"):
+    short_data = pd.read_csv(os.path.join(path, 'short-term-states-1.5-0.10.csv'), delimiter=",", engine="python")
     mass = short_data["mass"]
     time = short_data["time"]
     Y_sp = short_data[f"Y_{species}"]
@@ -102,8 +104,29 @@ def short_term_states_plots(species):
     # ax.plot(time, mass)
     plt.show()
 
+def long_term_states_plots(species, path="fullmcm"):
+    short_data = pd.read_csv(os.path.join(path, 'long-term-states-1.5-0.10.csv'), delimiter=",", engine="python")
+    mass = short_data["mass"]
+    time = short_data["time"]
+    Y_sp = short_data[f"Y_{species}"]
+    short_data.keys()
+    for k in short_data.keys():
+        fig, ax = plt.subplots()
+        # ax.plot(time, mass * Y_tol)
+        ax.plot(time, mass * short_data[k])
+        ax.set_title(k)
+        # ax.plot(time, mass)
+        plt.savefig(f"figures/{k}.pdf")
+        plt.close()
+
+
+def plot_all():
+    make_species_contour("short-term-states-{:.1f}-{:.2f}.csv", "TOLUENE", name="toluene-short-0", index=0)
+    make_species_contour("short-term-states-{:.1f}-{:.2f}.csv", "BENZENE", name="benzene-short-0", index=0)
+    make_species_contour("short-term-states-{:.1f}-{:.2f}.csv", "C5H8", name="isoprene-short-0", index=0)
+
 if __name__ == "__main__":
     # run_combustion_study()
-    make_species_contour("short-term-states-{:.1f}-{:.2f}.csv", "TOLUENE")
-    make_species_contour("long-term-states-{:.1f}-{:.2f}.csv", "TOLUENE")
-
+    long_term_states_plots("O2")
+    # short_term_states_plots("BENZENE")
+    # short_term_states_plots("C5H8")
