@@ -87,8 +87,8 @@ def new_network(r, precon=True):
                             "skip-flow-devices": True,
                             "skip-walls": True}
     net.max_steps = 1e9
-    net.rtol = 1e-10
-    net.atol = 1e-16
+    net.rtol = 1e-16
+    net.atol = 1e-20
     # setup preconditioner
     if precon:
         net.preconditioner = ct.AdaptivePreconditioner()
@@ -321,7 +321,7 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
         startState = reactors[i].thermo.TPX
         # setup some restarts for failed cases
         success = False
-        for i in range(10):
+        for j in range(10):
             try:
                 net.advance(0.1)
                 success = True

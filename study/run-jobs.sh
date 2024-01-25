@@ -29,7 +29,7 @@ slurm_job_wait() {
 }
 
 run_all_cases() {
-    for ((i=50; i<=300; i+=25)); do
+    for ((i=70; i<=250; i+=10)); do
         export EPZ=$(echo "scale=2; $i/100" | bc)
         for ((j=0; j<=20; j+=1)); do
             export FARNE=$(echo "scale=2; $j/100" | bc)
