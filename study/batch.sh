@@ -23,4 +23,4 @@ echo "Slurm ID: $SLURM_JOB_ID"
 echo
 echo "Running $EPZ, $FARNE"
 
-combustor --equiv_ratio $EPZ --farnesane $FARNE --outdir fullmcm --amodel /nfs/hpc/share/walkanth/nrg-cantera-project/cantera-atmospheric-coupling/cac/data/fullmcm.yaml
+combustor --equiv_ratio $EPZ --farnesane $FARNE --outdir minimal
