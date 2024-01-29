@@ -22,5 +22,10 @@
 echo "Slurm ID: $SLURM_JOB_ID"
 echo
 echo "Running $EPZ, $FARNE"
-
-combustor --equiv_ratio $EPZ --farnesane $FARNE --outdir minimal
+ODP="minimal"
+combustor --equiv_ratio $EPZ --farnesane $FARNE --outdir $ODP
+ret=$?
+if [ "$ret" -ne 0 ]; then
+    echo "Failure, attempting no precondition case"
+    combustor --equiv_ratio $EPZ --farnesane $FARNE --outdir $ODP --precon_off
+fi

@@ -17,6 +17,8 @@ from cac.merger import map_models
 from cac.constants import DATA_DIR
 from cac.reactors import PlumeSolution, PlumeReactor, DilutionReactor
 
+PRECONDITIONED = True
+
 def reformat_hdf5(hf_name):
     with h5py.File(hf_name, "r+") as hf:
         arr = hf["thermo"]['data']
@@ -77,11 +79,13 @@ def print_reactor_stats(net, r):
         print()
 
 
-def new_network(r, precon=True):
+def new_network(r, precon=None):
+    if precon is None:
+        precon = PRECONDITIONED
     # setup reactor network
     net = ct.ReactorNet(r)
-    net.derivative_settings = {"skip-falloff": True,
-                            "skip-third-bodies": True,
+    net.derivative_settings = {"skip-falloff": False,
+                            "skip-third-bodies": False,
                             "skip-coverage-dependence": True,
                             "skip-electrochemistry": True,
                             "skip-flow-devices": True,
@@ -332,7 +336,7 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
                 reactors[i].syncState()
                 reactors[i].volume = split_volumes[i]
                 net.initial_time = 0 # reset time to 0
-                net.max_time_step = net.max_time_step / 10
+                net.max_time_step = net.max_time_step / 2
                 net.initialize()
         # throw error if it does not make it through the last time
         if not success:
@@ -434,7 +438,10 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
 @click.option("--thrust", default=1.0, help="Percentage of thrust to use")
 @click.option("--fmodel", default=os.path.join(DATA_DIR, "combustor.yaml"), help="Fuel model used")
 @click.option("--amodel", default=os.path.join(DATA_DIR, "atmosphere.yaml"), help="Atmospheric model used")
-def run_combustor_atm_sim(equiv_ratio, farnesane, outdir, thrust, fmodel, amodel):
+@click.option('--precon_off', default=True, is_flag=True, help='Turn off preconditioner')
+def run_combustor_atm_sim(equiv_ratio, farnesane, outdir, thrust, fmodel, amodel, precon_off):
+    global PRECONDITIONED
+    PRECONDITIONED = precon_off
     combustor_atm_sim(equiv_ratio, farnesane, outdir, fmodel=fmodel, amodel=amodel, thrust_level=thrust)
 
 
@@ -522,7 +529,7 @@ def combustor_atm_sim(equiv_ratio, farnesane, outdir, fmodel=None, amodel=None, 
     thermo_states["P"].append(f"{p4:0.2f}")
     thermo_states["M3"] = [f"{M3:0.2f}"]
     # create atmosphere reactor
-    atmosphere = PlumeReactor(atms, energy="off")
+    atmosphere = PlumeReactor(atms)
     # open model mapping
     mapfile = f'{os.path.basename(fmodel).split(".")[0]}_to_{os.path.basename(amodel).split(".")[0]}.yaml'
     mapfile = os.path.join(os.path.dirname(fmodel), mapfile)
@@ -538,13 +545,13 @@ def combustor_atm_sim(equiv_ratio, farnesane, outdir, fmodel=None, amodel=None, 
     atmosphere.thermo.TPY = T4, p4, Y_mapped
     atmosphere.syncState()
     # set atmospheric quantities
-    atmosphere.volume = v4
     atmosphere.TX_air = [air_state[0],] + [x for x in air_state[2]]
     atmosphere.enthalpy_air = air_enthalpy
     atmosphere.cp_air = air_cp
     # setup mass flow from reservoir to atmosphere
     gc = 1 # 1 in SI system
     mdot = p4 * A4 * M4 * numpy.sqrt(gamma * gc / ct.gas_constant * T4)
+    thermo_states["mdot_exhaust"] = mdot
     # setup reactor network
     net = new_network([atmosphere])
     net.max_time_step = 1e-2

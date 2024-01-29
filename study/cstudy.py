@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 from cac.combustor import combustor_atm_sim
 from multiprocessing import Pool
 
+MASK_VALUE = 1e-40
 cbcolors = ['#a6cee3','#1f78b4','#b2df8a','#33a02c','#fb9a99','#e31a1c','#fdbf6f','#ff7f00','#cab2d6','#6a3d9a','#ffff99','#b15928']
 
 # change font of plots
@@ -71,7 +72,7 @@ def run_combustion_study(run_missing=True):
         p.map(wrapped, vals_list)
 
 def make_species_contour(sp, index=-1, path="fullmcm", name="", mode="hdf5", scale="short"):
-    equiv_ratios = numpy.arange(0.6, 2.6, 0.1)
+    equiv_ratios = numpy.arange(0.7, 2.6, 0.1)
     farnesane_percents = numpy.arange(0, 0.21, 0.01)
     unformatted = f"{scale}-term-states-"+ "{:.1f}-{:.2f}" + f".{mode}"
     masses = numpy.zeros((len(farnesane_percents), len(equiv_ratios)))
@@ -86,8 +87,12 @@ def make_species_contour(sp, index=-1, path="fullmcm", name="", mode="hdf5", sca
                     masses[j][i] = short_data[f'Y_{sp}'][index]
             else:
                 masses[j][i] = numpy.NAN
+    # apply mask to masses
+    mask = numpy.abs(masses) <= MASK_VALUE
+    for i in range(len(equiv_ratios)):
+        for j in range(len(farnesane_percents)):
+            masses[j][i] = masses[j][i] if not mask[j][i] else 0
     # make contour
-    # print(masses)
     X, Y = numpy.meshgrid(equiv_ratios, farnesane_percents)
     plt.contourf(X, Y, masses, cmap='inferno')
     plt.xlabel('Equivalence Ratio')
@@ -95,41 +100,38 @@ def make_species_contour(sp, index=-1, path="fullmcm", name="", mode="hdf5", sca
     plt.colorbar(label='Mass [kg]')
     if not os.path.exists("figures"):
         os.mkdir("figures")
-    plt.savefig(f"figures/{name}-{scale}-contour.pdf")
+    plt.savefig(f"figures/{sp.lower()}-{scale}-{index}-contour.pdf")
     plt.close()
 
-def short_term_states_plots(species, path="fullmcm"):
-    short_data = pd.read_csv(os.path.join(path, 'short-term-states-1.5-0.10.csv'), delimiter=",", engine="python")
-    mass = short_data["mass"]
-    time = short_data["time"]
-    Y_sp = short_data[f"Y_{species}"]
-    fig, ax = plt.subplots()
-    # ax.plot(time, mass * Y_tol)
-    ax.plot(time, mass * Y_sp)
-    # ax.plot(time, mass)
-    plt.show()
 
-def long_term_states_plots(species, path="fullmcm", mode="csv", scale="long"):
+def states_plots(species, path="fullmcm", mode="csv", scale="long", eq=1.0, fp=0.10):
     if mode == "csv":
-        short_data = pd.read_csv(os.path.join(path, f'{scale}-term-states-1.5-0.10.csv'), delimiter=",", engine="python")
+        short_data = pd.read_csv(os.path.join(path, f'{scale}-term-states-{eq:.1f}-{fp:.2f}.csv'), delimiter=",", engine="python")
         mass = short_data["mass"]
         time = short_data["time"]
     elif mode == "hdf5":
-        short_data = h5py.File(os.path.join(path, f'{scale}-term-states-1.5-0.09.hdf5'), "r")
+        short_data = h5py.File(os.path.join(path, f'{scale}-term-states-{eq:.1f}-{fp:.2f}.hdf5'), "r")
         mass = numpy.array(short_data["mass"])
         time = numpy.array(short_data["time"])
     if species is None:
         for k in short_data.keys():
-            if (numpy.mean(mass * numpy.array(short_data[k])) > 1e-30):
-                fig, ax = plt.subplots()
-                ax.plot(time, mass * numpy.array(short_data[k]))
-                ax.set_title(k)
-                plt.savefig(f"figures/{k}-{scale}.pdf")
-                plt.close()
+            data = numpy.array(short_data[k])
+            mask = numpy.abs(data) <= MASK_VALUE
+            for i in range(len(data)):
+                data[i] = data[i] if not mask[i] else 0
+            fig, ax = plt.subplots()
+            ax.plot(time, data)
+            ax.set_title(k)
+            plt.savefig(f"figures/{k}-{scale}.pdf")
+            plt.close()
     else:
+        data = numpy.array(short_data[f"Y_{species}"])
+        mask = numpy.abs(data) <= MASK_VALUE
+        for i in range(len(data)):
+            data[i] = data[i] if not mask[i] else 0
         fig, ax = plt.subplots()
-        ax.plot(time, mass * numpy.array(short_data[f"Y_{species}"]))
-        plt.savefig(f"figures/{species}-{scale}.pdf")
+        ax.plot(time, data)
+        plt.savefig(f"figures/{species.lower()}-{scale}-{eq:.1f}-{fp:.2f}.pdf")
         plt.close()
 
 
@@ -137,6 +139,8 @@ if __name__ == "__main__":
     mode = "hdf5"
     path = "minimal"
     # run_combustion_study()
-    # long_term_states_plots(None, path=path, mode=mode)
-    # long_term_states_plots(None, path=path, mode=mode, scale="short")
-    make_species_contour("TOLUENE", name="toluene-short-0", index=0, path=path, mode=mode)
+    for name in ["TOLUENE", "PHENOL", "BENZENE","C5H8"]: #
+        states_plots(name, path=path, mode=mode)
+        states_plots(name, path=path, mode=mode, scale="short")
+        make_species_contour(name, index=0, path=path, mode=mode)
+        make_species_contour(name, index=0, path=path, mode=mode, scale="long")
