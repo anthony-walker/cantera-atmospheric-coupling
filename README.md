@@ -25,7 +25,7 @@ A set of tools was developed in the process to perform these analyses, namely `e
 ### Simulation
 The setup simulation in its latest state can be run with the `combustor` command.
 
-```sh
+```console
 Usage: combustor [OPTIONS]
 
 Options:

@@ -331,12 +331,12 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
                 success = True
                 break
             except Exception as e:
-                print("Failed PZ integration, reducing timestep...")
+                print(f"Failed PZ integration, reducing timestep from {net.max_time_step}...")
                 reactors[i].thermo.TPX = startState
                 reactors[i].syncState()
                 reactors[i].volume = split_volumes[i]
                 net.initial_time = 0 # reset time to 0
-                net.max_time_step = net.max_time_step / 2
+                net.max_time_step = net.max_time_step / 5
                 net.initialize()
         # throw error if it does not make it through the last time
         if not success:
@@ -553,7 +553,7 @@ def combustor_atm_sim(equiv_ratio, farnesane, outdir, fmodel=None, amodel=None, 
     mdot = p4 * A4 * M4 * numpy.sqrt(gamma * gc / ct.gas_constant * T4)
     thermo_states["mdot_exhaust"] = mdot
     # setup reactor network
-    net = new_network([atmosphere])
+    net = new_network([atmosphere], precon=True)
     net.max_time_step = 1e-2
     # setup solution array
     short_states = ct.SolutionArray(atms, extra=["time", "moles", "mass", "volume"])
