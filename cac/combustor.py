@@ -320,7 +320,7 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
         # create a network and integrate the reactor to residence time
         # it is faster and more stable to integrate them all separately than together
         net = new_network([reactors[i]])
-        net.max_time_step = 1e-2
+        net.max_time_step = 0.1
         startState = reactors[i].thermo.TPX
         # setup some restarts for failed cases
         success = False
@@ -353,7 +353,7 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
                 integration_success[p] = True
             except Exception as e:
                 raise Exception("Complete primary zone integration failure.")
-
+    thermo_states["tres"] = float(tres)
     # EI closure
     def find_EI(r, i, sp):
         return r.Y[r.component_index(sp)] * mfs[i] * 1000 / (mdot_fuel * mass_flow_fractions[i])
@@ -371,7 +371,7 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
             ei_nox.append(float(cei))
         thermo_states["EI_NOx_pz"] = ei_nox
     # temperature distribution
-    thermo_states["temperature_distribution"] = [r.T for r in reactors]
+    thermo_states["temperature_distribution"] = [float(r.T) for r in reactors]
     # mix together at constant enthalpy and pressure
     mds = numpy.zeros(fuel.n_species)
     enthalpy = 0
@@ -442,7 +442,7 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     print_state_TP(fuel.TP[0], fuel.TP[1], f"2sz:{thrust_level:0.2f}")
     thermo_states.get("T", []).append(f"{fuel.TP[0]:0.2f}")
     thermo_states.get("P", []).append(f"{fuel.TP[1]:0.2f}")
-    thermo_states["mdot_out"] = slow_mixing.mass_flow_rate + fast_mixing.mass_flow_rate
+    thermo_states["mdot_out"] = float(slow_mixing.mass_flow_rate + fast_mixing.mass_flow_rate)
     # make and return combustor reactor
     combustor = ct.IdealGasConstPressureMoleReactor(fuel)
     return combustor, thermo_states
@@ -568,7 +568,7 @@ def combustor_atm_sim(equiv_ratio, farnesane, outdir, fmodel=None, amodel=None, 
     # setup mass flow from reservoir to atmosphere
     gc = 1 # 1 in SI system
     mdot = p4 * A4 * M4 * numpy.sqrt(gamma * gc / ct.gas_constant * T4)
-    thermo_states["mdot_exhaust"] = mdot
+    thermo_states["mdot_exhaust"] = float(mdot)
     # setup reactor network
     net = new_network([atmosphere], precon=True)
     net.max_time_step = 1e-2
