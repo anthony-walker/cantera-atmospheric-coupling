@@ -91,8 +91,6 @@ def new_network(r, precon=None):
                             "skip-flow-devices": True,
                             "skip-walls": True}
     net.max_steps = 1e9
-    net.rtol = 1e-16
-    net.atol = 1e-20
     # setup preconditioner
     if precon:
         net.preconditioner = ct.AdaptivePreconditioner()
@@ -301,6 +299,7 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     thermo_states["n-deviations"] = float(coeff)
     # create number of reactors
     reactors = []
+    integration_success = []
     for i in range(n_pz):
         # reset fuel object
         fuel.TP = T_i, P_i
@@ -321,16 +320,17 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
         # create a network and integrate the reactor to residence time
         # it is faster and more stable to integrate them all separately than together
         net = new_network([reactors[i]])
-        net.max_time_step = 0.1
+        net.max_time_step = 1e-2
         startState = reactors[i].thermo.TPX
         # setup some restarts for failed cases
         success = False
         for j in range(10):
             try:
-                net.advance(0.1)
+                net.advance(100 * tres)
                 success = True
                 break
             except Exception as e:
+                print(e)
                 print(f"Failed PZ integration, reducing timestep from {net.max_time_step}...")
                 reactors[i].thermo.TPX = startState
                 reactors[i].syncState()
@@ -338,9 +338,21 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
                 net.initial_time = 0 # reset time to 0
                 net.max_time_step = net.max_time_step / 5
                 net.initialize()
-        # throw error if it does not make it through the last time
-        if not success:
-            raise Exception("Primary zone integration failure.")
+        # add all successful integration attempts
+        integration_success.append(success)
+    # go through any unsuccessful attempts
+    for p, sv in enumerate(integration_success):
+        if not sv:
+            print(f"Reactor case {p} failed...")
+            # turn off preconditioning in unsuccessful cases
+            try:
+                net = new_network([reactors[p]], precon=False)
+                net.max_time_step = 1e-4
+                tres = split_volumes[p] / reactors[p].thermo.density / mfs[p]
+                net.advance(100 * tres)
+                integration_success[p] = True
+            except Exception as e:
+                raise Exception("Complete primary zone integration failure.")
 
     # EI closure
     def find_EI(r, i, sp):
@@ -390,25 +402,30 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     net = new_network([slow_mixing, fast_mixing], precon=False)
     net.initialize()
     # solution array for combustor
-    fast_mixing_states = ct.SolutionArray(fast_mixing.thermo, extra=["z", "mdot", "t", "phi"])
-    slow_mixing_states = ct.SolutionArray(slow_mixing.thermo, extra=["z", "mdot", "t", "phi"])
-    while fast_mixing.zloc < L_sz or slow_mixing.zloc < L_sz:
+    if kwargs.get("output_mixing", False):
+        fast_mixing_states = ct.SolutionArray(fast_mixing.thermo, extra=["z", "mdot", "t", "phi"])
+        slow_mixing_states = ct.SolutionArray(slow_mixing.thermo, extra=["z", "mdot", "t", "phi"])
+        while fast_mixing.zloc < L_sz or slow_mixing.zloc < L_sz:
+            slow_mixing_states.append(slow_mixing.thermo.state, z=slow_mixing.zloc, t=0.0, mdot=slow_mixing.mass_flow_rate, phi=slow_mixing.thermo.equivalence_ratio(X_fuel, X_air))
+            fast_mixing_states.append(fast_mixing.thermo.state, z=fast_mixing.zloc, t=0.0, mdot=fast_mixing.mass_flow_rate, phi=fast_mixing.thermo.equivalence_ratio(X_fuel, X_air))
+            # take 10 steps before every record
+            for i in range(50):
+                net.step()
+        # write last state
         slow_mixing_states.append(slow_mixing.thermo.state, z=slow_mixing.zloc, t=0.0, mdot=slow_mixing.mass_flow_rate, phi=slow_mixing.thermo.equivalence_ratio(X_fuel, X_air))
         fast_mixing_states.append(fast_mixing.thermo.state, z=fast_mixing.zloc, t=0.0, mdot=fast_mixing.mass_flow_rate, phi=fast_mixing.thermo.equivalence_ratio(X_fuel, X_air))
-        # take 10 steps before every record
-        for i in range(50):
-            net.step()
-    # write last state
-    slow_mixing_states.append(slow_mixing.thermo.state, z=slow_mixing.zloc, t=0.0, mdot=slow_mixing.mass_flow_rate, phi=slow_mixing.thermo.equivalence_ratio(X_fuel, X_air))
-    fast_mixing_states.append(fast_mixing.thermo.state, z=fast_mixing.zloc, t=0.0, mdot=fast_mixing.mass_flow_rate, phi=fast_mixing.thermo.equivalence_ratio(X_fuel, X_air))
-    # write out state and reformat
-    fm5 = os.path.join(outdir, f"fast-mixing-states{name_id}.hdf5")
-    fast_mixing_states.save(fm5, overwrite=True, name="thermo")
-    reformat_hdf5(fm5)
-    # write out state and reformat
-    sm5 = os.path.join(outdir, f"slow-mixing-states{name_id}.hdf5")
-    slow_mixing_states.save(sm5, overwrite=True, name="thermo")
-    reformat_hdf5(sm5)
+        # write out state and reformat
+        fm5 = os.path.join(outdir, f"fast-mixing-states{name_id}.hdf5")
+        fast_mixing_states.save(fm5, overwrite=True, name="thermo")
+        reformat_hdf5(fm5)
+        # write out state and reformat
+        sm5 = os.path.join(outdir, f"slow-mixing-states{name_id}.hdf5")
+        slow_mixing_states.save(sm5, overwrite=True, name="thermo")
+        reformat_hdf5(sm5)
+    else:
+        while fast_mixing.zloc < L_sz or slow_mixing.zloc < L_sz:
+            for i in range(10):
+                net.step()
     # mix together at constant enthalpy and pressure
     zones = [slow_mixing, fast_mixing]
     mds = numpy.zeros(fuel.n_species)

@@ -159,7 +159,7 @@ def parallel_run_combustor(x):
     out_dir = os.path.join(DATA_DIR, "verification")
     try:
         print(f"Running thrust-level: {x:.3f}")
-        combustor, thermo_states = multizone_combustor(fuel, x, equiv_ratio, X_fuel, X_air, n_pz=21, name_id=f"-verification-{x:0.2f}", outdir=out_dir, mode="data", test=False)
+        combustor, thermo_states = multizone_combustor(fuel, x, equiv_ratio, X_fuel, X_air, n_pz=21, name_id=f"-verification-{x:0.2f}", outdir=out_dir, mode="data", test=False, output_mixing=True)
     except Exception as e:
         print(f"Failed for Thrust-level: {x:.3f}")
         print(e)
@@ -359,10 +359,10 @@ def convert_mission_out(mout_name="CFM56_7B_737Mission.out"):
     fname = os.path.join(ver_dir, mout_name)
     with open(fname, "r") as f:
         lines = f.read().split("\n")
-        headers = ",".join(re.split("\s+", lines[2])[1:-1])
+        headers = ",".join(re.split(r"\s+", lines[2])[1:-1])
         nls = [headers]
         for l in lines[3:]:
-            r = re.split("\s+", l)[2:-1]
+            r = re.split(r"\s+", l)[2:-1]
             nls.append(",".join(r))
         content = "\n".join(nls)
     with open(os.path.join(ver_dir, f"{mout_name.split('.')[0]}.csv"), "w") as f:

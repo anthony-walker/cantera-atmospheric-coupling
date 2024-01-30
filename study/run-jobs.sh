@@ -28,6 +28,10 @@ slurm_job_wait() {
     fi
 }
 
+count_jobs() {
+    squeue -h -o "%A" -u $(whoami) | wc -l
+}
+
 run_all_cases() {
     for ((i=70; i<=250; i+=10)); do
         export EPZ=$(echo "scale=2; $i/100" | bc)
@@ -42,5 +46,3 @@ run_all_cases() {
         done
     done
 }
-
-run_all_cases

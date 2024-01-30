@@ -24,8 +24,8 @@ echo
 echo "Running $EPZ, $FARNE"
 ODP="minimal"
 combustor --equiv_ratio $EPZ --farnesane $FARNE --outdir $ODP
-ret=$?
-if [ "$ret" -ne 0 ]; then
-    echo "Failure, attempting no precondition case"
-    combustor --equiv_ratio $EPZ --farnesane $FARNE --outdir $ODP --precon_off
-fi
+# ret=$?
+# if [ "$ret" -ne 0 ]; then
+#     echo "Failure, attempting no precondition case"
+#     combustor --equiv_ratio $EPZ --farnesane $FARNE --outdir $ODP --precon_off
+# fi
