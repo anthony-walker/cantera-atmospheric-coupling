@@ -91,6 +91,8 @@ def new_network(r, precon=None):
                             "skip-flow-devices": True,
                             "skip-walls": True}
     net.max_steps = 1e9
+    net.rtol = 1e-16
+    net.atol = 1e-20
     # setup preconditioner
     if precon:
         net.preconditioner = ct.AdaptivePreconditioner()
