@@ -23,6 +23,7 @@ class PlumeReactor(ct.ExtensibleIdealGasConstPressureMoleReactor):
         self.state_air = []
         self.enthalpy = []
         self.cp = []
+        self.air_ids = []
         self.er_start = 0 # starting index for omega since time only moves forward
         self.thermo.zenith_angle = self.calculate_solar_zenith_angle(0)
         self.zat = -1
@@ -42,7 +43,9 @@ class PlumeReactor(ct.ExtensibleIdealGasConstPressureMoleReactor):
     @TX_air.setter
     def TX_air(self, value):
         self.state_air = np.array(value)
-
+        for i, v in enumerate(self.state_air[1:]):
+            if v > 0:
+                self.air_ids.append(i)
 
     @property
     def enthalpy_air(self):
@@ -90,6 +93,18 @@ class PlumeReactor(ct.ExtensibleIdealGasConstPressureMoleReactor):
     def pressure(self):
         return self.T * ct.gas_constant * self.mass / self.thermo.mean_molecular_weight / self.volume
 
+    # def after_update_state(self, y):
+        # check for values greater than atmospheric
+        # if self.air_ids:
+        #     rids = []
+        #     for ai in self.air_ids:
+        #         if self.thermo.X[ai] >= self.state_air[ai+1]:
+        #             self.state_air[ai+1] = 0
+        #             rids.append(ai)
+        #     # remove air ids
+        #     for rid in rids:
+        #         self.air_ids.remove(rid)
+
     def replace_eval(self, t, LHS, RHS):
         # updating zenith angle after eval
         if t != self.zat:
@@ -130,12 +145,12 @@ class PlumeReactor(ct.ExtensibleIdealGasConstPressureMoleReactor):
             # find most from ideal gas law
             T,P = self.thermo.TP
             Nt = P * self.volume / ct.gas_constant / self.T
-            moles = self.state_air[1:] * Nt
             # addition of value to energy equation for thermal entrainment
             RHS[0] -= omega_T * (self.T - self.state_air[0]) * self.mass * self.thermo.cp_mass
             # addition of value for species equation entrainment
-            for i in range(len(moles)):
-                RHS[i+1] += omega_X * moles[i]
+            for i in self.air_ids:
+                RHS[i+1] += omega_X * self.state_air[i+1] * Nt
+
 
 class DilutionReactor(ct.ExtensibleIdealGasConstPressureMoleReactor):
     def __init__(self, *args, mdot, beta_da, beta_mixing, **kwargs):

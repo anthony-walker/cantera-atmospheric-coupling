@@ -90,7 +90,7 @@ def new_network(r, precon=None):
                             "skip-electrochemistry": True,
                             "skip-flow-devices": True,
                             "skip-walls": True}
-    net.max_steps = 1e9
+    net.max_steps = 5e6
     net.rtol = 1e-16
     net.atol = 1e-20
     # setup preconditioner
@@ -326,7 +326,7 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
         startState = reactors[i].thermo.TPX
         # setup some restarts for failed cases
         success = False
-        for j in range(10):
+        for j in range(3):
             try:
                 net.advance(100 * tres)
                 success = True
@@ -569,11 +569,10 @@ def combustor_atm_sim(equiv_ratio, farnesane, outdir, fmodel=None, amodel=None, 
     atmosphere.cp_air = air_cp
     # setup mass flow from reservoir to atmosphere
     gc = 1 # 1 in SI system
-    mdot = p4 * A4 * M4 * numpy.sqrt(gamma * gc / ct.gas_constant * T4)
+    mdot = atmosphere.thermo.density * A4 * M4 * numpy.sqrt(gamma * gc * 287 * T4)
     thermo_states["mdot_exhaust"] = float(mdot)
     # setup reactor network
     net = new_network([atmosphere], precon=True)
-    net.max_time_step = 1e-2
     # setup solution array
     short_states = ct.SolutionArray(atms, extra=["time", "moles", "mass", "volume"])
     failures = 0
@@ -581,26 +580,26 @@ def combustor_atm_sim(equiv_ratio, farnesane, outdir, fmodel=None, amodel=None, 
     short_states.append(atmosphere.thermo.state, time=net.time, moles=moles, mass=atmosphere.mass, volume=atmosphere.volume)
     # setup times to safely integrate too and store data for because storing mass model
     # species data is expensive
-    times = numpy.linspace(0, 0.005, 100)
+    times = numpy.logspace(numpy.log10(1e-6), numpy.log10(10), 100)
     failed = False
-    for t in times[1:]: #for t in steps:
+    for t in times: #for t in steps:
         failures = 0
         t_target = t
-        net.max_time_step = 1e-3
+        net.max_time_step = 0
         while net.time < t:
             try:
-                print(f"Integrating atmosphere time, temp: {net.time, atmosphere.T}...")
+                print(f"Integrating atmosphere time, temp: {t_target, atmosphere.T}...")
                 former_time = net.time
                 net.advance(t_target)
                 # reset targeted time and time step
                 t_target = t
                 failures = 0
-                net.max_time_step = 1e-3
+                net.max_time_step = 0
                 # append the state so last state is always available
                 moles = numpy.sum(atmosphere.get_state()[1:atms.n_species + 1])
                 short_states.append(atmosphere.thermo.state, time=net.time, mass=atmosphere.mass, moles=moles, volume=atmosphere.volume)
                 # break if temperatures are close
-                if numpy.isclose(atmosphere.T, T_atm, rtol=1e-2) or atmosphere.T <= T_atm:
+                if check_entrainment_conditions(atmosphere):
                     print(f"Temperature equilibrium tolerance met, breaking...")
                     break
             except Exception as e:
@@ -610,15 +609,19 @@ def combustor_atm_sim(equiv_ratio, farnesane, outdir, fmodel=None, amodel=None, 
                 atmosphere.syncState()
                 atmosphere.volume = short_states[-1].volume
                 net.initial_time = former_time
-                net.max_time_step = net.max_time_step / 10
+                if net.max_time_step == 0:
+                    net.max_time_step = 0.1
+                else:
+                    net.max_time_step = net.max_time_step / 10
                 net.initialize()
                 t_target = former_time + t_target * 0.01 # 1% of next target time
                 failures += 1
                 if failures >= 20:
                     failed = True
                     break
-        if failed or numpy.isclose(atmosphere.T, T_atm, rtol=1e-2) or atmosphere.T <= T_atm:
+        if failed or check_entrainment_conditions(atmosphere):
             break
+    print(f"Integrated atmosphere time, temp: {net.time, atmosphere.T}...")
     # append thermo state
     thermo_states["T"].append(f"{atmosphere.T:0.2f}")
     thermo_states["P"].append(f"{p4:0.2f}")
@@ -626,17 +629,15 @@ def combustor_atm_sim(equiv_ratio, farnesane, outdir, fmodel=None, amodel=None, 
     # longer time scale integration - turn off entrainment and energy
     atmosphere.entrainment = False
     atmosphere.energy_enabled = False
-    # setup solution array
-    long_states = ct.SolutionArray(atms, extra=["time", "moles", "mass", "volume"])
+    atmosphere.no_change_species = ["H2O", "O2", "N2"]
+    long_states = short_states # solution array is now used for long states
     failures = 0
-    moles = numpy.sum(atmosphere.get_state()[1:])
-    long_states.append(atmosphere.thermo.state, time=net.time, moles=moles, mass=atmosphere.mass, volume=atmosphere.volume)
     # setup times to safely integrate too and store data for because storing mass model
     # species data is expensive
     ndays = 3
-    times = numpy.linspace(0, ndays * 24 * 3600, 100)
+    times = numpy.linspace(net.time, ndays * 24 * 3600, 100)
     failed = False
-    for t in times[1:]: #for t in steps:
+    for t in times[1:]:
         failures = 0
         t_target = t
         net.max_time_step = 1000
@@ -692,6 +693,13 @@ def combustor_atm_sim(equiv_ratio, farnesane, outdir, fmodel=None, amodel=None, 
         print(f"Failed to save {ah5}, writing to csv...")
         ah5 = os.path.join(outdir, f"long-term-states-{equiv_ratio:.1f}-{farnesane:.2f}.csv")
         long_states.save(ah5, overwrite=True)
+
+def check_entrainment_conditions(r):
+    val = True
+    for i, v in enumerate(r.TX_air[1:]):
+        if v > 0:
+            val = numpy.allclose(r.thermo.X[i], v, rtol=1e-1) and val
+    return numpy.isclose(r.T, r.TX_air[0], rtol=0.025) and val
 
 def curve_fit_thrust_data(xval=0, mdot=1.086, test=False):
     with open(os.path.join(DATA_DIR, "thrust-data.csv"), "r")  as f:
