@@ -578,6 +578,7 @@ def combustor_atm_sim(equiv_ratio, farnesane, outdir, fmodel=None, amodel=None, 
     failures = 0
     moles = numpy.sum(atmosphere.get_state()[1:])
     short_states.append(atmosphere.thermo.state, time=net.time, moles=moles, mass=atmosphere.mass, volume=atmosphere.volume)
+    long_states = ct.SolutionArray(atms, extra=["time", "moles", "mass", "volume"])
     # setup times to safely integrate too and store data for because storing mass model
     # species data is expensive
     times = numpy.logspace(numpy.log10(1e-6), numpy.log10(10), 100)
@@ -598,6 +599,7 @@ def combustor_atm_sim(equiv_ratio, farnesane, outdir, fmodel=None, amodel=None, 
                 # append the state so last state is always available
                 moles = numpy.sum(atmosphere.get_state()[1:atms.n_species + 1])
                 short_states.append(atmosphere.thermo.state, time=net.time, mass=atmosphere.mass, moles=moles, volume=atmosphere.volume)
+                long_states.append(atmosphere.thermo.state, time=net.time, mass=atmosphere.mass, moles=moles, volume=atmosphere.volume)
                 # break if temperatures are close
                 if check_entrainment_conditions(atmosphere):
                     print(f"Temperature equilibrium tolerance met, breaking...")
@@ -630,7 +632,6 @@ def combustor_atm_sim(equiv_ratio, farnesane, outdir, fmodel=None, amodel=None, 
     atmosphere.entrainment = False
     atmosphere.energy_enabled = False
     atmosphere.no_change_species = ["H2O", "O2", "N2"]
-    long_states = short_states # solution array is now used for long states
     failures = 0
     # setup times to safely integrate too and store data for because storing mass model
     # species data is expensive
