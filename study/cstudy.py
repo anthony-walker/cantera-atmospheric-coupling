@@ -82,10 +82,10 @@ def make_species_contour(sp, index=-1, path="fullmcm", name="", mode="hdf5", sca
             if os.path.exists(os.path.join(path, unformatted.format(eq, fs))):
                 if mode == "csv":
                     short_data = pd.read_csv(os.path.join(path, unformatted.format(eq, fs)), delimiter=",", engine="python", usecols=["mass", "time", f'Y_{sp}'])
-                    masses[j][i] = short_data[f'Y_{sp}'].iloc[index] * short_data['mass'].iloc[index]
+                    masses[j][i] = short_data[f'Y_{sp}'].iloc[index] * short_data[f'mass'].iloc[index]
                 elif mode == "hdf5":
                     short_data = h5py.File(os.path.join(path, unformatted.format(eq, fs)), "r")
-                    masses[j][i] = short_data[f'Y_{sp}'][index] * short_data['mass'][index]
+                    masses[j][i] = short_data[f'Y_{sp}'][index] * short_data[f'mass'][index]
             else:
                 masses[j][i] = numpy.NAN
     # apply mask to masses
@@ -109,7 +109,44 @@ def make_species_contour(sp, index=-1, path="fullmcm", name="", mode="hdf5", sca
     plt.close()
 
 
-def states_plots(species=[], path="fullmcm", mode="csv", scale="long", eq=1.0, fp=0.10, name=None, normalized=False, limit=None):
+def make_temperature_contour(index=-1, path="fullmcm", mode="hdf5", scale="short"):
+    equiv_ratios = numpy.arange(0.7, 2.6, 0.1)
+    farnesane_percents = numpy.arange(0, 0.21, 0.01)
+    unformatted = f"{scale}-term-states-"+ "{:.1f}-{:.2f}" + f".{mode}"
+    temps = numpy.zeros((len(farnesane_percents), len(equiv_ratios)))
+    for i, eq in enumerate(equiv_ratios):
+        for j, fs in enumerate(farnesane_percents):
+            if os.path.exists(os.path.join(path, unformatted.format(eq, fs))):
+                if mode == "csv":
+                    short_data = pd.read_csv(os.path.join(path, unformatted.format(eq, fs)), delimiter=",", engine="python", usecols=[f'T'])
+                    temps[j][i] = short_data[f'T'].iloc[index]
+                elif mode == "hdf5":
+                    short_data = h5py.File(os.path.join(path, unformatted.format(eq, fs)), "r")
+                    temps[j][i] = short_data[f'T'][index]
+            else:
+                temps[j][i] = numpy.NAN
+    # apply mask to temps
+    mask = numpy.abs(temps) <= MASK_VALUE
+    for i in range(len(equiv_ratios)):
+        for j in range(len(farnesane_percents)):
+            temps[j][i] = temps[j][i] if not mask[j][i] else 0
+    # make contour
+    X, Y = numpy.meshgrid(equiv_ratios, farnesane_percents)
+    plt.contourf(X, Y, temps, cmap='viridis')
+    plt.xticks(numpy.linspace(0.7, 2.5, 5))
+    plt.yticks(numpy.linspace(0, 0.2, 5))
+    plt.xlabel('Equivalence Ratio')
+    plt.ylabel('Farnesane Fraction')
+    plt.colorbar(label='Temperature [K]')
+    if not os.path.exists("figures"):
+        os.mkdir("figures")
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig(f"figures/temperature-{scale}-{index}-contour.pdf", bbox_inches='tight')
+    plt.close()
+
+def states_plots(species=[], path="fullmcm", mode="csv", scale="long", eq=1.0, fp=0.10, name=None, normalized=False, limit=None, pltfcn=plt.plot, ncols=3):
+    # load data
     if mode == "csv":
         short_data = pd.read_csv(os.path.join(path, f'{scale}-term-states-{eq:.1f}-{fp:.2f}.csv'), delimiter=",", engine="python")
         mass = short_data["mass"]
@@ -119,11 +156,11 @@ def states_plots(species=[], path="fullmcm", mode="csv", scale="long", eq=1.0, f
         mass = numpy.array(short_data["mass"])
         time = numpy.array(short_data["time"])
     # adjust time scale
-    if scale == "long":
-        time = time // 24 // 3600 # days
+    # if scale == "long":
+    #     time = time // 24 // 3600 # days
     if species is None:
         for k in short_data.keys():
-            data = numpy.array(short_data[k])
+            data = numpy.array(short_data[k]) * numpy.array(mass)
             mask = data <= MASK_VALUE
             for i in range(len(data)):
                 data[i] = data[i] if not mask[i] else 0
@@ -132,9 +169,9 @@ def states_plots(species=[], path="fullmcm", mode="csv", scale="long", eq=1.0, f
                 if normalized:
                     data = data / numpy.amax(data)
                 fig, ax = plt.subplots()
-                ax.plot(time, data)
+                pltfcn(time, data)
                 ax.set_title(k)
-                ax.set_yticks(numpy.linspace(0, numpy.amax(data) * 1.1, 5))
+                # ax.set_yticks(numpy.linspace(0, numpy.amax(data) * 1.1, 5))
                 ax.set_ylabel("Mass [kg]")
                 if scale == "long":
                     ax.set_xlabel("Time [days]")
@@ -147,20 +184,18 @@ def states_plots(species=[], path="fullmcm", mode="csv", scale="long", eq=1.0, f
         if isinstance(species, str):
             species = [species]
         fig, ax = plt.subplots()
+        plt.axvspan(0, numpy.amax(time[time<=10]), facecolor=COLORS[-3], alpha=0.2, label="entrainment")
         for j, sp in enumerate(species):
-            data = numpy.array(short_data[f"Y_{sp}"])
+            data = numpy.array(short_data[f"Y_{sp}"]) * numpy.array(mass)
             mask = numpy.abs(data) <= MASK_VALUE
             for i in range(len(data)):
                 data[i] = data[i] if not mask[i] else 0
             if normalized:
                 data = data / numpy.amax(data)
             lb = sp.lower() if sp != "C5H8" else "isoprene"
-            ax.plot(time, data, color=COLORS[j], label=lb, linewidth=3)
-        fig.legend(loc='upper center', ncols=len(species)//2, bbox_to_anchor=(0.5, 1.125))
-        if scale == "short":
-            plt.xlabel('Time [s]')
-        else:
-            plt.xlabel("Time [days]")
+            pltfcn(time, data, color=COLORS[j], label=lb, linewidth=3)
+        ax.legend()
+        plt.xlabel("Time [s]")
         if normalized:
             plt.ylabel('Normalized Mass')
         else:
@@ -173,20 +208,26 @@ def states_plots(species=[], path="fullmcm", mode="csv", scale="long", eq=1.0, f
             plt.savefig(f"figures/states-{scale}-{eq:.1f}-{fp:.2f}.pdf", bbox_inches='tight')
         plt.close()
 
+def paper_plots():
+    mode = "hdf5"
+    path = "minimal"
+    all_specs = ["TOLUENE", "BENZENE", "C5H8"]
+    states_plots(all_specs, path=path, mode=mode, scale="long", eq=0.7, fp=0.2, normalized=False, pltfcn=plt.loglog)
+    states_plots(all_specs, path=path, mode=mode, scale="long", eq=1.5, fp=0.2, normalized=False, pltfcn=plt.loglog)
+    for name in all_specs: #
+        make_species_contour(name, index=0, path=path, mode=mode)
+    make_temperature_contour(index=0, path=path, mode=mode)
 
 if __name__ == "__main__":
     mode = "hdf5"
-    path = "maximal"
-    all_specs = ["TOLUENE", "PHENOL", "BENZENE", "C5H8"]
-    states_plots(None, path=path, mode=mode, scale="long", eq=1.5, fp=0.08, limit=1e-24)
-    states_plots(all_specs, path=path, mode=mode, scale="short", eq=0.7, fp=0.08, normalized=True)
-    states_plots(all_specs, path=path, mode=mode, scale="short", eq=1.5, fp=0.08, normalized=True)
+    path = "minimal"
+    all_specs = ["TOLUENE", "BENZENE", "C5H8"]
+    paper_plots()
+    peroxys = ["BZBIPERO2", "TLBIPERO2", "ISOP34O2"]
+    states_plots(peroxys, path=path, mode=mode, scale="long", eq=1.5, fp=0.2, name=f"peroxys-states", pltfcn=plt.loglog)
+    states_plots(peroxys, path=path, mode=mode, scale="long", eq=0.7, fp=0.2, name=f"peroxys-states", pltfcn=plt.loglog)
+    # for ro2 in peroxys:
+    #     make_species_contour(ro2, path=path, scale="long", mode=mode)
+    #     states_plots(ro2, path=path, mode=mode, scale="long", eq=1.5, fp=0.08, name=f"{ro2.lower()}-states", pltfcn=plt.semilogx)
 
-    for name in all_specs: #
-        make_species_contour(name, index=0, path=path, mode=mode)
-        # make_species_contour(name, index=0, path=path, mode=mode, scale="long")
-    peroxys = ["BZBIPERO2", "TLBIPERO2"]
-    states_plots(peroxys, path=path, mode=mode, scale="long", eq=1.5, fp=0.08, name=f"peroxys-states", normalized=True)
-    for ro2 in peroxys:
-        make_species_contour(ro2, path=path, scale="long", mode=mode)
-        states_plots(ro2, path=path, mode=mode, scale="long", eq=1.5, fp=0.08, name=f"{ro2.lower()}-states")
+    # states_plots(None, path=path, mode=mode, scale="long", eq=1.5, fp=0.08, pltfcn=plt.loglog, limit=1e-20)

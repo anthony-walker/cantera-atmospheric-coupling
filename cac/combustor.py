@@ -455,16 +455,20 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
 @click.option("--farnesane", default=0.1, help="Farnesane blend percentage")
 @click.option("--outdir", default=DATA_DIR, help="Output directory for data")
 @click.option("--thrust", default=1.0, help="Percentage of thrust to use")
+@click.option("--stime", default=0, help="Time of day in hours when the simulation is started")
 @click.option("--fmodel", default=os.path.join(DATA_DIR, "combustor.yaml"), help="Fuel model used")
 @click.option("--amodel", default=os.path.join(DATA_DIR, "atmosphere.yaml"), help="Atmospheric model used")
+@click.option("--restdir", default=None, help="Restart directory for atmospheric only simulation")
 @click.option('--precon_off', default=True, is_flag=True, help='Turn off preconditioner')
-def run_combustor_atm_sim(equiv_ratio, farnesane, outdir, thrust, fmodel, amodel, precon_off):
+def run_combustor_atm_sim(equiv_ratio, farnesane, outdir, thrust, stime, fmodel, amodel, restdir, precon_off):
     global PRECONDITIONED
     PRECONDITIONED = precon_off
-    combustor_atm_sim(equiv_ratio, farnesane, outdir, fmodel=fmodel, amodel=amodel, thrust_level=thrust)
+    combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=stime, fmodel=fmodel, amodel=amodel, thrust_level=thrust, restart_dir=restdir)
 
 
-def combustor_atm_sim(equiv_ratio, farnesane, outdir, fmodel=None, amodel=None, thrust_level=1.0):
+def combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=0, fmodel=None, amodel=None, thrust_level=1.0, restart_dir=None):
+    # parameters used in both cases
+    states_file = os.path.join(outdir, f"thermo-states-{equiv_ratio:.1f}-{farnesane:.2f}.yaml")
     thermo_states = {"farnesane": f"{farnesane:.2f}", "equivalence_ratio": f"{equiv_ratio:.1f}"}
     # append appropriate directories
     sys.path.append(DATA_DIR)
@@ -486,80 +490,98 @@ def combustor_atm_sim(equiv_ratio, farnesane, outdir, fmodel=None, amodel=None, 
     print_state_TP(T_atm, p_atm, 0)
     thermo_states["T"] = [f"{T_atm:0.2f}"]
     thermo_states["P"] = [f"{p_atm:0.2f}"]
-    # create path to fuel model
+    # create path to models
     fuel_model = os.path.join(DATA_DIR, "combustor.yaml") if fmodel is None else fmodel
+    atms_model = os.path.join(DATA_DIR, "atmosphere.yaml") if amodel is None else amodel
     # creation of fuel thermo object
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         fuel = ct.Solution(fuel_model, name="combustor", transport_model=None)
-    fuel.TPX = T_atm, p_atm, X_air
-    # compression is achieved in data file during multizone-combustor run
-    combustor, ____ = multizone_combustor(fuel, thrust_level, equiv_ratio, X_fuel, X_air, thermo_states=thermo_states, outdir=outdir, name_id=f"-{equiv_ratio:.1f}-{farnesane:.2f}")
-    # continue
-    T2, p2 = combustor.thermo.TP
-    # get total moles for volume calculation
-    Ntotal = numpy.sum(combustor.get_state()[1:fuel.n_species + 1])
-    # use nozzle end conditions to back calculate state 3 and calculate T4
-    A3 = numpy.pi * (1.07 ** 2) / 4 # meters
-    A4 = numpy.pi * (0.62 ** 2) / 4 # meters
-    M4 = 1
-    p4 = p_atm
-    # iteratively solve for pressure at 3 from choked nozzle and area ratio
-    # to get temperature at 3 and then at 4
-    M3 = 0.3 # initial guess
-    gamma_old = 0
-    gamma = fuel.cp_mole / (fuel.cp_mole - ct.gas_constant)
-    while numpy.abs(gamma - gamma_old) > 1e-8:
-        gmone = gamma - 1
-        def machthree(x):
-            numer = 1 + gmone / 2 * M4 * M4
-            denom = 1 + gmone / 2 * x[0] * x[0]
-            mach = A4 / A3 * M4 / ((numer / denom) ** ((gamma + 1) / (2 * gamma - 2)))
-            return x[0] - mach
-        M3 = fsolve(machthree, [M3])[0]
-        # solve for pressure 3
-        p3 = p4 / (((1 + gmone / 2 * M3 * M3) / (1 + gmone / 2 * M4 * M4)) ** (gamma / gmone))
-        T3 = T2 * ((p3 / p2) ** (ct.gas_constant / fuel.cp_mole))
-        # set new state and recalculate gamma
-        fuel.TPY = T3, p3, combustor.Y
-        gamma_old = gamma
-        gamma = fuel.cp_mole / (fuel.cp_mole - ct.gas_constant)
-    # print state at 3
-    v3 = Ntotal * ct.gas_constant * T3 / p3
-    print_state_TP(T3, p3, 3)
-    print(f"M3: {M3}")
-    T4 = T3 * (1 + gmone / 2 * (M3 ** 2)) / (1 + gmone / 2 * (M4 ** 2))
-    v4 = Ntotal * ct.gas_constant * T4 / p4
-    print_state_TP(T4, p4, 4)
-    # create atmosphere model
-    exhaust = ct.Reservoir(fuel)
-    atms_model = os.path.join(DATA_DIR, "atmosphere.yaml") if amodel is None else amodel
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
         atms = PlumeSolution(atms_model, name="atmosphere", transport_model=None)
+    fuel.TPX = T_atm, p_atm, X_air
     atms.TPX = T_atm, p_atm, X_air
+    # setup air properties needed later
     air_state = atms.TPX
     air_enthalpy = atms.partial_molar_enthalpies
     air_cp = atms.partial_molar_cp
-    # fill thermo states
-    thermo_states["T"].append(f"{T3:0.2f}")
-    thermo_states["P"].append(f"{p3:0.2f}")
-    thermo_states["T"].append(f"{T4:0.2f}")
-    thermo_states["P"].append(f"{p4:0.2f}")
-    thermo_states["M3"] = [f"{M3:0.2f}"]
+    # restart from existing combustor state to perturb atms only
+    if restart_dir is None:
+        # compression is achieved in data file during multizone-combustor run
+        combustor, ____ = multizone_combustor(fuel, thrust_level, equiv_ratio, X_fuel, X_air, thermo_states=thermo_states, outdir=outdir, name_id=f"-{equiv_ratio:.1f}-{farnesane:.2f}")
+        # continue
+        T2, p2 = combustor.thermo.TP
+        # get total moles for volume calculation
+        Ntotal = numpy.sum(combustor.get_state()[1:fuel.n_species + 1])
+        # use nozzle end conditions to back calculate state 3 and calculate T4
+        A3 = numpy.pi * (1.07 ** 2) / 4 # meters
+        A4 = numpy.pi * (0.62 ** 2) / 4 # meters
+        M4 = 1
+        p4 = p_atm
+        # iteratively solve for pressure at 3 from choked nozzle and area ratio
+        # to get temperature at 3 and then at 4
+        M3 = 0.3 # initial guess
+        gamma_old = 0
+        gamma = fuel.cp_mole / (fuel.cp_mole - ct.gas_constant)
+        while numpy.abs(gamma - gamma_old) > 1e-8:
+            gmone = gamma - 1
+            def machthree(x):
+                numer = 1 + gmone / 2 * M4 * M4
+                denom = 1 + gmone / 2 * x[0] * x[0]
+                mach = A4 / A3 * M4 / ((numer / denom) ** ((gamma + 1) / (2 * gamma - 2)))
+                return x[0] - mach
+            M3 = fsolve(machthree, [M3])[0]
+            # solve for pressure 3
+            p3 = p4 / (((1 + gmone / 2 * M3 * M3) / (1 + gmone / 2 * M4 * M4)) ** (gamma / gmone))
+            T3 = T2 * ((p3 / p2) ** (ct.gas_constant / fuel.cp_mole))
+            # set new state and recalculate gamma
+            fuel.TPY = T3, p3, combustor.Y
+            gamma_old = gamma
+            gamma = fuel.cp_mole / (fuel.cp_mole - ct.gas_constant)
+        # print state at 3
+        v3 = Ntotal * ct.gas_constant * T3 / p3
+        print_state_TP(T3, p3, 3)
+        print(f"M3: {M3}")
+        T4 = T3 * (1 + gmone / 2 * (M3 ** 2)) / (1 + gmone / 2 * (M4 ** 2))
+        v4 = Ntotal * ct.gas_constant * T4 / p4
+        print_state_TP(T4, p4, 4)
+        # fill thermo states
+        thermo_states["T"].append(f"{T3:0.2f}")
+        thermo_states["P"].append(f"{p3:0.2f}")
+        thermo_states["T"].append(f"{T4:0.2f}")
+        thermo_states["P"].append(f"{p4:0.2f}")
+        thermo_states["M3"] = [f"{M3:0.2f}"]
+        thermo_states["gamma"] = gamma
+        # open model mapping
+        mapfile = f'{os.path.basename(fmodel).split(".")[0]}_to_{os.path.basename(amodel).split(".")[0]}.yaml'
+        mapfile = os.path.join(os.path.dirname(fmodel), mapfile)
+        if not os.path.exists(mapfile):
+            map_models(fmodel, amodel)
+        with open(mapfile, "r") as f:
+            mapping = yaml.load(f, Loader=yaml.SafeLoader)
+        Y_mapped = numpy.zeros(atms.n_species)
+        cstate = combustor.Y
+        for csp, asp in mapping.items():
+            Y_mapped[atms.species_index(asp)] = cstate[fuel.species_index(csp)]
+    else:
+        print("Restarting from existing combustor data")
+        # load existing thermo states
+        sf = os.path.join(restart_dir, os.path.basename(states_file))
+        with open(sf, "r") as f:
+            ydata = yaml.load(f, Loader=yaml.SafeLoader)
+            thermo_states.update(ydata)
+        # loading solution array
+        rf = os.path.join(restart_dir, f"short-term-states-{equiv_ratio:.1f}-{farnesane:.2f}.hdf5")
+        short_data = h5py.File(rf, "r")
+        T4 = short_data["T"][0]
+        A4 = numpy.pi * (0.62 ** 2) / 4 # meters
+        M4 = 1
+        p4 = p_atm
+        gamma = thermo_states.get("gamma", 1.4)
+        Y_mapped = numpy.zeros(atms.n_species)
+        for i in range(atms.n_species):
+            Y_mapped[i] = short_data[f"Y_{atms.species_name(i)}"][0]
     # create atmosphere reactor
-    atmosphere = PlumeReactor(atms)
-    # open model mapping
-    mapfile = f'{os.path.basename(fmodel).split(".")[0]}_to_{os.path.basename(amodel).split(".")[0]}.yaml'
-    mapfile = os.path.join(os.path.dirname(fmodel), mapfile)
-    if not os.path.exists(mapfile):
-        map_models(fmodel, amodel)
-    with open(mapfile, "r") as f:
-        mapping = yaml.load(f, Loader=yaml.SafeLoader)
-    Y_mapped = numpy.zeros(len(atmosphere.Y))
-    cstate = combustor.Y
-    for csp, asp in mapping.items():
-        Y_mapped[atms.species_index(asp)] = cstate[fuel.species_index(csp)]
+    atmosphere = PlumeReactor(atms, start_time=stime)
     # set thermo object of atmospheric object and sync state
     atmosphere.thermo.TPY = T4, p4, Y_mapped
     atmosphere.syncState()
@@ -671,7 +693,6 @@ def combustor_atm_sim(equiv_ratio, farnesane, outdir, fmodel=None, amodel=None, 
         if failed:
             break
     # write out thermo yaml
-    states_file = os.path.join(outdir, f"thermo-states-{equiv_ratio:.1f}-{farnesane:.2f}.yaml")
     with open(states_file, "w") as f:
         yaml.dump(thermo_states, f)
     # write out hdf5 data - short term
