@@ -105,7 +105,7 @@ def make_species_contour(sp, index=-1, path="fullmcm", name="", mode="hdf5", sca
         os.mkdir("figures")
     plt.grid(True)
     plt.tight_layout()
-    plt.savefig(f"figures/{sp.lower()}-{scale}-{index}-contour.pdf", bbox_inches='tight')
+    plt.savefig(f"figures/{path}-{sp.lower()}-{scale}-{index}-contour.pdf", bbox_inches='tight')
     plt.close()
 
 
@@ -113,16 +113,21 @@ def make_temperature_contour(index=-1, path="fullmcm", mode="hdf5", scale="short
     equiv_ratios = numpy.arange(0.7, 2.6, 0.1)
     farnesane_percents = numpy.arange(0, 0.21, 0.01)
     unformatted = f"{scale}-term-states-"+ "{:.1f}-{:.2f}" + f".{mode}"
+    yf = "thermo-states-{:.1f}-{:.2f}.yaml"
     temps = numpy.zeros((len(farnesane_percents), len(equiv_ratios)))
     for i, eq in enumerate(equiv_ratios):
         for j, fs in enumerate(farnesane_percents):
-            if os.path.exists(os.path.join(path, unformatted.format(eq, fs))):
+            if os.path.exists(os.path.join(path, unformatted.format(eq, fs))) and mode != "yaml":
                 if mode == "csv":
                     short_data = pd.read_csv(os.path.join(path, unformatted.format(eq, fs)), delimiter=",", engine="python", usecols=[f'T'])
                     temps[j][i] = short_data[f'T'].iloc[index]
                 elif mode == "hdf5":
                     short_data = h5py.File(os.path.join(path, unformatted.format(eq, fs)), "r")
                     temps[j][i] = short_data[f'T'][index]
+            elif os.path.exists(os.path.join(path, yf.format(eq, fs))):
+                with open(os.path.join(path, yf.format(eq, fs)), "r") as f:
+                    yaml_data = yaml.load(f, Loader=yaml.SafeLoader)
+                temps[j][i] = float(yaml_data["T"][index])
             else:
                 temps[j][i] = numpy.NAN
     # apply mask to temps
@@ -142,7 +147,7 @@ def make_temperature_contour(index=-1, path="fullmcm", mode="hdf5", scale="short
         os.mkdir("figures")
     plt.grid(True)
     plt.tight_layout()
-    plt.savefig(f"figures/temperature-{scale}-{index}-contour.pdf", bbox_inches='tight')
+    plt.savefig(f"figures/{path}-temperature-{scale}-{index}-contour.pdf", bbox_inches='tight')
     plt.close()
 
 def states_plots(species=[], path="fullmcm", mode="csv", scale="long", eq=1.0, fp=0.10, name=None, normalized=False, limit=None, pltfcn=plt.plot, ncols=3):
@@ -203,9 +208,9 @@ def states_plots(species=[], path="fullmcm", mode="csv", scale="long", eq=1.0, f
         plt.grid(True)
         plt.tight_layout()
         if name is not None:
-            plt.savefig(f"figures/{name}-{scale}-{eq:.1f}-{fp:.2f}.pdf", bbox_inches='tight')
+            plt.savefig(f"figures/{path}-{name}-{scale}-{eq:.1f}-{fp:.2f}.pdf", bbox_inches='tight')
         else:
-            plt.savefig(f"figures/states-{scale}-{eq:.1f}-{fp:.2f}.pdf", bbox_inches='tight')
+            plt.savefig(f"figures/{path}-states-{scale}-{eq:.1f}-{fp:.2f}.pdf", bbox_inches='tight')
         plt.close()
 
 def paper_plots():
@@ -216,7 +221,7 @@ def paper_plots():
     states_plots(all_specs, path=path, mode=mode, scale="long", eq=1.5, fp=0.2, normalized=False, pltfcn=plt.loglog)
     for name in all_specs: #
         make_species_contour(name, index=0, path=path, mode=mode)
-    make_temperature_contour(index=0, path=path, mode=mode)
+    make_temperature_contour(index=5, path=path, mode="yaml")
 
 if __name__ == "__main__":
     mode = "hdf5"

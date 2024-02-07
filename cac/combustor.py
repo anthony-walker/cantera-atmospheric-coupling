@@ -18,6 +18,7 @@ from cac.constants import DATA_DIR
 from cac.reactors import PlumeSolution, PlumeReactor, DilutionReactor
 
 PRECONDITIONED = True
+HIGH_TOLERANCE = True
 
 def reformat_hdf5(hf_name):
     with h5py.File(hf_name, "r+") as hf:
@@ -91,8 +92,9 @@ def new_network(r, precon=None):
                             "skip-flow-devices": True,
                             "skip-walls": True}
     net.max_steps = 5e6
-    net.rtol = 1e-16
-    net.atol = 1e-20
+    if HIGH_TOLERANCE:
+        net.rtol = 1e-16
+        net.atol = 1e-20
     # setup preconditioner
     if precon:
         net.preconditioner = ct.AdaptivePreconditioner()
@@ -279,9 +281,16 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     equiv_max = kwargs.get("equiv_max", 3.6)
     sigma = mixing_param * equiv_mean
     coeff = min([abs(equiv_mean - equiv_min) / sigma, abs(equiv_max - equiv_mean) / sigma, 2])
-    phis = numpy.linspace(equiv_mean - coeff * sigma, equiv_mean + coeff * sigma, n_pz)
+    if n_pz > 1:
+        phis = numpy.linspace(equiv_mean - coeff * sigma, equiv_mean + coeff * sigma, n_pz)
+    else:
+        phis = numpy.array([equiv_mean])
     # calculate mass flows
-    mass_flow_fractions = (1 / (sigma * numpy.sqrt(2*numpy.pi))) * numpy.exp(- (phis - equiv_mean) ** 2 / (2 * sigma ** 2 )) * (phis[1] - phis[0])
+    mass_flow_fractions = (1 / (sigma * numpy.sqrt(2*numpy.pi))) * numpy.exp(- (phis - equiv_mean) ** 2 / (2 * sigma ** 2 ))
+    if len(phis) > 1:
+        mass_flow_fractions *= (phis[1] - phis[0])
+    else:
+        mass_flow_fractions *= phis[0]
     # scale mass flow fractions to equal all of mdot
     mass_flow_fractions *= 1 / numpy.sum(mass_flow_fractions)
     mfs = mass_flow_fractions * mdot
@@ -299,6 +308,7 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     thermo_states["mass_flow_fraction_distribution"] = [float(p) for p in mass_flow_fractions]
     thermo_states["mass_flow_distribution"] = [float(p) for p in mfs]
     thermo_states["n-deviations"] = float(coeff)
+    thermo_states["n-reactors"] = int(n_pz)
     # create number of reactors
     reactors = []
     integration_success = []
@@ -460,13 +470,17 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
 @click.option("--amodel", default=os.path.join(DATA_DIR, "atmosphere.yaml"), help="Atmospheric model used")
 @click.option("--restdir", default=None, help="Restart directory for atmospheric only simulation")
 @click.option('--precon_off', default=True, is_flag=True, help='Turn off preconditioner')
-def run_combustor_atm_sim(equiv_ratio, farnesane, outdir, thrust, stime, fmodel, amodel, restdir, precon_off):
+@click.option('--npz', default=21, help='Number of reactors used in simulation')
+@click.option('--hightol', default=True, is_flag=True, help='Turn off preconditioner')
+def run_combustor_atm_sim(equiv_ratio, farnesane, outdir, thrust, stime, fmodel, amodel, restdir, precon_off, npz, hightol):
     global PRECONDITIONED
     PRECONDITIONED = precon_off
-    combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=stime, fmodel=fmodel, amodel=amodel, thrust_level=thrust, restart_dir=restdir)
+    global HIGH_TOLERANCE
+    HIGH_TOLERANCE = hightol
+    combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=stime, fmodel=fmodel, amodel=amodel, thrust_level=thrust, restart_dir=restdir, npz=npz)
 
 
-def combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=0, fmodel=None, amodel=None, thrust_level=1.0, restart_dir=None):
+def combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=0, fmodel=None, amodel=None, thrust_level=1.0, restart_dir=None, npz=21):
     # parameters used in both cases
     states_file = os.path.join(outdir, f"thermo-states-{equiv_ratio:.1f}-{farnesane:.2f}.yaml")
     thermo_states = {"farnesane": f"{farnesane:.2f}", "equivalence_ratio": f"{equiv_ratio:.1f}"}
@@ -507,7 +521,7 @@ def combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=0, fmodel=None, amod
     # restart from existing combustor state to perturb atms only
     if restart_dir is None:
         # compression is achieved in data file during multizone-combustor run
-        combustor, ____ = multizone_combustor(fuel, thrust_level, equiv_ratio, X_fuel, X_air, thermo_states=thermo_states, outdir=outdir, name_id=f"-{equiv_ratio:.1f}-{farnesane:.2f}")
+        combustor, ____ = multizone_combustor(fuel, thrust_level, equiv_ratio, X_fuel, X_air, thermo_states=thermo_states, outdir=outdir, name_id=f"-{equiv_ratio:.1f}-{farnesane:.2f}", n_pz=npz)
         # continue
         T2, p2 = combustor.thermo.TP
         # get total moles for volume calculation
