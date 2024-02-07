@@ -61,3 +61,18 @@ run_restarts() {
         done
     done
 }
+
+run_lowtol() {
+    for ((i=70; i<=250; i+=10)); do
+        export EPZ=$(echo "scale=2; $i/100" | bc)
+        export EPZ=$(printf "%.1f\n" $EPZ | sed 's/^0+//')
+        for ((j=0; j<=20; j+=1)); do
+            export FARNE=$(echo "scale=2; $j/100" | bc)
+            export FARNE=$(printf "%.2f\n" $FARNE | sed 's/^0+//')
+            if ! [ -f "$JPATH/thermo-states-$EPZ-$FARNE.yaml" ]; then
+                # echo "$JPATH/thermo-states-$EPZ-$FARNE.yaml"
+                sbatch -J "combustor-$EPZ-$FARNE" lowtol.sh
+            fi
+        done
+    done
+}
