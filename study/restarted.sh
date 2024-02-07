@@ -23,5 +23,5 @@ echo "Slurm ID: $SLURM_JOB_ID"
 echo
 echo "Running $EPZ, $FARNE"
 RDP="minimal"
-ODP="restarted"
-combustor --equiv_ratio $EPZ --farnesane $FARNE --outdir $ODP --restdir $RDP --stime 12
+ODP="nox"
+combustor --equiv_ratio $EPZ --farnesane $FARNE --outdir $ODP --restdir $RDP --nox 0.1
