@@ -24,4 +24,4 @@ echo
 echo "Running $EPZ, $FARNE"
 RDP="minimal"
 ODP="nox"
-combustor --equiv_ratio $EPZ --farnesane $FARNE --outdir $ODP --restdir $RDP --nox 0.1
+combustor --equiv_ratio $EPZ --farnesane $FARNE --outdir $ODP --restdir $RDP --nox 2.394e-5
