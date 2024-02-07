@@ -265,6 +265,7 @@ def paper_plots():
     all_specs = ["TOLUENE", "BENZENE", "C5H8"]
     states_plots(all_specs, path=path, mode=mode, scale="long", eq=0.7, fp=0.2, normalized=False, pltfcn=plt.loglog)
     states_plots(all_specs, path=path, mode=mode, scale="long", eq=1.5, fp=0.2, normalized=False, pltfcn=plt.loglog)
+    states_plots(all_specs, path="nox", mode=mode, scale="long", eq=0.7, fp=0.2, normalized=False, pltfcn=plt.loglog)
     states_plots(["O2", "N2", "H2O"], path=path, mode=mode, scale="long", eq=1.5, fp=0.2, normalized=False, pltfcn=plt.loglog, name="o2")
     states_plots(["O2", "N2", "H2O"], path=path, mode=mode, scale="long", eq=0.7, fp=0.2, normalized=False, pltfcn=plt.loglog, name="o2")
     for name in all_specs: #
@@ -272,9 +273,14 @@ def paper_plots():
     make_temperature_contour(index=5, path=path, mode="yaml")
     make_temperature_contour(index=5, path="lowtol", mode="yaml")
     # radical plots
-    peroxys = ["BZBIPERO2", "TLBIPERO2", "ISOP34O2"]
+    peroxys = ["BZBIPERO2", "TLBIPERO2", "ISOP34O2"] #"C6H5CO3"
     states_plots(peroxys, path=path, mode=mode, scale="long", eq=1.5, fp=0.2, name=f"peroxys-states", pltfcn=plt.loglog)
     states_plots(peroxys, path=path, mode=mode, scale="long", eq=0.7, fp=0.2, name=f"peroxys-states", pltfcn=plt.loglog)
+    states_plots(peroxys, path="nox", mode=mode, scale="long", eq=0.7, fp=0.2, name=f"peroxys-states", pltfcn=plt.loglog)
+    ovocs = ["A2PANOO", "PHCOOH", "BZEMUCCO2H"] #"C6H5CO3"
+    states_plots(ovocs, path=path, mode=mode, scale="long", eq=1.5, fp=0.2, name=f"ovocs-states", pltfcn=plt.loglog)
+    states_plots(ovocs, path=path, mode=mode, scale="long", eq=0.7, fp=0.2, name=f"ovocs-states", pltfcn=plt.loglog)
+    states_plots(ovocs, path="nox", mode=mode, scale="long", eq=0.7, fp=0.2, name=f"ovocs-states", pltfcn=plt.loglog)
 
 
 if __name__ == "__main__":
@@ -282,9 +288,5 @@ if __name__ == "__main__":
     path = "minimal"
     all_specs = ["TOLUENE", "BENZENE", "C5H8"]
     paper_plots()
-    # make_states_temperature_plot(all_specs, 0.2, path=path, mode=mode, limit=1e-50)
-    # for ro2 in peroxys:
-    #     make_species_contour(ro2, path=path, scale="long", mode=mode)
-    #     states_plots(ro2, path=path, mode=mode, scale="long", eq=1.5, fp=0.08, name=f"{ro2.lower()}-states", pltfcn=plt.semilogx)
-
-    # states_plots(None, path=path, mode=mode, scale="long", eq=1.5, fp=0.08, pltfcn=plt.loglog, limit=1e-20)
+    # states_plots(None, path=path, mode=mode, scale="long", eq=0.7, fp=0.2, name=f"search1", pltfcn=plt.loglog, limit=1e-36)
+    # states_plots(None, path=path, mode=mode, scale="long", eq=1.5, fp=0.2, name=f"search2", pltfcn=plt.loglog, limit=1e-36)
