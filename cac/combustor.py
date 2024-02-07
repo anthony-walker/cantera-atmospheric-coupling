@@ -472,15 +472,16 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
 @click.option('--precon_off', default=True, is_flag=True, help='Turn off preconditioner')
 @click.option('--npz', default=21, help='Number of reactors used in simulation')
 @click.option('--hightol', default=True, is_flag=True, help='Turn off preconditioner')
-def run_combustor_atm_sim(equiv_ratio, farnesane, outdir, thrust, stime, fmodel, amodel, restdir, precon_off, npz, hightol):
+@click.option('--nox', default=0.0, help='Atmospheric NOX injection percentage.')
+def run_combustor_atm_sim(equiv_ratio, farnesane, outdir, thrust, stime, fmodel, amodel, restdir, precon_off, npz, hightol, nox):
     global PRECONDITIONED
     PRECONDITIONED = precon_off
     global HIGH_TOLERANCE
     HIGH_TOLERANCE = hightol
-    combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=stime, fmodel=fmodel, amodel=amodel, thrust_level=thrust, restart_dir=restdir, npz=npz)
+    combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=stime, fmodel=fmodel, amodel=amodel, thrust_level=thrust, restart_dir=restdir, npz=npz, nox=nox)
 
 
-def combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=0, fmodel=None, amodel=None, thrust_level=1.0, restart_dir=None, npz=21):
+def combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=0, fmodel=None, amodel=None, thrust_level=1.0, restart_dir=None, npz=21, nox=0):
     # parameters used in both cases
     states_file = os.path.join(outdir, f"thermo-states-{equiv_ratio:.1f}-{farnesane:.2f}.yaml")
     thermo_states = {"farnesane": f"{farnesane:.2f}", "equivalence_ratio": f"{equiv_ratio:.1f}"}
@@ -594,6 +595,10 @@ def combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=0, fmodel=None, amod
         Y_mapped = numpy.zeros(atms.n_species)
         for i in range(atms.n_species):
             Y_mapped[i] = short_data[f"Y_{atms.species_name(i)}"][0]
+    # inject nox
+    if nox > 0:
+        print(f"Injecting {nox} of NO2")
+        Y_mapped[atms.species_index("NO2")] = nox
     # create atmosphere reactor
     atmosphere = PlumeReactor(atms, start_time=stime)
     # set thermo object of atmospheric object and sync state

@@ -2,6 +2,7 @@ import os
 import re
 import sys
 import csv
+import copy
 import yaml
 import h5py
 import numpy
@@ -108,7 +109,6 @@ def make_species_contour(sp, index=-1, path="fullmcm", name="", mode="hdf5", sca
     plt.savefig(f"figures/{path}-{sp.lower()}-{scale}-{index}-contour.pdf", bbox_inches='tight')
     plt.close()
 
-
 def make_temperature_contour(index=-1, path="fullmcm", mode="hdf5", scale="short"):
     equiv_ratios = numpy.arange(0.7, 2.6, 0.1)
     farnesane_percents = numpy.arange(0, 0.21, 0.01)
@@ -213,24 +213,76 @@ def states_plots(species=[], path="fullmcm", mode="csv", scale="long", eq=1.0, f
             plt.savefig(f"figures/{path}-states-{scale}-{eq:.1f}-{fp:.2f}.pdf", bbox_inches='tight')
         plt.close()
 
+def make_states_temperature_plot(species, fs, index=0, path="fullmcm", mode="hdf5", pltfcn=plt.semilogy, limit=None):
+    if isinstance(species, str):
+        species = [species]
+    spmasses = []
+    for sp in species:
+        equiv_ratios = numpy.arange(0.7, 2.6, 0.1)
+        unformatted = f"long-term-states-" + "{:.1f}" + f"-{fs:.2f}" + f".{mode}"
+        temps = numpy.zeros(len(equiv_ratios))
+        masses = numpy.zeros(len(equiv_ratios))
+        for i, eq in enumerate(equiv_ratios):
+            if os.path.exists(os.path.join(path, unformatted.format(eq))):
+                if mode == "csv":
+                    short_data = pd.read_csv(os.path.join(path, unformatted.format(eq)), delimiter=",", engine="python", usecols=[f'T', f"Y_{sp}", "mass"])
+                    temps[i] = short_data[f'T'].iloc[index]
+                    masses[i] = short_data[f'Y_{sp}'].iloc[index] * short_data[f'mass'].iloc[index]
+                elif mode == "hdf5":
+                    short_data = h5py.File(os.path.join(path, unformatted.format(eq)), "r")
+                    temps[i] = short_data[f'T'][index]
+                    masses[i] = short_data[f'Y_{sp}'][index] * short_data[f'mass'][index]
+            else:
+                temps[i] = numpy.NAN
+        # apply mask to temps
+        if limit is None:
+            mask = numpy.abs(masses) <= MASK_VALUE
+        else:
+            mask = numpy.abs(masses) <= limit
+        for i in range(len(equiv_ratios)):
+            masses[i] = masses[i] if not mask[i] else 0
+        spmasses.append(copy.deepcopy(masses))
+    # make contour
+    fig, ax = plt.subplots()
+    for i in range(len(species)):
+        pltfcn(temps, spmasses[i], label=sp, color=COLORS[i], linewidth=2)
+    plt.show()
+    # plt.xticks(numpy.linspace(0.7, 2.5, 5))
+    # plt.yticks(numpy.linspace(0, 0.2, 5))
+    # plt.xlabel('Equivalence Ratio')
+    # plt.ylabel('Farnesane Fraction')
+    # plt.colorbar(label='Temperature [K]')
+    # if not os.path.exists("figures"):
+    #     os.mkdir("figures")
+    # plt.grid(True)
+    # plt.tight_layout()
+    # plt.savefig(f"figures/{path}-temperature-{scale}-{index}-contour.pdf", bbox_inches='tight')
+    # plt.close()
+
 def paper_plots():
     mode = "hdf5"
     path = "minimal"
     all_specs = ["TOLUENE", "BENZENE", "C5H8"]
     states_plots(all_specs, path=path, mode=mode, scale="long", eq=0.7, fp=0.2, normalized=False, pltfcn=plt.loglog)
     states_plots(all_specs, path=path, mode=mode, scale="long", eq=1.5, fp=0.2, normalized=False, pltfcn=plt.loglog)
+    states_plots(["O2", "N2", "H2O"], path=path, mode=mode, scale="long", eq=1.5, fp=0.2, normalized=False, pltfcn=plt.loglog, name="o2")
+    states_plots(["O2", "N2", "H2O"], path=path, mode=mode, scale="long", eq=0.7, fp=0.2, normalized=False, pltfcn=plt.loglog, name="o2")
     for name in all_specs: #
         make_species_contour(name, index=0, path=path, mode=mode)
     make_temperature_contour(index=5, path=path, mode="yaml")
+    make_temperature_contour(index=5, path="lowtol", mode="yaml")
+    # radical plots
+    peroxys = ["BZBIPERO2", "TLBIPERO2", "ISOP34O2"]
+    states_plots(peroxys, path=path, mode=mode, scale="long", eq=1.5, fp=0.2, name=f"peroxys-states", pltfcn=plt.loglog)
+    states_plots(peroxys, path=path, mode=mode, scale="long", eq=0.7, fp=0.2, name=f"peroxys-states", pltfcn=plt.loglog)
+
 
 if __name__ == "__main__":
     mode = "hdf5"
     path = "minimal"
     all_specs = ["TOLUENE", "BENZENE", "C5H8"]
     paper_plots()
-    peroxys = ["BZBIPERO2", "TLBIPERO2", "ISOP34O2"]
-    states_plots(peroxys, path=path, mode=mode, scale="long", eq=1.5, fp=0.2, name=f"peroxys-states", pltfcn=plt.loglog)
-    states_plots(peroxys, path=path, mode=mode, scale="long", eq=0.7, fp=0.2, name=f"peroxys-states", pltfcn=plt.loglog)
+    # make_states_temperature_plot(all_specs, 0.2, path=path, mode=mode, limit=1e-50)
     # for ro2 in peroxys:
     #     make_species_contour(ro2, path=path, scale="long", mode=mode)
     #     states_plots(ro2, path=path, mode=mode, scale="long", eq=1.5, fp=0.08, name=f"{ro2.lower()}-states", pltfcn=plt.semilogx)
