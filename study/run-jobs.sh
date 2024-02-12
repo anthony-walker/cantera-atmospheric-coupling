@@ -76,3 +76,19 @@ run_lowtol() {
         done
     done
 }
+
+run_h2o_jobs() {
+    epz=("0.7" "1.5")
+    export FARNE="0.10"
+    for cepz in "${epz[@]}"; do
+        export EPZ=$(printf "%.1f\n" $cepz | sed 's/^0+//')
+        for ((j=0; j<=5; j+=1)); do
+            export WATER=$(echo "scale=2; $j/100" | bc)
+            export WATER=$(printf "%.2f\n" $WATER | sed 's/^0+//')
+            if ! [ -f "$JPATH/thermo-states-$EPZ-$FARNE.yaml" ]; then
+                # echo "$JPATH/thermo-states-$EPZ-$FARNE.yaml"
+                sbatch -J "combustor-$EPZ-$FARNE-$WATER" water.sh
+            fi
+        done
+    done
+}

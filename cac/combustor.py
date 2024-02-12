@@ -473,15 +473,16 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
 @click.option('--npz', default=21, help='Number of reactors used in simulation')
 @click.option('--hightol', default=True, is_flag=True, help='Turn off preconditioner')
 @click.option('--nox', default=0.0, help='Atmospheric NOX injection percentage.')
-def run_combustor_atm_sim(equiv_ratio, farnesane, outdir, thrust, stime, fmodel, amodel, restdir, precon_off, npz, hightol, nox):
+@click.option('--h2o', default=0.04, help='Set air water content.')
+def run_combustor_atm_sim(equiv_ratio, farnesane, outdir, thrust, stime, fmodel, amodel, restdir, precon_off, npz, hightol, nox, h2o):
     global PRECONDITIONED
     PRECONDITIONED = precon_off
     global HIGH_TOLERANCE
     HIGH_TOLERANCE = hightol
-    combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=stime, fmodel=fmodel, amodel=amodel, thrust_level=thrust, restart_dir=restdir, npz=npz, nox=nox)
+    combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=stime, fmodel=fmodel, amodel=amodel, thrust_level=thrust, restart_dir=restdir, npz=npz, nox=nox, h2o=h2o)
 
 
-def combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=0, fmodel=None, amodel=None, thrust_level=1.0, restart_dir=None, npz=21, nox=0):
+def combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=0, fmodel=None, amodel=None, thrust_level=1.0, restart_dir=None, npz=21, nox=0, h2o=0.04):
     # parameters used in both cases
     states_file = os.path.join(outdir, f"thermo-states-{equiv_ratio:.1f}-{farnesane:.2f}.yaml")
     thermo_states = {"farnesane": f"{farnesane:.2f}", "equivalence_ratio": f"{equiv_ratio:.1f}"}
@@ -496,7 +497,7 @@ def combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=0, fmodel=None, amod
     if Xfarne > 0:
         X_fuel.update({"iC15H32": Xfarne})
     X_fuel = ", ".join([f"{k}:{v:.6f}" for k, v in X_fuel.items()])
-    X_air = "H2O: 0.04, O2:0.2095, N2:0.7808"
+    X_air = f"H2O: {h2o:.2f}, O2:0.2095, N2:0.7808"
     thermo_states["X_fuel"] = X_fuel
     thermo_states["X_air"] =  X_air
     # design parameters
