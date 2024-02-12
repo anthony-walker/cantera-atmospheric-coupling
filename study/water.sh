@@ -23,7 +23,7 @@ echo "Slurm ID: $SLURM_JOB_ID"
 echo
 echo "Running $EPZ, $FARNE"
 ODP="water"
-combustor --equiv_ratio $EPZ --farnesane $FARNE --outdir $ODP --h2o $WATER
+combustor --equiv_ratio $EPZ --farnesane $FARNE --outdir $ODP --h2o $WATER --name $WATER
 # ret=$?
 # if [ "$ret" -ne 0 ]; then
 #     echo "Failure, attempting no precondition case"

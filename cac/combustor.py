@@ -474,17 +474,20 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
 @click.option('--hightol', default=True, is_flag=True, help='Turn off preconditioner')
 @click.option('--nox', default=0.0, help='Atmospheric NOX injection percentage.')
 @click.option('--h2o', default=0.04, help='Set air water content.')
-def run_combustor_atm_sim(equiv_ratio, farnesane, outdir, thrust, stime, fmodel, amodel, restdir, precon_off, npz, hightol, nox, h2o):
+@click.option('--name', default="", help='Append content to the name of files.')
+def run_combustor_atm_sim(equiv_ratio, farnesane, outdir, thrust, stime, fmodel, amodel, restdir, precon_off, npz, hightol, nox, h2o, name):
     global PRECONDITIONED
     PRECONDITIONED = precon_off
     global HIGH_TOLERANCE
     HIGH_TOLERANCE = hightol
-    combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=stime, fmodel=fmodel, amodel=amodel, thrust_level=thrust, restart_dir=restdir, npz=npz, nox=nox, h2o=h2o)
+    combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=stime, fmodel=fmodel, amodel=amodel, thrust_level=thrust, restart_dir=restdir, npz=npz, nox=nox, h2o=h2o, name=name)
 
 
-def combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=0, fmodel=None, amodel=None, thrust_level=1.0, restart_dir=None, npz=21, nox=0, h2o=0.04):
+def combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=0, fmodel=None, amodel=None, thrust_level=1.0, restart_dir=None, npz=21, nox=0, h2o=0.04, name=""):
     # parameters used in both cases
-    states_file = os.path.join(outdir, f"thermo-states-{equiv_ratio:.1f}-{farnesane:.2f}.yaml")
+    if name:
+        name = f"-{name}"
+    states_file = os.path.join(outdir, f"thermo-states-{equiv_ratio:.1f}-{farnesane:.2f}{name}.yaml")
     thermo_states = {"farnesane": f"{farnesane:.2f}", "equivalence_ratio": f"{equiv_ratio:.1f}"}
     # append appropriate directories
     sys.path.append(DATA_DIR)
@@ -523,7 +526,7 @@ def combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=0, fmodel=None, amod
     # restart from existing combustor state to perturb atms only
     if restart_dir is None:
         # compression is achieved in data file during multizone-combustor run
-        combustor, ____ = multizone_combustor(fuel, thrust_level, equiv_ratio, X_fuel, X_air, thermo_states=thermo_states, outdir=outdir, name_id=f"-{equiv_ratio:.1f}-{farnesane:.2f}", n_pz=npz)
+        combustor, ____ = multizone_combustor(fuel, thrust_level, equiv_ratio, X_fuel, X_air, thermo_states=thermo_states, outdir=outdir, name_id=f"-{equiv_ratio:.1f}-{farnesane:.2f}{name}", n_pz=npz)
         # continue
         T2, p2 = combustor.thermo.TP
         # get total moles for volume calculation
@@ -586,7 +589,7 @@ def combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=0, fmodel=None, amod
             ydata = yaml.load(f, Loader=yaml.SafeLoader)
             thermo_states.update(ydata)
         # loading solution array
-        rf = os.path.join(restart_dir, f"short-term-states-{equiv_ratio:.1f}-{farnesane:.2f}.hdf5")
+        rf = os.path.join(restart_dir, f"short-term-states-{equiv_ratio:.1f}-{farnesane:.2f}{name}.hdf5")
         short_data = h5py.File(rf, "r")
         T4 = short_data["T"][0]
         A4 = numpy.pi * (0.62 ** 2) / 4 # meters
@@ -717,23 +720,23 @@ def combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=0, fmodel=None, amod
         yaml.dump(thermo_states, f)
     # write out hdf5 data - short term
     try:
-        ah5 = os.path.join(outdir, f"short-term-states-{equiv_ratio:.1f}-{farnesane:.2f}.hdf5")
+        ah5 = os.path.join(outdir, f"short-term-states-{equiv_ratio:.1f}-{farnesane:.2f}{name}.hdf5")
         short_states.save(ah5, overwrite=True, name="thermo", sub="data")
         reformat_hdf5(ah5)
     except Exception as e:
         os.remove(ah5)
         print(f"Failed to save {ah5}, writing to csv...")
-        ah5 = os.path.join(outdir, f"short-term-states-{equiv_ratio:.1f}-{farnesane:.2f}.csv")
+        ah5 = os.path.join(outdir, f"short-term-states-{equiv_ratio:.1f}-{farnesane:.2f}{name}.csv")
         short_states.save(ah5, overwrite=True)
     # write out hdf5 data - longterm
     try:
-        ah5 = os.path.join(outdir, f"long-term-states-{equiv_ratio:.1f}-{farnesane:.2f}.hdf5")
+        ah5 = os.path.join(outdir, f"long-term-states-{equiv_ratio:.1f}-{farnesane:.2f}{name}.hdf5")
         long_states.save(ah5, overwrite=True, name="thermo")
         reformat_hdf5(ah5)
     except Exception as e:
         os.remove(ah5)
         print(f"Failed to save {ah5}, writing to csv...")
-        ah5 = os.path.join(outdir, f"long-term-states-{equiv_ratio:.1f}-{farnesane:.2f}.csv")
+        ah5 = os.path.join(outdir, f"long-term-states-{equiv_ratio:.1f}-{farnesane:.2f}{name}.csv")
         long_states.save(ah5, overwrite=True)
 
 def check_entrainment_conditions(r):
