@@ -103,7 +103,7 @@ run_ncomp_jobs() {
             export NAME="nox-$j"
             if ! [ -f "$JPATH/thermo-states-$EPZ-$FARNE.yaml" ]; then
                 # echo "$JPATH/thermo-states-$EPZ-$FARNE.yaml"
-                sbatch -J "combustor-$EPZ-$FARNE-$WATER" water.sh
+                sbatch -J "combustor-$EPZ-$FARNE-$WATER" ncomp.sh
             fi
         done
     done
