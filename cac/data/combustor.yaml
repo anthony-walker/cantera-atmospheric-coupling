@@ -12,6 +12,7 @@ description: "DLR Concise: High Temperature Reaction Mechanism for fuel surrogat
   Hydrocarbons without Butanol+OMEs - 238(1814)\nHydrocarbons with Butanol+OME0-5
   - 307(2123)\nHydrocarbons with Butanol+OME0-5+iso-OME2 - 313(2148)\nFor any error
   kindly report back to trupti.kathrotia(at)dlr.de"
+# # ^-\s*equation\s*(?!.*(?: NO | NO2 | NO3 )).*$ NOX regex
 generator: ck2yaml
 input-files: [mech-thermo-tran_DLRConcise2021v1JF_Kathrotia_etal_FUELII_2021.txt]
 phases:

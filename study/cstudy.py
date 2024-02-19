@@ -7,11 +7,15 @@ import yaml
 import h5py
 import numpy
 import random
+import warnings
+import cantera as ct
 import pandas as pd
+from scipy.interpolate import interp1d
 import matplotlib.pyplot as plt
+from cac.verification import polimi_model
 from cac.combustor import combustor_atm_sim
 from multiprocessing import Pool
-from cac.constants import COLORS
+from cac.constants import COLORS, DATA_DIR
 
 MASK_VALUE = 1e-40
 cbcolors = ['#a6cee3','#1f78b4','#b2df8a','#33a02c','#fb9a99','#e31a1c','#fdbf6f','#ff7f00','#cab2d6','#6a3d9a','#ffff99','#b15928']
@@ -259,6 +263,49 @@ def make_states_temperature_plot(species, fs, index=0, path="fullmcm", mode="hdf
     # plt.savefig(f"figures/{path}-temperature-{scale}-{index}-contour.pdf", bbox_inches='tight')
     # plt.close()
 
+
+def make_water_contour(sp, eq=1.5, path="water", mode="hdf5", scale="long", limit=MASK_VALUE):
+    water_percents = numpy.arange(0, 0.06, 0.01)
+    unformatted = f"{scale}-term-states-"+ "{:.1f}-0.10-{:.2f}" + f".{mode}"
+    data = []
+    times = []
+    for i, wf in enumerate(water_percents):
+        if mode == "hdf5":
+            short_data = h5py.File(os.path.join(path, unformatted.format(eq, wf)), "r")
+            times.append(numpy.array(short_data["time"]))
+            data.append(numpy.array(short_data[f"Y_{sp}"]) * numpy.array(short_data[f'mass']))
+    # mask the data
+    masked_data = []
+    x = times[0]
+    for d in range(len(data)):
+        mask = numpy.abs(data[d]) <= limit
+        temp_data = []
+        for i in range(len(data[d])):
+            if not mask[i]:
+                temp_data.append(data[d][i])
+            else:
+                temp_data.append(0)
+            # adjust data size
+        ifc = interp1d(times[d], temp_data)
+        masked_data.append(numpy.array(ifc(x)))
+    masked_data = numpy.array(masked_data)
+    # make plot
+    fig, ax = plt.subplots()
+    plt.axvspan(0, numpy.amax(x[x<=10]), facecolor=COLORS[-3], alpha=0.2, label="entrainment")
+    for i, r in enumerate(masked_data):
+        plt.loglog(x, r, color=COLORS[i], label=f"{water_percents[i]:.2f}", linewidth=3)
+    leg = plt.legend()
+    leg.set_title("$X_{H2O}$")
+    plt.xlabel('Time [s]')
+    plt.ylabel('Mass [kg]')
+    if not os.path.exists("figures"):
+        os.mkdir("figures")
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig(f"figures/{path}-{sp.lower()}-{scale}-{eq:1.1f}.pdf", bbox_inches='tight')
+    plt.close()
+
+
 def paper_plots():
     mode = "hdf5"
     path = "minimal"
@@ -270,6 +317,8 @@ def paper_plots():
     states_plots(["O2", "N2", "H2O"], path=path, mode=mode, scale="long", eq=0.7, fp=0.2, normalized=False, pltfcn=plt.loglog, name="o2")
     for name in all_specs: #
         make_species_contour(name, index=0, path=path, mode=mode)
+        make_water_contour(name, eq=1.5)
+        make_water_contour(name, eq=0.7)
     make_temperature_contour(index=5, path=path, mode="yaml")
     make_temperature_contour(index=5, path="lowtol", mode="yaml")
     # radical plots
@@ -281,7 +330,20 @@ def paper_plots():
     states_plots(ovocs, path=path, mode=mode, scale="long", eq=1.5, fp=0.2, name=f"ovocs-states", pltfcn=plt.loglog)
     states_plots(ovocs, path=path, mode=mode, scale="long", eq=0.7, fp=0.2, name=f"ovocs-states", pltfcn=plt.loglog)
     states_plots(ovocs, path="nox", mode=mode, scale="long", eq=0.7, fp=0.2, name=f"ovocs-states", pltfcn=plt.loglog)
+    # water study
 
+def test_nox_files():
+    gri = os.path.join(DATA_DIR, "all-models", "nox-gri.yaml")
+    nox = os.path.join(DATA_DIR, "combustor-nox.yaml")
+    def test_reactor(fuel_file):
+        gas = ct.Solution(fuel_file)
+        gas.TP = 1200, ct.one_atm
+        gas.set_equivalence_ratio(1.0, "CH4: 1.0", "O2:1.0, N2:3.76")
+        r = ct.IdealGasConstPressureMoleReactor(gas)
+        net = ct.ReactorNet([r])
+        net.step()
+    test_reactor(gri)
+    test_reactor(nox)
 
 if __name__ == "__main__":
     mode = "hdf5"

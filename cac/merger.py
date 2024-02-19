@@ -507,10 +507,87 @@ def update_atmospheric_mechanism_species(atmos_mech):
                 nsp.append(sp)
                 sp = species.pop(0)
 
+def nox_submechanism_merge(m1=None, m2=None, nox=["NO", "NO2", "NO3"]):
+    if m1 is None:
+        m1 = os.path.join(DATA_DIR, "combustor.yaml")
+    if m2 is None:
+        m2 = os.path.join(DATA_DIR, "all-models", "gri-mech-55-325.yaml")
+    ruamel.yaml.representer.RoundTripRepresenter.ignore_aliases = lambda x, y: True
+    yaml = ruamel.yaml.YAML(typ="rt")
+    def represent_anymap(dumper, data):
+        # Convert the AnyMap to a dictionary before representing
+        return dumper.represent_mapping(u'tag:yaml.org,2002:map', CommentedMap(data))
+    # Register the representer function for the AnyMap class
+    yaml.representer.add_representer(ct.AnyMap, represent_anymap)
+    # yaml.preserve_quotes = True
+    yaml.default_flow_style=False
+    # yaml.sort_keys = False
+    data_one = yaml.load(open(m1, "r"))
+    data_two = yaml.load(open(m2, "r"))
+    mnames = [m.split(".")[0].strip() for m in [m1, m2]]
+    units_match = data_one.get("units", {}) == data_two.get("units", {})
+    # get a complete list of elements
+    elements = []
+    for ds in [data_one, data_two]:
+        for ele in ds["phases"][0]["elements"]:
+            elements.append(ele)
+    elements = list(set(elements))
+    # go through species and identify matching species
+    primary_species = data_one["species"]
+    gas = ct.Solution(m2)
+    all_reactions = ct.Reaction.list_from_file(m2, gas)
+    additional_reactions = []
+    additional_species = []
+    for r in all_reactions:
+        for sp in nox:
+            if r.reactants.get(sp, False) or r.products.get(sp, False):
+                rmap = CommentedMap(r.input_data)
+                # check units
+                if not rmap.get("units", False) and not units_match:
+                    rmap.update({"units":data_two.get("units", {})})
+                for k, v in rmap.items():
+                    if isinstance(v, ct.AnyMap):
+                        rmap[k] = CommentedMap(v)
+                additional_reactions.append(rmap)
+                for ap in (list(r.reactants.keys())+list(r.products.keys())):
+                    if ap not in additional_species:
+                        additional_species.append(ap)
+
+                print(f"Adding {r}")
+                break
+    unique = set(additional_species) - set(data_one["phases"][0]["species"])
+    # update species and reactions
+    for sp in unique:
+        data_one["phases"][0]["species"].append(sp)
+        for ds2 in data_two["species"]:
+            if ds2["name"] == sp:
+                data_one["species"].append(ds2)
+                break
+    data_one["reactions"] = data_one["reactions"] + additional_reactions
+    with open(os.path.join(DATA_DIR, "combustor-nox.yaml"), "w") as f:
+        yaml.dump({"description":data_one.pop("description", "")}, f)
+        yaml.dump({"generator":data_one.pop("generator", "")}, f)
+        yaml.dump({"input-files":data_one.pop("input-files", [])}, f)
+        yaml.dump({"cantera-version":data_one.pop("cantera-version", "3.0")}, f)
+        dt = data_one.pop("date", datetime.datetime.now())
+        if not isinstance(dt, str):
+            dt = dt.strftime("%m/%d/%Y, %H:%M:%S")
+        yaml.dump({"date":dt}, f)
+        yaml.dump({"units":data_one.pop("units", {})}, f)
+        yaml.dump({"extensions":data_one.pop("extensions", [])}, f)
+        yaml.dump({"phases":data_one.pop("phases", "")}, f)
+        yaml.dump({"species":data_one.pop("species", "")}, f)
+        for yk in data_one:
+            yaml.dump({yk: data_one[yk]}, f)
+
+
 @click.command()
 @click.argument('model1')
 @click.argument('model2')
 def map_models(model1, model2):
+    map_models_wrapped(model1, model2)
+
+def map_models_wrapped(model1, model2):
     yaml = ruamel.yaml.YAML()
     model1_species, model2_species = [yaml.load(open(m, "r"))["species"] for m in [model1, model2]]
     m1n, m2n = [os.path.basename(m).split(".")[0].strip() for m in [model1, model2]]

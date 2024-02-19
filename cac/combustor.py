@@ -13,7 +13,7 @@ from scipy.optimize import fsolve
 from scipy.optimize import curve_fit
 from scipy.interpolate import interp1d
 import matplotlib.pyplot as plt
-from cac.merger import map_models
+from cac.merger import map_models_wrapped
 from cac.constants import DATA_DIR
 from cac.reactors import PlumeSolution, PlumeReactor, DilutionReactor
 
@@ -574,7 +574,7 @@ def combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=0, fmodel=None, amod
         mapfile = f'{os.path.basename(fmodel).split(".")[0]}_to_{os.path.basename(amodel).split(".")[0]}.yaml'
         mapfile = os.path.join(os.path.dirname(fmodel), mapfile)
         if not os.path.exists(mapfile):
-            map_models(fmodel, amodel)
+            map_models_wrapped(fmodel, amodel)
         with open(mapfile, "r") as f:
             mapping = yaml.load(f, Loader=yaml.SafeLoader)
         Y_mapped = numpy.zeros(atms.n_species)
