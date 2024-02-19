@@ -92,3 +92,19 @@ run_h2o_jobs() {
         done
     done
 }
+
+run_ncomp_jobs() {
+    epz=("0.7" "1.5")
+    export FARNE="0.20"
+    for cepz in "${epz[@]}"; do
+        export EPZ=$(printf "%.1f\n" $cepz | sed 's/^0+//')
+        for ((j=-1; j<=0; j+=1)); do
+            export NOX="$j"
+            export NAME="nox-$j"
+            if ! [ -f "$JPATH/thermo-states-$EPZ-$FARNE.yaml" ]; then
+                # echo "$JPATH/thermo-states-$EPZ-$FARNE.yaml"
+                sbatch -J "combustor-$EPZ-$FARNE-$WATER" water.sh
+            fi
+        done
+    done
+}

@@ -472,8 +472,8 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
 @click.option('--precon_off', default=True, is_flag=True, help='Turn off preconditioner')
 @click.option('--npz', default=21, help='Number of reactors used in simulation')
 @click.option('--hightol', default=True, is_flag=True, help='Turn off preconditioner')
-@click.option('--nox', default=0.0, help='Atmospheric NOX injection percentage.')
-@click.option('--h2o', default=0.04, help='Set air water content.')
+@click.option('--nox', default=0.0, help='Atmospheric NOX injection percentage, make value -1 for equilibrium estimate.')
+@click.option('--h2o', default=0.0, help='Set air water content.')
 @click.option('--name', default="", help='Append content to the name of files.')
 def run_combustor_atm_sim(equiv_ratio, farnesane, outdir, thrust, stime, fmodel, amodel, restdir, precon_off, npz, hightol, nox, h2o, name):
     global PRECONDITIONED
@@ -599,10 +599,24 @@ def combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=0, fmodel=None, amod
         Y_mapped = numpy.zeros(atms.n_species)
         for i in range(atms.n_species):
             Y_mapped[i] = short_data[f"Y_{atms.species_name(i)}"][0]
-    # inject nox
+    # inject nox or equilibrium estimate it
     if nox > 0:
         print(f"Injecting {nox} of NO2")
         Y_mapped[atms.species_index("NO2")] = nox
+    elif nox == -1:
+        nox_sp = ["NO", "NO2"]
+        # reset fuel object
+        P_i = get_prop_by_thrust_level(thrust_level, "Pt3[kPa]") * 1000
+        T_i = get_prop_by_thrust_level(thrust_level, "Tt3[K]")
+        fuel.TP = T_i, P_i
+        fuel.set_equivalence_ratio(equiv_ratio, X_fuel, X_air, basis="mole")
+        # create reactor
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            fuel.equilibrate("HP")
+        for nsp in nox_sp:
+            print(f"Equilibrium estimate for {nsp}: {fuel.Y[fuel.species_index(nsp)]}")
+            Y_mapped[atms.species_index(nsp)] = fuel.Y[fuel.species_index(nsp)]
     # create atmosphere reactor
     atmosphere = PlumeReactor(atms, start_time=stime)
     # set thermo object of atmospheric object and sync state
