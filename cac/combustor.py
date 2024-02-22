@@ -19,7 +19,7 @@ from cac.reactors import PlumeSolution, PlumeReactor, DilutionReactor
 
 PRECONDITIONED = True
 HIGH_TOLERANCE = True
-
+ENGINE_MODEL = "7B"
 def reformat_hdf5(hf_name):
     with h5py.File(hf_name, "r+") as hf:
         arr = hf["thermo"]['data']
@@ -156,7 +156,7 @@ def adjust_volume_to_preserve_mass(r, tm):
 
 
 def get_prop_by_thrust_level(thrust_level, prop):
-    cycle_data = pd.read_csv(os.path.join(DATA_DIR, "verification", 'CFM56-7B-737.csv'), delimiter=",", engine="python")
+    cycle_data = pd.read_csv(os.path.join(DATA_DIR, "verification", f'CFM56-{ENGINE_MODEL}-737.csv'), delimiter=",", engine="python")
     propty = cycle_data[prop].values
     thrust = cycle_data['NetThrust[kN]']
     thrust_percents = thrust / numpy.amax(thrust)
@@ -171,7 +171,7 @@ def get_prop_by_thrust_level(thrust_level, prop):
 
 
 def get_mass_flow_thrust_data(thrust_level):
-    cycle_data = pd.read_csv(os.path.join(DATA_DIR, "verification", 'CFM56-7B-737.csv'), delimiter=",", engine="python")
+    cycle_data = pd.read_csv(os.path.join(DATA_DIR, "verification", f'CFM56-{ENGINE_MODEL}-737.csv'), delimiter=",", engine="python")
     ma = cycle_data['W3[kg/s]'].values
     mf = cycle_data['Wf[kg/s]'].values
     thrust = cycle_data['NetThrust[kN]']
@@ -194,7 +194,7 @@ def get_mass_flow_thrust_data(thrust_level):
 
 
 def get_interpolated_property(v1, prop1, prop2):
-    cycle_data = pd.read_csv(os.path.join(DATA_DIR, "verification", 'CFM56-7B-737.csv'), delimiter=",", engine="python")
+    cycle_data = pd.read_csv(os.path.join(DATA_DIR, "verification", f'CFM56-{ENGINE_MODEL}-737.csv'), delimiter=",", engine="python")
     p1 = cycle_data[prop1].values
     p2 = cycle_data[prop2].values
     zipped = list(zip(p1, p2))
@@ -297,12 +297,23 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     assert numpy.isclose(numpy.sum(mfs), mdot)
     # add to thermo states
     split_volumes = volume * mass_flow_fractions # split over zones
+    # get overall equivalence ratio
+    akeys = [fuel.species_index(x.split(":")[0].strip()) for x in X_air.split(",")]
+    fkeys = [fuel.species_index(x.split(":")[0].strip()) for x in X_fuel.split(",")]
+    fuel.TP = T_i, P_i
+    fuel.set_equivalence_ratio(1.0, X_fuel, X_air)
+    mdot_st = numpy.sum(mdot_fuel_takeoff / fuel.Y[fkeys])
+    mdot_air_st= numpy.sum(mdot_st * fuel.Y[akeys])
+    FARst = mdot_fuel_takeoff / mdot_air_st
+    FAR = (mdot_fuel * fuel_scalar / (mdot_air_takeoff * f_air_pz + mdot_air_takeoff * f_air_sa + mdot_air_takeoff * f_air_da))
+    phi_across = FAR / FARst
     # add all calculated parameters to output
     thermo_states["mdot_fuel"] = float(fuel_scalar * mdot_fuel)
     thermo_states["mdot_air"] = float(mdot_air)
     thermo_states["f_air_pz"] = float(f_air_pz)
     thermo_states["f_air_sa"] = float(f_air_sa)
     thermo_states["phi_mean"] = float(equiv_mean)
+    thermo_states["phi_across"] = float(phi_across)
     thermo_states["thrust_level"] = float(thrust_level)
     thermo_states["phi_distribution"] = [float(p) for p in phis]
     thermo_states["mass_flow_fraction_distribution"] = [float(p) for p in mass_flow_fractions]
@@ -465,8 +476,8 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
 @click.option("--farnesane", default=0.1, help="Farnesane blend percentage")
 @click.option("--outdir", default=DATA_DIR, help="Output directory for data")
 @click.option("--thrust", default=1.0, help="Percentage of thrust to use")
-@click.option("--stime", default=0, help="Time of day in hours when the simulation is started")
-@click.option("--fmodel", default=os.path.join(DATA_DIR, "combustor.yaml"), help="Fuel model used")
+@click.option("--stime", default=0.0, help="Time of day in hours when the simulation is started")
+@click.option("--fmodel", default=os.path.join(DATA_DIR, "combustor-nox.yaml"), help="Fuel model used")
 @click.option("--amodel", default=os.path.join(DATA_DIR, "atmosphere.yaml"), help="Atmospheric model used")
 @click.option("--restdir", default=None, help="Restart directory for atmospheric only simulation")
 @click.option('--precon_off', default=True, is_flag=True, help='Turn off preconditioner')
@@ -475,20 +486,66 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
 @click.option('--nox', default=0.0, help='Atmospheric NOX injection percentage, make value -1 for equilibrium estimate.')
 @click.option('--h2o', default=0.0, help='Set air water content.')
 @click.option('--name', default="", help='Append content to the name of files.')
-def run_combustor_atm_sim(equiv_ratio, farnesane, outdir, thrust, stime, fmodel, amodel, restdir, precon_off, npz, hightol, nox, h2o, name):
+@click.option('--pthermo', default=False, is_flag=True, help='Use PyCycle thermo data')
+@click.option('--complex_ambient', default=False, is_flag=True, help='Use complex ambient estimation.')
+@click.option('--entf', default=1.0, help='Entrainment rate scalar')
+@click.option('--emodel', default="5B", help='Engine model, 7B or 5B')
+def run_combustor_atm_sim(equiv_ratio, farnesane, outdir, thrust, stime, fmodel, amodel, restdir, precon_off, npz, hightol, nox, h2o, name, pthermo, complex_ambient, entf, emodel):
     global PRECONDITIONED
     PRECONDITIONED = precon_off
     global HIGH_TOLERANCE
     HIGH_TOLERANCE = hightol
-    combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=stime, fmodel=fmodel, amodel=amodel, thrust_level=thrust, restart_dir=restdir, npz=npz, nox=nox, h2o=h2o, name=name)
+    global ENGINE_MODEL
+    ENGINE_MODEL = emodel
+    # set  a new entrainment rate scalar
+    global ENTRAINMENT_FACTOR
+    ENTRAINMENT_FACTOR = entf
+    PlumeReactor.entrainment_scalar = entf
+    # run combustor sim
+    combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=stime, fmodel=fmodel, amodel=amodel, thrust_level=thrust, restart_dir=restdir, npz=npz, nox=nox, h2o=h2o, name=name, pthermo=pthermo, complex_ambient=complex_ambient)
 
+def get_complex_ambient_by_model(solobj):
+    with open(os.path.join(DATA_DIR, "complex-ambient.yaml"), "r") as caf:
+        ca_ppm = yaml.load(caf, Loader=yaml.SafeLoader)
+    total = 0
+    all_names = solobj.species_names
+    ca_ppm = dict(filter(lambda x: x[0] in all_names, ca_ppm.items()))
+    for k, v in ca_ppm.items():
+        ca_ppm[k] = float(v) / 1e6
+        total += ca_ppm[k]
+    ca_ppm["N2"] = 1 - total
+    X_air = [f"{k}:{v}" for k, v in ca_ppm.items()]
+    X_air = ", ".join(X_air)
+    return X_air
 
-def combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=0, fmodel=None, amodel=None, thrust_level=1.0, restart_dir=None, npz=21, nox=0, h2o=0.04, name=""):
+def test_complex_ambient():
+    # create path to models
+    fuel_model = os.path.join(DATA_DIR, "combustor.yaml")
+    # creation of fuel thermo object
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        fuel = ct.Solution(fuel_model, name="combustor", transport_model=None)
+    X_air = get_complex_ambient_by_model(fuel)
+
+def combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=0.0, fmodel=None, amodel=None, thrust_level=1.0, restart_dir=None, npz=21, nox=0.0, h2o=0.0, name="", pthermo=False, complex_ambient=False, entf=0):
     # parameters used in both cases
     if name:
         name = f"-{name}"
     states_file = os.path.join(outdir, f"thermo-states-{equiv_ratio:.1f}-{farnesane:.2f}{name}.yaml")
-    thermo_states = {"farnesane": f"{farnesane:.2f}", "equivalence_ratio": f"{equiv_ratio:.1f}"}
+    thermo_states = {"farnesane": f"{farnesane:.2f}", "equivalence_ratio": f"{equiv_ratio:.1f}", "engine_model":ENGINE_MODEL, "entrainment_rate_scalar":ENTRAINMENT_FACTOR}
+    # attempt to make directory
+    try:
+        os.mkdir(outdir)
+    except:
+        pass
+    # create path to models
+    fuel_model = os.path.join(DATA_DIR, "combustor.yaml") if fmodel is None else fmodel
+    atms_model = os.path.join(DATA_DIR, "atmosphere.yaml") if amodel is None else amodel
+    # creation of fuel thermo object
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        fuel = ct.Solution(fuel_model, name="combustor", transport_model=None)
+        atms = PlumeSolution(atms_model, name="atmosphere", transport_model=None)
     # append appropriate directories
     sys.path.append(DATA_DIR)
     # create initial fuel setting
@@ -500,7 +557,11 @@ def combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=0, fmodel=None, amod
     if Xfarne > 0:
         X_fuel.update({"iC15H32": Xfarne})
     X_fuel = ", ".join([f"{k}:{v:.6f}" for k, v in X_fuel.items()])
-    X_air = f"H2O: {h2o:.2f}, O2:0.2095, N2:0.7808"
+    if complex_ambient:
+        print("Using complex ambient configuration for air...")
+        X_air = get_complex_ambient_by_model(fuel)
+    else:
+        X_air = f"H2O: {h2o:.2f}, O2:0.2095, N2:0.7808"
     thermo_states["X_fuel"] = X_fuel
     thermo_states["X_air"] =  X_air
     # design parameters
@@ -509,14 +570,7 @@ def combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=0, fmodel=None, amod
     print_state_TP(T_atm, p_atm, 0)
     thermo_states["T"] = [f"{T_atm:0.2f}"]
     thermo_states["P"] = [f"{p_atm:0.2f}"]
-    # create path to models
-    fuel_model = os.path.join(DATA_DIR, "combustor.yaml") if fmodel is None else fmodel
-    atms_model = os.path.join(DATA_DIR, "atmosphere.yaml") if amodel is None else amodel
-    # creation of fuel thermo object
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        fuel = ct.Solution(fuel_model, name="combustor", transport_model=None)
-        atms = PlumeSolution(atms_model, name="atmosphere", transport_model=None)
+    # set initial conditions
     fuel.TPX = T_atm, p_atm, X_air
     atms.TPX = T_atm, p_atm, X_air
     # setup air properties needed later
@@ -534,11 +588,11 @@ def combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=0, fmodel=None, amod
         # use nozzle end conditions to back calculate state 3 and calculate T4
         A3 = numpy.pi * (1.07 ** 2) / 4 # meters
         A4 = numpy.pi * (0.62 ** 2) / 4 # meters
-        M4 = 1
+        M4 = get_prop_by_thrust_level(thrust_level, "MN5")
         p4 = p_atm
         # iteratively solve for pressure at 3 from choked nozzle and area ratio
         # to get temperature at 3 and then at 4
-        M3 = 0.3 # initial guess
+        M3 = 0.1 # initial guess
         gamma_old = 0
         gamma = fuel.cp_mole / (fuel.cp_mole - ct.gas_constant)
         while numpy.abs(gamma - gamma_old) > 1e-8:
@@ -593,12 +647,19 @@ def combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=0, fmodel=None, amod
         short_data = h5py.File(rf, "r")
         T4 = short_data["T"][0]
         A4 = numpy.pi * (0.62 ** 2) / 4 # meters
-        M4 = 1
+        M4 = get_prop_by_thrust_level(thrust_level, "MN5")
         p4 = p_atm
         gamma = thermo_states.get("gamma", 1.4)
         Y_mapped = numpy.zeros(atms.n_species)
         for i in range(atms.n_species):
             Y_mapped[i] = short_data[f"Y_{atms.species_name(i)}"][0]
+    # Use pycycle thermo conditions
+    if pthermo:
+        p4 = get_prop_by_thrust_level(thrust_level, "Pt5[kPa]") * 1000
+        T4 = get_prop_by_thrust_level(thrust_level, "Tt5[K]")
+    # relevant mach numbers
+    thermo_states["M3"] = float(M3)
+    thermo_states["M4"] = float(M4)
     # inject nox or equilibrium estimate it
     if nox > 0:
         print(f"Injecting {nox} of NO2")
@@ -640,7 +701,7 @@ def combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=0, fmodel=None, amod
     long_states = ct.SolutionArray(atms, extra=["time", "moles", "mass", "volume"])
     # setup times to safely integrate too and store data for because storing mass model
     # species data is expensive
-    times = numpy.logspace(numpy.log10(1e-6), numpy.log10(10), 100)
+    times = numpy.logspace(numpy.log10(1e-6), numpy.log10(10 / atmosphere.entrainment_scalar), 100)
     failed = False
     for t in times: #for t in steps:
         failures = 0

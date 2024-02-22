@@ -11,6 +11,8 @@ class PlumeSolution(ct.Solution):
 
 class PlumeReactor(ct.ExtensibleIdealGasConstPressureMoleReactor):
 
+    entrainment_scalar = 1.0
+
     def __init__(self, label, *args, **kwargs):
         # get some possible kwargs
         self.latitude = kwargs.pop("latitude", 0)
@@ -139,7 +141,7 @@ class PlumeReactor(ct.ExtensibleIdealGasConstPressureMoleReactor):
                         break
                     elif t > times[-1]:
                         omega_ent = 1 / t
-                return omega_ent
+                return omega_ent * self.entrainment_scalar
             omega_T = entrain_loop(self.tT, self.wT)
             omega_X = entrain_loop(self.tX, self.wX)
             # find most from ideal gas law

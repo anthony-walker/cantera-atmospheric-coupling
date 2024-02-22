@@ -1,0 +1,28 @@
+# All values are in ppm
+# @article{garmory2008simulation,
+#   title={Simulation of the evolution of aircraft exhaust plumes including detailed chemistry and segregation},
+#   author={Garmory, Andrew and Britter, RE and Mastorakos, E},
+#   journal={Journal of Geophysical Research: Atmospheres},
+#   volume={113},
+#   number={D8},
+#   year={2008},
+#   publisher={Wiley Online Library}
+# }
+O: 1.0e-13
+O2: 2.1e5
+O3: 3.86e-2
+H2: 9.0e-1
+OH: 2.8e-7
+HO2: 3.6e-6
+H2O: 8.8e1
+H2O2: 2.4e-5
+"NO": 1.86e-2
+NO2: 3.14e-2
+NO3: 8.9e-9
+N2O5: 1.0e-5
+HNO2: 3.4e-7
+HNO3: 2.0e-3
+HNO4: 1.1e-4
+CO: 4.0e-2
+CO2: 3.3e2
+SO2: 9.1e-6

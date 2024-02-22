@@ -21,11 +21,5 @@
 # run my jobs
 echo "Slurm ID: $SLURM_JOB_ID"
 echo
-echo "Running $EPZ, $FARNE"
-ODP="minimal"
-combustor --equiv_ratio $EPZ --farnesane $FARNE --outdir $ODP
-# ret=$?
-# if [ "$ret" -ne 0 ]; then
-#     echo "Failure, attempting no precondition case"
-#     combustor --equiv_ratio $EPZ --farnesane $FARNE --outdir $ODP --precon_off
-# fi
+echo "Running $COMBUSTOR_OPTIONS
+combustor $COMBUSTOR_OPTIONS
