@@ -21,5 +21,6 @@
 # run my jobs
 echo "Slurm ID: $SLURM_JOB_ID"
 echo
-echo "Running $COMBUSTOR_OPTIONS
+echo "Running $COMBUSTOR_OPTIONS"
 combustor $COMBUSTOR_OPTIONS
+s
