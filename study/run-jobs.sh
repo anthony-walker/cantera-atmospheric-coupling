@@ -86,7 +86,7 @@ run_perturbed_ambient_water() {
             if ! [ -f "water/thermo-states-$EPZ-$FARNE-$WATER.yaml" ]; then
                 if [ -f "CLUSTER.txt" ]; then
                     echo "Executing on slurm"
-                    sbatch -J "combustor-$EPZ-$FARNE-$WATER" batch.sh
+                    sbatch -J "combustor-$EPZ-$FARNE-water-$WATER" batch.sh
                 elif [ -f "TEST.txt" ]; then
                     echo "Executing test"
                     echo "Running $COMBUSTOR_OPTIONS"
@@ -210,6 +210,80 @@ run_lowtol() {
                     echo "Executing on local"
                     nohup combustor $COMBUSTOR_OPTIONS > "ptb-lowtol-$EPZ-$FARNE.log" 2>&1 &
                 fi
+            fi
+        done
+    done
+}
+
+my_slurm_jobs() {
+    squeue --format="%.12i %.35j" -u walkanth # time  %.10M
+}
+
+list_slurm_jobs_by_name() {
+    if [ -z "$1" ]; then
+        echo "No name given, listing all"
+    fi
+    squeue --format="%.12i %.35j %.10M" -u walkanth | grep -- "$1"
+}
+
+cancel_slurm_jobs_by_name() {
+    if [ -z "$1" ]; then
+        echo "No name given"
+        return 1
+    fi
+
+    scancel $(my_slurm_jobs | grep -- "$1" | grep -o '\b[0-9]\{7\}\b')
+}
+
+run_cruise_nonox() {
+    # cruise
+    for ((i=70; i<=250; i+=10)); do
+        EPZ=$(echo "scale=2; $i/100" | bc)
+        EPZ=$(printf "%.1f\n" $EPZ | sed 's/^0+//')
+        for ((j=0; j<=20; j+=1)); do
+            FARNE=$(echo "scale=2; $j/100" | bc)
+            FARNE=$(printf "%.2f\n" $FARNE | sed 's/^0+//')
+            export COMBUSTOR_OPTIONS="--equiv_ratio $EPZ --farnesane $FARNE --outdir nonox --thrust 0.554 --emodel 5B --fmodel ../cac/data/combustor.yaml"
+            if ! [ -f "nonox/thermo-states-$EPZ-$FARNE.yaml" ]; then
+                if [ -f "CLUSTER.txt" ]; then
+                    echo "Executing on slurm"
+                    sbatch -J "combustor-$EPZ-$FARNE-nonox" batch.sh
+                elif [ -f "TEST.txt" ]; then
+                    echo "Executing test"
+                    echo "Running $COMBUSTOR_OPTIONS"
+                else
+                    echo "Executing on local"
+                    nohup combustor $COMBUSTOR_OPTIONS > "ptb-cruise-nonox-$EPZ-$FARNE.log" 2>&1 &
+                fi
+            else
+                echo "SKIPPING $COMBUSTOR_OPTIONS"
+            fi
+        done
+    done
+}
+
+run_nox_equilibrium() {
+    # cruise
+    for ((i=70; i<=250; i+=10)); do
+        EPZ=$(echo "scale=2; $i/100" | bc)
+        EPZ=$(printf "%.1f\n" $EPZ | sed 's/^0+//')
+        for ((j=0; j<=20; j+=1)); do
+            FARNE=$(echo "scale=2; $j/100" | bc)
+            FARNE=$(printf "%.2f\n" $FARNE | sed 's/^0+//')
+            export COMBUSTOR_OPTIONS="--equiv_ratio $EPZ --farnesane $FARNE --outdir noxeq --restdir cruise --thrust 0.554 --emodel 5B --nox -1.0"
+            if ! [ -f "noxeq/thermo-states-$EPZ-$FARNE.yaml" ]; then
+                if [ -f "CLUSTER.txt" ]; then
+                    echo "Executing on slurm"
+                    sbatch -J "combustor-$EPZ-$FARNE-noxeq" batch.sh
+                elif [ -f "TEST.txt" ]; then
+                    echo "Executing test"
+                    echo "Running $COMBUSTOR_OPTIONS"
+                else
+                    echo "Executing on local"
+                    nohup combustor $COMBUSTOR_OPTIONS > "ptb-cruise-noxeq-$EPZ-$FARNE.log" 2>&1 &
+                fi
+            else
+                echo "SKIPPING $COMBUSTOR_OPTIONS"
             fi
         done
     done
