@@ -658,8 +658,7 @@ def combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=0.0, fmodel=None, am
         p4 = get_prop_by_thrust_level(thrust_level, "Pt5[kPa]") * 1000
         T4 = get_prop_by_thrust_level(thrust_level, "Tt5[K]")
     # relevant mach numbers
-    thermo_states["M3"] = float(M3)
-    thermo_states["M4"] = float(M4)
+    thermo_states["M4"] = [f"{M4:0.2f}"]
     # inject nox or equilibrium estimate it
     if nox > 0:
         print(f"Injecting {nox} of NO2")
@@ -701,7 +700,10 @@ def combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=0.0, fmodel=None, am
     long_states = ct.SolutionArray(atms, extra=["time", "moles", "mass", "volume"])
     # setup times to safely integrate too and store data for because storing mass model
     # species data is expensive
-    times = numpy.logspace(numpy.log10(1e-6), numpy.log10(10 / atmosphere.entrainment_scalar), 100)
+    if not numpy.isclose(atmosphere.entrainment_scalar, 1.0):
+        times = numpy.logspace(numpy.log10(1e-6), numpy.log10(500), 500)
+    else:
+        times = numpy.logspace(numpy.log10(1e-6), numpy.log10(10), 100)
     failed = False
     for t in times: #for t in steps:
         failures = 0
