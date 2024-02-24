@@ -288,3 +288,79 @@ run_nox_equilibrium() {
         done
     done
 }
+
+
+run_idle_nonox() {
+    # cruise
+    for ((i=70; i<=250; i+=10)); do
+        EPZ=$(echo "scale=2; $i/100" | bc)
+        EPZ=$(printf "%.1f\n" $EPZ | sed 's/^0+//')
+        for ((j=0; j<=20; j+=1)); do
+            FARNE=$(echo "scale=2; $j/100" | bc)
+            FARNE=$(printf "%.2f\n" $FARNE | sed 's/^0+//')
+            export COMBUSTOR_OPTIONS="--equiv_ratio $EPZ --farnesane $FARNE --outdir nonox_idle --thrust 0.06 --emodel 7B --fmodel ../cac/data/combustor.yaml"
+            if ! [ -f "nonox_idle/thermo-states-$EPZ-$FARNE.yaml" ]; then
+                if [ -f "CLUSTER.txt" ]; then
+                    echo "Executing on slurm"
+                    sbatch -J "combustor-$EPZ-$FARNE-nonox-idle" batch.sh
+                elif [ -f "TEST.txt" ]; then
+                    echo "Executing test"
+                    echo "Running $COMBUSTOR_OPTIONS"
+                else
+                    echo "Executing on local"
+                    nohup combustor $COMBUSTOR_OPTIONS > "ptb-cruise-nonox-idle-$EPZ-$FARNE.log" 2>&1 &
+                fi
+            else
+                echo "SKIPPING $COMBUSTOR_OPTIONS"
+            fi
+        done
+    done
+}
+
+run_perturbed_ambient_water_nonox() {
+    # Adjust ambient water
+    epz=("0.7" "1.5")
+    export FARNE="0.10"
+    for cepz in "${epz[@]}"; do
+        export EPZ=$(printf "%.1f\n" $cepz | sed 's/^0+//')
+        for ((j=0; j<=4; j+=1)); do
+            export WATER=$(echo "scale=2; $j/100" | bc)
+            export WATER=$(printf "%.2f\n" $WATER | sed 's/^0+//')
+            export COMBUSTOR_OPTIONS="--equiv_ratio $EPZ --farnesane $FARNE --outdir water_nonox --thrust 0.554 --emodel 5B --h2o $WATER --name $WATER --fmodel ../cac/data/combustor.yaml"
+            if ! [ -f "water_nonox/thermo-states-$EPZ-$FARNE-$WATER.yaml" ]; then
+                if [ -f "CLUSTER.txt" ]; then
+                    echo "Executing on slurm"
+                    sbatch -J "combustor-$EPZ-$FARNE-water_nonox-$WATER" batch.sh
+                elif [ -f "TEST.txt" ]; then
+                    echo "Executing test"
+                    echo "Running $COMBUSTOR_OPTIONS"
+                else
+                    echo "Executing on local"
+                    nohup combustor $COMBUSTOR_OPTIONS > "ptb-water_nonox-$WATER.log" 2>&1 &
+                fi
+            fi
+        done
+    done
+}
+
+run_restarted_minimal() {
+    # Adjust ambient water
+    epz=("0.7" "1.5")
+    export FARNE="0.10"
+    for cepz in "${epz[@]}"; do
+        export EPZ=$(printf "%.1f\n" $cepz | sed 's/^0+//')
+        export COMBUSTOR_OPTIONS="--equiv_ratio $EPZ --farnesane $FARNE --outdir rmin --restdir cruise --thrust 0.554 --emodel 5B --stime=12.0"
+        if ! [ -f "rmin/thermo-states-$EPZ-$FARNE.yaml" ]; then
+            if [ -f "CLUSTER.txt" ]; then
+                echo "Executing on slurm"
+                sbatch -J "combustor-$EPZ-$FARNE-rmin" batch.sh
+            elif [ -f "TEST.txt" ]; then
+                echo "Executing test"
+                echo "Running $COMBUSTOR_OPTIONS"
+            else
+                echo "Executing on local"
+                nohup combustor $COMBUSTOR_OPTIONS > "ptb-rmin-$EPZ.log" 2>&1 &
+            fi
+        fi
+    done
+}
