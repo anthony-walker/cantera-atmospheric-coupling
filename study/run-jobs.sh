@@ -364,3 +364,30 @@ run_restarted_minimal() {
         fi
     done
 }
+
+run_cruise_total_phi() {
+    # cruise
+    for ((i=20; i<=100; i+=10)); do
+        EPZ=$(echo "scale=2; $i/100" | bc)
+        EPZ=$(printf "%.1f\n" $EPZ | sed 's/^0+//')
+        for ((j=0; j<=20; j+=1)); do
+            FARNE=$(echo "scale=2; $j/100" | bc)
+            FARNE=$(printf "%.2f\n" $FARNE | sed 's/^0+//')
+            export COMBUSTOR_OPTIONS="--equiv_ratio $EPZ --farnesane $FARNE --outdir ctp --thrust 0.554 --emodel 5B --total_phi"
+            if ! [ -f "ctp/thermo-states-$EPZ-$FARNE.yaml" ]; then
+                if [ -f "CLUSTER.txt" ]; then
+                    echo "Executing on slurm"
+                    sbatch -J "combustor-$EPZ-$FARNE-ctp" batch.sh
+                elif [ -f "TEST.txt" ]; then
+                    echo "Executing test"
+                    echo "Running $COMBUSTOR_OPTIONS"
+                else
+                    echo "Executing on local"
+                    nohup combustor $COMBUSTOR_OPTIONS > "ptb-ctp-$EPZ-$FARNE.log" 2>&1 &
+                fi
+            else
+                echo "SKIPPING $COMBUSTOR_OPTIONS"
+            fi
+        done
+    done
+}

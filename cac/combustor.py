@@ -240,9 +240,7 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     lhv_data = kwargs.get("lhv_data", 43.5e6) # Lower heating value of fuel in data set J/kg
     lhv_model = kwargs.get("lhv_model", 43.1e6)
     fuel_scalar = kwargs.get("fuel_scalar", lhv_data / lhv_model)
-    FARst = kwargs.get("FARst", 0.068) # This value substantially impacts EIs
-    # adjustments to airflow can better fit thesis data but overall behavior seems
-    # to mostly correct
+    mdot_fuel *= fuel_scalar
     # fixed params from study
     A_sz = kwargs.pop("A_sz", 0.15) # meters squared
     L_sz = 0.075 # m
@@ -252,33 +250,54 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     l_sa_fm = 0.015 # 0.09
     l_dae = 1
     l_das = 0.95
-    # This mode calc
-    if kwargs.get("mode", "data") == "verification":
-        equiv_mean = get_mean_equivalence_ratio_from_data(thrust_level)
-        # adjust mdot air to meet mean equiv ratio from thesis
-        mdot_air = (equiv_pz * mdot_fuel * mdot_air_takeoff) / (equiv_mean * mdot_fuel_takeoff)
-    # fraction of total air
-    fpz= kwargs.get("fpz", 1) # 0.915
-    fsz= kwargs.get("fsz", 1) # 0.75
-    fda = kwargs.get("fda", 1) # 0.3
-    f_air_pz = mdot_fuel_takeoff * fuel_scalar / (mdot_air_takeoff * equiv_pz * FARst) * fpz
-    f_air_sa = mdot_fuel_takeoff / (equiv_sec_zone * FARst * mdot_air_takeoff) * fsz
-    f_air_da = (1 - f_air_sa - f_air_pz) * fda
+    # different fueling options for equiv ratio
+    if (kwargs.get("use_total_equiv", False)):
+        print("Using total equivalence ratio option")
+        phi_across = equiv_pz
+        f_air_pz = {"7B":0.256, "5B":0.256}.get(ENGINE_MODEL, 0.256)
+        f_air_sa = {"7B":0.635, "5B":0.635}.get(ENGINE_MODEL, 0.635)
+        f_air_da = (1 - f_air_sa - f_air_pz)
+        # keys for mixture
+        akeys = [fuel.species_index(x.split(":")[0].strip()) for x in X_air.split(",")]
+        fkeys = [fuel.species_index(x.split(":")[0].strip()) for x in X_fuel.split(",")]
+        # stoichiometric fuel/air
+        fuel.TP = T_i, P_i
+        fuel.set_equivalence_ratio(1.0, X_fuel, X_air)
+        mdot_st = numpy.sum(mdot_fuel / fuel.Y[fkeys])
+        mdot_air_st= numpy.sum(mdot_st * fuel.Y[akeys])
+        FARst = mdot_fuel / mdot_air_st
+        # total air flow
+        mdot_air =  mdot_air_st / phi_across
+        FAR = mdot_fuel / mdot_air
+        # find primary zone equivalence ratio
+        equiv_pz = mdot_fuel / (mdot_air * f_air_pz) / FARst
+        equiv_sec_zone = 0.4 * equiv_pz
+    else:
+        FARst = kwargs.get("FARst", 0.068) # This value substantially impacts EIs
+        # adjustments to airflow can better fit thesis data but overall behavior seems
+        # to mostly correct
+        FAR = get_prop_by_thrust_level(thrust_level, "FAR")
+        # fraction of total air
+        f_air_pz = mdot_fuel_takeoff * fuel_scalar / (mdot_air_takeoff * equiv_pz * FARst)
+        f_air_sa = mdot_fuel_takeoff / (equiv_sec_zone * FARst * mdot_air_takeoff)
+        f_air_da = (1 - f_air_sa - f_air_pz)
+    # check the phi across
+    phi_across = FAR / FARst
+    # check the dilution air
     if f_air_da < 0:
         print("Not enough dilution air, f_air_da set to 0")
         f_air_da = 0
     # update mass flow rates
-    mdot = mdot_air * f_air_pz + mdot_fuel * fuel_scalar
+    mdot = mdot_air * f_air_pz + mdot_fuel
     # now determine mean equiv ratio with takeoff air and mdot fuel
-    equiv_mean = mdot_fuel * fuel_scalar / (mdot_air * f_air_pz * FARst)
+    equiv_mean = mdot_fuel / (mdot_air * f_air_pz * FARst)
     # calculated parameters
-    beta_scalar = kwargs.get("beta_scalar", 1.0)
-    beta_sa_sm = f_air_sa * f_sm * mdot_air / (l_sa_sm * L_sz) * beta_scalar
-    beta_sa_fm = f_air_sa * f_fm * mdot_air / (l_sa_fm * L_sz) * beta_scalar
-    beta_da = f_air_da * mdot_air / (l_dae - l_das) / L_sz * beta_scalar
+    beta_sa_sm = f_air_sa * f_sm * mdot_air / (l_sa_sm * L_sz)
+    beta_sa_fm = f_air_sa * f_fm * mdot_air / (l_sa_fm * L_sz)
+    beta_da = f_air_da * mdot_air / (l_dae - l_das) / L_sz
     # calculate phi values
     equiv_min = kwargs.get("equiv_min", 0.3)
-    equiv_max = kwargs.get("equiv_max", 3.6)
+    equiv_max = kwargs.get("equiv_max", 4.5)
     sigma = mixing_param * equiv_mean
     coeff = min([abs(equiv_mean - equiv_min) / sigma, abs(equiv_max - equiv_mean) / sigma, 2])
     if n_pz > 1:
@@ -297,21 +316,14 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     assert numpy.isclose(numpy.sum(mfs), mdot)
     # add to thermo states
     split_volumes = volume * mass_flow_fractions # split over zones
-    # get overall equivalence ratio
-    akeys = [fuel.species_index(x.split(":")[0].strip()) for x in X_air.split(",")]
-    fkeys = [fuel.species_index(x.split(":")[0].strip()) for x in X_fuel.split(",")]
-    fuel.TP = T_i, P_i
-    fuel.set_equivalence_ratio(1.0, X_fuel, X_air)
-    mdot_st = numpy.sum(mdot_fuel_takeoff / fuel.Y[fkeys])
-    mdot_air_st= numpy.sum(mdot_st * fuel.Y[akeys])
-    FARst = mdot_fuel_takeoff / mdot_air_st
-    FAR = (mdot_fuel * fuel_scalar / (mdot_air_takeoff * f_air_pz + mdot_air_takeoff * f_air_sa + mdot_air_takeoff * f_air_da))
-    phi_across = FAR / FARst
     # add all calculated parameters to output
-    thermo_states["mdot_fuel"] = float(fuel_scalar * mdot_fuel)
+    thermo_states["mdot_fuel"] = float(mdot_fuel)
     thermo_states["mdot_air"] = float(mdot_air)
     thermo_states["f_air_pz"] = float(f_air_pz)
     thermo_states["f_air_sa"] = float(f_air_sa)
+    thermo_states["use_total_equiv"] = kwargs.get("use_total_equiv", False)
+    thermo_states["phi_sz"] = float(equiv_sec_zone)
+    thermo_states["phi_pz"] = float(equiv_pz)
     thermo_states["phi_mean"] = float(equiv_mean)
     thermo_states["phi_across"] = float(phi_across)
     thermo_states["thrust_level"] = float(thrust_level)
@@ -320,6 +332,10 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     thermo_states["mass_flow_distribution"] = [float(p) for p in mfs]
     thermo_states["n-deviations"] = float(coeff)
     thermo_states["n-reactors"] = int(n_pz)
+    # for testing purposes
+    if kwargs.get("norun", False):
+        warnings.warn("Ran in no-run mode")
+        return
     # create number of reactors
     reactors = []
     integration_success = []
@@ -490,7 +506,8 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
 @click.option('--complex_ambient', default=False, is_flag=True, help='Use complex ambient estimation.')
 @click.option('--entf', default=1.0, help='Entrainment rate scalar')
 @click.option('--emodel', default="5B", help='Engine model, 7B or 5B')
-def run_combustor_atm_sim(equiv_ratio, farnesane, outdir, thrust, stime, fmodel, amodel, restdir, precon_off, npz, hightol, nox, h2o, name, pthermo, complex_ambient, entf, emodel):
+@click.option('--total_phi', default=False, is_flag=True, help='Makes the specified equivalence ratio across the entire system, not the primary zone.')
+def run_combustor_atm_sim(equiv_ratio, farnesane, outdir, thrust, stime, fmodel, amodel, restdir, precon_off, npz, hightol, nox, h2o, name, pthermo, complex_ambient, entf, emodel, total_phi):
     global PRECONDITIONED
     PRECONDITIONED = precon_off
     global HIGH_TOLERANCE
@@ -502,7 +519,7 @@ def run_combustor_atm_sim(equiv_ratio, farnesane, outdir, thrust, stime, fmodel,
     ENTRAINMENT_FACTOR = entf
     PlumeReactor.entrainment_scalar = entf
     # run combustor sim
-    combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=stime, fmodel=fmodel, amodel=amodel, thrust_level=thrust, restart_dir=restdir, npz=npz, nox=nox, h2o=h2o, name=name, pthermo=pthermo, complex_ambient=complex_ambient)
+    combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=stime, fmodel=fmodel, amodel=amodel, thrust_level=thrust, restart_dir=restdir, npz=npz, nox=nox, h2o=h2o, name=name, pthermo=pthermo, complex_ambient=complex_ambient, total_phi=total_phi)
 
 def get_complex_ambient_by_model(solobj):
     with open(os.path.join(DATA_DIR, "complex-ambient.yaml"), "r") as caf:
@@ -527,7 +544,7 @@ def test_complex_ambient():
         fuel = ct.Solution(fuel_model, name="combustor", transport_model=None)
     X_air = get_complex_ambient_by_model(fuel)
 
-def combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=0.0, fmodel=None, amodel=None, thrust_level=1.0, restart_dir=None, npz=21, nox=0.0, h2o=0.0, name="", pthermo=False, complex_ambient=False, entf=0):
+def combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=0.0, fmodel=None, amodel=None, thrust_level=1.0, restart_dir=None, npz=21, nox=0.0, h2o=0.0, name="", pthermo=False, complex_ambient=False, entf=0, total_phi=False):
     # parameters used in both cases
     if name:
         name = f"-{name}"
@@ -580,15 +597,15 @@ def combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=0.0, fmodel=None, am
     # restart from existing combustor state to perturb atms only
     if restart_dir is None:
         # compression is achieved in data file during multizone-combustor run
-        combustor, ____ = multizone_combustor(fuel, thrust_level, equiv_ratio, X_fuel, X_air, thermo_states=thermo_states, outdir=outdir, name_id=f"-{equiv_ratio:.1f}-{farnesane:.2f}{name}", n_pz=npz)
+        combustor, ____ = multizone_combustor(fuel, thrust_level, equiv_ratio, X_fuel, X_air, thermo_states=thermo_states, outdir=outdir, name_id=f"-{equiv_ratio:.1f}-{farnesane:.2f}{name}", n_pz=npz, use_total_equiv=total_phi)
         # continue
         T2, p2 = combustor.thermo.TP
         # get total moles for volume calculation
         Ntotal = numpy.sum(combustor.get_state()[1:fuel.n_species + 1])
         # use nozzle end conditions to back calculate state 3 and calculate T4
-        A3 = numpy.pi * (1.07 ** 2) / 4 # meters
-        A4 = numpy.pi * (0.62 ** 2) / 4 # meters
-        M4 = get_prop_by_thrust_level(thrust_level, "MN5")
+        A3 = numpy.pi * (get_prop_by_thrust_level(thrust_level, "D[in]") * 0.0254) ** 2 / 4
+        A4 = numpy.pi * (get_prop_by_thrust_level(thrust_level, "ThroatDia[in]") * 0.0254) ** 2 / 4
+        M4 = get_prop_by_thrust_level(thrust_level, "SecMach")
         p4 = p_atm
         # iteratively solve for pressure at 3 from choked nozzle and area ratio
         # to get temperature at 3 and then at 4
