@@ -407,12 +407,19 @@ run_cruise_total_phi_nonox() {
 
 run_nox_equilibrium() {
     # cruise
-    epz=("0.7" "1.5")
+    epz=("0.6" "0.9")
     export FARNE="0.10"
     for cepz in "${epz[@]}"; do
         export EPZ=$(printf "%.1f\n" $cepz | sed 's/^0+//')
         export COMBUSTOR_OPTIONS="--equiv_ratio $EPZ --farnesane $FARNE --outdir noxeq --restdir ctp --thrust 0.554 --emodel 5B --nox -1.0"
-        if ! [ -f "noxeq/thermo-states-$EPZ-$FARNE.yaml" ]; then
+        # name of slurm job
+        if [ -f "CLUSTER.txt" ]; then
+            SNAME="$(list_slurm_jobs_by_name combustor-$EPZ-$FARNE-noxeq)"
+        else
+            SNAME=""
+        fi
+        # check conditions to run job
+        if ! [ -f "noxeq/thermo-states-$EPZ-$FARNE.yaml" ] && [ -z "$SNAME" ]; then
             if [ -f "CLUSTER.txt" ]; then
                 echo "Executing on slurm"
                 sbatch -J "combustor-$EPZ-$FARNE-noxeq" batch.sh
@@ -429,9 +436,35 @@ run_nox_equilibrium() {
     done
 }
 
-test_slurm_check() {
-    if [ -z "$(list_slurm_jobs_by_name combustor-1.0-0.17-ctpnn)" ]; then
-        echo "DNE EXISTS"
-    fi
+run_perturbed_ctp_water() {
+    # Adjust ambient water
+    epz=("0.6" "0.9")
+    export FARNE="0.10"
+    for cepz in "${epz[@]}"; do
+        export EPZ=$(printf "%.1f\n" $cepz | sed 's/^0+//')
+        for ((j=0; j<=4; j+=1)); do
+            export WATER=$(echo "scale=2; $j/100" | bc)
+            export WATER=$(printf "%.2f\n" $WATER | sed 's/^0+//')
+            export COMBUSTOR_OPTIONS="--equiv_ratio $EPZ --farnesane $FARNE --outdir water_ctp --thrust 0.554 --emodel 5B --h2o $WATER --name $WATER  --total_phi"
+            # name of slurm job
+            if [ -f "CLUSTER.txt" ]; then
+                SNAME="$(list_slurm_jobs_by_name combustor-$EPZ-$FARNE-water_ctp-$WATER)"
+            else
+                SNAME=""
+            fi
+            # check conditions to run job
+            if ! [ -f "water_ctp/thermo-states-$EPZ-$FARNE-$WATER.yaml" ] && [ -z "$SNAME" ]; then
+                if [ -f "CLUSTER.txt" ]; then
+                    echo "Executing on slurm"
+                    sbatch -J "combustor-$EPZ-$FARNE-water_ctp-$WATER" batch.sh
+                elif [ -f "TEST.txt" ]; then
+                    echo "Executing test"
+                    echo "Running $COMBUSTOR_OPTIONS"
+                else
+                    echo "Executing on local"
+                    nohup combustor $COMBUSTOR_OPTIONS > "ptb-water_ctp-$WATER.log" 2>&1 &
+                fi
+            fi
+        done
+    done
 }
-
