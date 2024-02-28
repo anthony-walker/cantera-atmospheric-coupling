@@ -99,31 +99,6 @@ run_perturbed_ambient_water() {
     done
 }
 
-run_idle() {
-    # idle
-    for ((i=70; i<=250; i+=10)); do
-        EPZ=$(echo "scale=2; $i/100" | bc)
-        EPZ=$(printf "%.1f\n" $EPZ | sed 's/^0+//')
-        for ((j=0; j<=20; j+=1)); do
-            FARNE=$(echo "scale=2; $j/100" | bc)
-            FARNE=$(printf "%.2f\n" $FARNE | sed 's/^0+//')
-            export COMBUSTOR_OPTIONS="--equiv_ratio $EPZ --farnesane $FARNE --outdir idle --thrust 0.06 --emodel 7B --complex_ambient"
-            if ! [ -f "idle/thermo-states-$EPZ-$FARNE.yaml" ]; then
-                if [ -f "CLUSTER.txt" ]; then
-                    echo "Executing on slurm"
-                    sbatch -J "combustor-$EPZ-$FARNE-idle" batch.sh
-                elif [ -f "TEST.txt" ]; then
-                    echo "Executing test"
-                    echo "Running $COMBUSTOR_OPTIONS"
-                else
-                    echo "Executing on local"
-                    nohup combustor $COMBUSTOR_OPTIONS > "ptb-idle-$EPZ-$FARNE.log" 2>&1 &
-                fi
-            fi
-        done
-    done
-}
-
 run_time_restarted() {
     #  restarted for start time
     for ((i=70; i<=250; i+=10)); do
@@ -317,11 +292,11 @@ run_perturbed_ambient_water_nonox() {
 
 run_restarted_minimal() {
     # Adjust ambient water
-    epz=("0.7" "1.5")
+    epz=("0.6" "0.9")
     export FARNE="0.10"
     for cepz in "${epz[@]}"; do
         export EPZ=$(printf "%.1f\n" $cepz | sed 's/^0+//')
-        export COMBUSTOR_OPTIONS="--equiv_ratio $EPZ --farnesane $FARNE --outdir rmin --restdir cruise --thrust 0.554 --emodel 5B --stime=12.0"
+        export COMBUSTOR_OPTIONS="--equiv_ratio $EPZ --farnesane $FARNE --outdir rmin --restdir ctp --thrust 0.554 --emodel 5B --stime=12.0 --total_phi"
         if ! [ -f "rmin/thermo-states-$EPZ-$FARNE.yaml" ]; then
             if [ -f "CLUSTER.txt" ]; then
                 echo "Executing on slurm"
@@ -466,5 +441,67 @@ run_perturbed_ctp_water() {
                 fi
             fi
         done
+    done
+}
+
+run_perturbed_ctp_entrain() {
+    # Adjust ambient water
+    epz=("0.6" "0.9")
+    export FARNE="0.10"
+    for cepz in "${epz[@]}"; do
+        export EPZ=$(printf "%.1f\n" $cepz | sed 's/^0+//')
+        for ENTF in "0.1" "1.0" "2.0" "5.0" "10.0"; do
+            export COMBUSTOR_OPTIONS="--equiv_ratio $EPZ --farnesane $FARNE --outdir entall --restdir ctp --thrust 0.554 --emodel 5B --complex_ambient --entf $ENTF --name $ENTF --total_phi"
+            # name of slurm job
+            if [ -f "CLUSTER.txt" ]; then
+                SNAME="$(list_slurm_jobs_by_name combustor-$EPZ-$FARNE-entall-$ENTF)"
+            else
+                SNAME=""
+            fi
+            # check conditions to run job
+            if ! [ -f "entall/thermo-states-$EPZ-$FARNE-$WATER.yaml" ] && [ -z "$SNAME" ]; then
+                if [ -f "CLUSTER.txt" ]; then
+                    echo "Executing on slurm"
+                    sbatch -J "combustor-$EPZ-$FARNE-entall-$ENTF" batch.sh
+                elif [ -f "TEST.txt" ]; then
+                    echo "Executing test"
+                    echo "Running $COMBUSTOR_OPTIONS"
+                else
+                    echo "Executing on local"
+                    nohup combustor $COMBUSTOR_OPTIONS > "ptb-entall-$ENTF.log" 2>&1 &
+                fi
+            fi
+        done
+    done
+}
+
+run_idle_range_equiv() {
+    # cruise
+    for ((i=20; i<=50; i+=10)); do
+        EPZ=$(echo "scale=2; $i/100" | bc)
+        EPZ=$(printf "%.1f\n" $EPZ | sed 's/^0+//')
+        FARNE="0.10"
+        export COMBUSTOR_OPTIONS="--equiv_ratio $EPZ --farnesane $FARNE --outdir ctp-idle --thrust 0.06 --emodel 7B --total_phi --complex_ambient"
+        # name of slurm job
+        if [ -f "CLUSTER.txt" ]; then
+            SNAME="$(list_slurm_jobs_by_name combustor-$EPZ-$FARNE-ctp-idle)"
+        else
+            SNAME=""
+        fi
+        # check conditions to run job
+        if ! [ -f "ctp-idle/thermo-states-$EPZ-$FARNE.yaml" ] && [ -z "$SNAME" ]; then
+            if [ -f "CLUSTER.txt" ]; then
+                echo "Executing on slurm"
+                sbatch -J "combustor-$EPZ-$FARNE-ctp-idle" batch.sh
+            elif [ -f "TEST.txt" ]; then
+                echo "Executing test"
+                echo "Running $COMBUSTOR_OPTIONS"
+            else
+                echo "Executing on local"
+                nohup combustor $COMBUSTOR_OPTIONS > "ptb-ctp-idle-$EPZ-$FARNE.log" 2>&1 &
+            fi
+        else
+            echo "SKIPPING $COMBUSTOR_OPTIONS"
+        fi
     done
 }
