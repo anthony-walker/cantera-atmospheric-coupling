@@ -505,3 +505,33 @@ run_idle_range_equiv() {
         fi
     done
 }
+
+run_surrogates() {
+    # cruise
+    for ((i=0; i<=5; i+=1)); do
+        EPZ="0.6"
+        FARNE="0.10"
+        export COMBUSTOR_OPTIONS="--equiv_ratio $EPZ --farnesane $FARNE --outdir surrogate --thrust 0.554 --emodel 5B --total_phi --surrogate $i --name $i"
+        # name of slurm job
+        if [ -f "CLUSTER.txt" ]; then
+            SNAME="$(list_slurm_jobs_by_name combustor-$EPZ-$FARNE-surrogate-$i)"
+        else
+            SNAME=""
+        fi
+        # check conditions to run job
+        if ! [ -f "surrogate/thermo-states-$EPZ-$FARNE.yaml" ] && [ -z "$SNAME" ]; then
+            if [ -f "CLUSTER.txt" ]; then
+                echo "Executing on slurm"
+                sbatch -J "combustor-$EPZ-$FARNE-surrogate-$i" batch.sh
+            elif [ -f "TEST.txt" ]; then
+                echo "Executing test"
+                echo "Running $COMBUSTOR_OPTIONS"
+            else
+                echo "Executing on local"
+                nohup combustor $COMBUSTOR_OPTIONS > "ptb-surrogate-$i-$EPZ-$FARNE.log" 2>&1 &
+            fi
+        else
+            echo "SKIPPING $COMBUSTOR_OPTIONS"
+        fi
+    done
+}

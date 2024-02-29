@@ -317,8 +317,11 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     # add to thermo states
     split_volumes = volume * mass_flow_fractions # split over zones
     # add all calculated parameters to output
+    thermo_states["FAR"] = float(FAR)
+    thermo_states["FARst"] =  float(FARst)
     thermo_states["mdot_fuel"] = float(mdot_fuel)
     thermo_states["mdot_air"] = float(mdot_air)
+    thermo_states["mdot_in"] = float(mdot)
     thermo_states["f_air_pz"] = float(f_air_pz)
     thermo_states["f_air_sa"] = float(f_air_sa)
     thermo_states["use_total_equiv"] = kwargs.get("use_total_equiv", False)
@@ -334,8 +337,28 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     thermo_states["n-reactors"] = int(n_pz)
     # for testing purposes
     if kwargs.get("norun", False):
+        # output the initial composition
+        fuel.TP = T_i, P_i
+        fuel.set_equivalence_ratio(equiv_mean, X_fuel, X_air, basis="mole")
+        # attempt to make directory
+        try:
+            os.mkdir("initials")
+        except:
+            pass
+        initial_states = ct.SolutionArray(fuel, extra=["time", "moles", "mass", "volume"])
+        nmoles = P_i * volume / ct.gas_constant / T_i
+        mass = nmoles * fuel.mean_molecular_weight
+        initial_states.append(fuel.state, time=0, volume=volume, moles=nmoles, mass=mass)
+        # write out state and reformat
+        is5 = os.path.join("initials", f"initial-states-{name_id}.hdf5")
+        initial_states.save(is5, overwrite=True, name="thermo")
+        reformat_hdf5(is5)
+        states_file = os.path.join("initials", f"thermo-states-{name_id}.yaml")
+        with open(states_file, "w") as f:
+            yaml.dump(thermo_states, f)
+        # throw a warning
         warnings.warn("Ran in no-run mode")
-        return
+        return None, None
     # create number of reactors
     reactors = []
     integration_success = []
@@ -487,6 +510,31 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
     return combustor, thermo_states
 
 
+def surrogate_selection(choice=0):
+    if (choice == 0):
+        xfuel = "N-C10H22:0.4267, I-C8H18:0.3302, C7H8:0.2431"
+    elif (choice == 1):
+        xfuel = "N-C12H26:0.303, C7H14:0.485, ebz:0.212"
+    elif (choice == 2):
+        xfuel = "N-C12H26:0.384, C7H14:0.234, N-C16H34:0.148, C7H8:0.234"
+    elif (choice == 3):
+        xfuel = "N-C12H26:0.290, N-C16H34:0.142, C7H8:0.249, DECALIN:0.319"
+    elif (choice == 4):
+        xfuel = "N-C12H26:0.371, I-C8H18:0.020, N-C16H34:0.206, C7H8:0.259, DECALIN:0.145"
+    elif (choice == 5):
+        xfuel = "N-C12H26:0.404, I-C8H18:0.295, ebz:0.073, pbz:0.228"
+    # napthalene calc
+    items = {}
+    sumt = 0
+    for fc in xfuel.split(", "):
+        n,v = fc.split(":")
+        items[n] = float(v)
+        sumt += float(v)
+    if not numpy.isclose((1-sumt), 0) and 1-sumt > 0:
+        items["C10H8"] = 1-sumt
+    return items
+
+
 @click.command()
 @click.option('--equiv_ratio', default=1.0, help='Equivalence ratio for the fuel')
 @click.option("--farnesane", default=0.1, help="Farnesane blend percentage")
@@ -507,7 +555,9 @@ def multizone_combustor(fuel, thrust_level, equiv_pz, X_fuel, X_air, **kwargs):
 @click.option('--entf', default=1.0, help='Entrainment rate scalar')
 @click.option('--emodel', default="5B", help='Engine model, 7B or 5B')
 @click.option('--total_phi', default=False, is_flag=True, help='Makes the specified equivalence ratio across the entire system, not the primary zone.')
-def run_combustor_atm_sim(equiv_ratio, farnesane, outdir, thrust, stime, fmodel, amodel, restdir, precon_off, npz, hightol, nox, h2o, name, pthermo, complex_ambient, entf, emodel, total_phi):
+@click.option('--surrogate', default=0, help='Number for surrogate fuel used.')
+@click.option('--norun', default=False, is_flag=True, help='A testing flag to prevent full run.')
+def run_combustor_atm_sim(equiv_ratio, farnesane, outdir, thrust, stime, fmodel, amodel, restdir, precon_off, npz, hightol, nox, h2o, name, pthermo, complex_ambient, entf, emodel, total_phi, surrogate, norun):
     global PRECONDITIONED
     PRECONDITIONED = precon_off
     global HIGH_TOLERANCE
@@ -519,7 +569,7 @@ def run_combustor_atm_sim(equiv_ratio, farnesane, outdir, thrust, stime, fmodel,
     ENTRAINMENT_FACTOR = entf
     PlumeReactor.entrainment_scalar = entf
     # run combustor sim
-    combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=stime, fmodel=fmodel, amodel=amodel, thrust_level=thrust, restart_dir=restdir, npz=npz, nox=nox, h2o=h2o, name=name, pthermo=pthermo, complex_ambient=complex_ambient, total_phi=total_phi)
+    combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=stime, fmodel=fmodel, amodel=amodel, thrust_level=thrust, restart_dir=restdir, npz=npz, nox=nox, h2o=h2o, name=name, pthermo=pthermo, complex_ambient=complex_ambient, total_phi=total_phi, surrogate=surrogate, norun=norun)
 
 def get_complex_ambient_by_model(solobj):
     with open(os.path.join(DATA_DIR, "complex-ambient.yaml"), "r") as caf:
@@ -544,7 +594,7 @@ def test_complex_ambient():
         fuel = ct.Solution(fuel_model, name="combustor", transport_model=None)
     X_air = get_complex_ambient_by_model(fuel)
 
-def combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=0.0, fmodel=None, amodel=None, thrust_level=1.0, restart_dir=None, npz=21, nox=0.0, h2o=0.0, name="", pthermo=False, complex_ambient=False, entf=0, total_phi=False):
+def combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=0.0, fmodel=None, amodel=None, thrust_level=1.0, restart_dir=None, npz=21, nox=0.0, h2o=0.0, name="", pthermo=False, complex_ambient=False, entf=0, total_phi=False, surrogate=0, norun=False):
     # parameters used in both cases
     if name:
         name = f"-{name}"
@@ -566,7 +616,7 @@ def combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=0.0, fmodel=None, am
     # append appropriate directories
     sys.path.append(DATA_DIR)
     # create initial fuel setting
-    X_fuel = {"N-C10H22":0.4267, "I-C8H18":0.3302, "C7H8":0.2431}
+    X_fuel = surrogate_selection(surrogate)
     # adjust fuels for farnesane blend
     X_fuel = {k:v * (1-farnesane) for k,v in X_fuel.items()}
     # add farnesane blend
@@ -597,7 +647,9 @@ def combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=0.0, fmodel=None, am
     # restart from existing combustor state to perturb atms only
     if restart_dir is None:
         # compression is achieved in data file during multizone-combustor run
-        combustor, ____ = multizone_combustor(fuel, thrust_level, equiv_ratio, X_fuel, X_air, thermo_states=thermo_states, outdir=outdir, name_id=f"-{equiv_ratio:.1f}-{farnesane:.2f}{name}", n_pz=npz, use_total_equiv=total_phi)
+        combustor, ____ = multizone_combustor(fuel, thrust_level, equiv_ratio, X_fuel, X_air, thermo_states=thermo_states, outdir=outdir, name_id=f"-{equiv_ratio:.1f}-{farnesane:.2f}{name}", n_pz=npz, use_total_equiv=total_phi, norun=norun)
+        if norun:
+            return
         # continue
         T2, p2 = combustor.thermo.TP
         # get total moles for volume calculation

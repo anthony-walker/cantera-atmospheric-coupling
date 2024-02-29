@@ -13,13 +13,13 @@ import pandas as pd
 from scipy.interpolate import interp1d
 import matplotlib.pyplot as plt
 from cac.verification import polimi_model
-from cac.combustor import combustor_atm_sim
+from cac.combustor import combustor_atm_sim, multizone_combustor
 from multiprocessing import Pool
 from cac.constants import COLORS, DATA_DIR
 from cac.reactors import PlumeSolution
 from openap import FuelFlow, Emission
 
-MASK_VALUE = 1e-40
+MASK_VALUE = 1e-20
 cbcolors = ['#a6cee3','#1f78b4','#b2df8a','#33a02c','#fb9a99','#e31a1c','#fdbf6f','#ff7f00','#cab2d6','#6a3d9a','#ffff99','#b15928']
 
 # change font of plots
@@ -177,7 +177,7 @@ def states_plots(species=[], path="fullmcm", mode="csv", scale="long", eq=1.0, f
     #     time = time // 24 // 3600 # days
     if species is None:
         for k in short_data.keys():
-            data = numpy.array(short_data[k]) * mdot_exhaust / numpy.array(mass) * 1e9
+            data = numpy.array(short_data[k]) * mdot_exhaust / numpy.array(mass)[0] * 1e9
             mask = data <= MASK_VALUE
             for i in range(len(data)):
                 data[i] = data[i] if not mask[i] else 0
@@ -203,7 +203,7 @@ def states_plots(species=[], path="fullmcm", mode="csv", scale="long", eq=1.0, f
         fig, ax = plt.subplots()
         plt.axvspan(0, numpy.amax(time[time<=10]), facecolor=COLORS[-3], alpha=0.2, label="entrainment")
         for j, sp in enumerate(species):
-            data = numpy.array(short_data[f"Y_{sp}"]) * mdot_exhaust / numpy.array(mass) * 1e9
+            data = numpy.array(short_data[f"Y_{sp}"]) * mdot_exhaust / numpy.array(mass)[0] * 1e9
             mask = numpy.abs(data) <= MASK_VALUE
             for i in range(len(data)):
                 data[i] = data[i] if not mask[i] else 0
@@ -283,7 +283,7 @@ def make_water_contour(sp, eq=1.5, path="water", mode="hdf5", scale="long", limi
         if mode == "hdf5":
             short_data = h5py.File(os.path.join(path, unformatted.format(eq, wf)), "r")
             times.append(numpy.array(short_data["time"]))
-            data.append(numpy.array(short_data[f"Y_{sp}"]) * mdot_exhaust / numpy.array(short_data[f'mass']) * 1e9)
+            data.append(numpy.array(short_data[f"Y_{sp}"]) * mdot_exhaust / numpy.array(short_data[f'mass'])[0] * 1e9)
     # mask the data
     masked_data = []
     x = times[0]
@@ -390,12 +390,11 @@ def entrainment_perturb_plot(species, path="entrain", mode="hdf5", scale="long",
         mdot_exhaust = yaml.load(tsf, Loader=yaml.SafeLoader)["mdot_exhaust"]
     masses = []
     times = []
-    entfs = [0.1, 1.0, 10.0]
+    entfs = [0.1, 1.0, 5.0, 10.0]
     for v in entfs:
         if mode == "hdf5":
             short_data = h5py.File(os.path.join(path, f'{scale}-term-states-{eq:.1f}-{fp:.2f}-{v:.1f}.hdf5'), "r")
-            print(short_data[f"Y_{species}"][0], mdot_exhaust, numpy.array(short_data["mass"])[0])
-            masses.append(numpy.array(short_data[f"Y_{species}"]) * mdot_exhaust * 1e9 / numpy.array(short_data["mass"]))
+            masses.append(numpy.array(short_data[f"Y_{species}"]) * mdot_exhaust * 1e9 / numpy.array(short_data["mass"])[0])
             times.append(numpy.array(short_data["time"]))
     fig, ax = plt.subplots()
     plt.axvspan(0, numpy.amax(times[1][times[1]<=10]), facecolor=COLORS[-3], alpha=0.2, label="entrainment")
@@ -416,32 +415,32 @@ def entrainment_perturb_plot(species, path="entrain", mode="hdf5", scale="long",
 
 def paper_plots():
     mode = "hdf5"
-    path = "minimal"
-    # all_specs = ["TOLUENE", "BENZENE", "C5H8"]
-    # states_plots(all_specs, path=path, mode=mode, scale="long", eq=0.7, fp=0.2, normalized=False, pltfcn=plt.loglog)
-    # states_plots(all_specs, path=path, mode=mode, scale="long", eq=1.5, fp=0.2, normalized=False, pltfcn=plt.loglog)
-    # states_plots(all_specs, path="nox", mode=mode, scale="long", eq=0.7, fp=0.2, normalized=False, pltfcn=plt.loglog)
-    # states_plots(["O2", "N2", "H2O"], path=path, mode=mode, scale="long", eq=1.5, fp=0.2, normalized=False, pltfcn=plt.loglog, name="o2")
-    # states_plots(["O2", "N2", "H2O"], path=path, mode=mode, scale="long", eq=0.7, fp=0.2, normalized=False, pltfcn=plt.loglog, name="o2")
-    # for name in all_specs: #
-    #     make_species_contour(name, index=0, path=path, mode=mode)
-    #     make_water_contour(name, eq=1.5)
-    #     make_water_contour(name, eq=0.7)
-    # make_temperature_contour(index=5, path=path, mode="yaml")
-    # make_temperature_contour(index=5, path="lowtol", mode="yaml")
-    # # radical plots
-    # peroxys = ["BZBIPERO2", "TLBIPERO2", "ISOP34O2"] #"C6H5CO3"
-    # states_plots(peroxys, path=path, mode=mode, scale="long", eq=1.5, fp=0.2, name=f"peroxys-states", pltfcn=plt.loglog)
-    # states_plots(peroxys, path=path, mode=mode, scale="long", eq=0.7, fp=0.2, name=f"peroxys-states", pltfcn=plt.loglog)
-    # states_plots(peroxys, path="nox", mode=mode, scale="long", eq=0.7, fp=0.2, name=f"peroxys-states", pltfcn=plt.loglog)
-    # ovocs = ["A2PANOO", "PHCOOH", "BZEMUCCO2H"] #"C6H5CO3"
-    # states_plots(ovocs, path=path, mode=mode, scale="long", eq=1.5, fp=0.2, name=f"ovocs-states", pltfcn=plt.loglog)
-    # states_plots(ovocs, path=path, mode=mode, scale="long", eq=0.7, fp=0.2, name=f"ovocs-states", pltfcn=plt.loglog)
-    # states_plots(ovocs, path="nox", mode=mode, scale="long", eq=0.7, fp=0.2, name=f"ovocs-states", pltfcn=plt.loglog)
+    path = "cruise"
+    all_specs = ["TOLUENE", "BENZENE", "C5H8"]
+    states_plots(all_specs, path=path, mode=mode, scale="long", eq=0.7, fp=0.2, normalized=False, pltfcn=plt.loglog)
+    states_plots(all_specs, path=path, mode=mode, scale="long", eq=1.5, fp=0.2, normalized=False, pltfcn=plt.loglog)
+    states_plots(all_specs, path="nox", mode=mode, scale="long", eq=0.7, fp=0.2, normalized=False, pltfcn=plt.loglog)
+    states_plots(["O2", "N2", "H2O"], path=path, mode=mode, scale="long", eq=1.5, fp=0.2, normalized=False, pltfcn=plt.loglog, name="o2")
+    states_plots(["O2", "N2", "H2O"], path=path, mode=mode, scale="long", eq=0.7, fp=0.2, normalized=False, pltfcn=plt.loglog, name="o2")
+    for name in all_specs: #
+        make_species_contour(name, index=0, path=path, mode=mode)
+        make_water_contour(name, path="water_nonox", eq=1.5)
+        make_water_contour(name, path="water_nonox", eq=0.7)
+    make_temperature_contour(index=5, path=path, mode="yaml")
+    make_temperature_contour(index=5, path="lowtol", mode="yaml")
+    # radical plots
+    peroxys = ["BZBIPERO2", "TLBIPERO2", "ISOP34O2"] #"C6H5CO3"
+    states_plots(peroxys, path=path, mode=mode, scale="long", eq=1.5, fp=0.2, name=f"peroxys-states", pltfcn=plt.loglog)
+    states_plots(peroxys, path=path, mode=mode, scale="long", eq=0.7, fp=0.2, name=f"peroxys-states", pltfcn=plt.loglog)
+    states_plots(peroxys, path="nox", mode=mode, scale="long", eq=0.7, fp=0.2, name=f"peroxys-states", pltfcn=plt.loglog)
+    ovocs = ["A2PANOO", "PHCOOH", "BZEMUCCO2H"] #"C6H5CO3"
+    states_plots(ovocs, path=path, mode=mode, scale="long", eq=1.5, fp=0.2, name=f"ovocs-states", pltfcn=plt.loglog)
+    states_plots(ovocs, path=path, mode=mode, scale="long", eq=0.7, fp=0.2, name=f"ovocs-states", pltfcn=plt.loglog)
+    states_plots(ovocs, path="nox", mode=mode, scale="long", eq=0.7, fp=0.2, name=f"ovocs-states", pltfcn=plt.loglog)
     # overall hydrocarbons
-    # HC_open = openAP_estimate()
-    # print(f"HC: {HC_open}")
-    # plot_total_HC_output_contour()
+    HC_open = openAP_estimate()
+    print(f"HC: {HC_open}")
+    plot_total_HC_output_contour()
     # entrainment perturb
     entrainment_perturb_plot("BENZENE")
 
@@ -453,7 +452,7 @@ def openAP_estimate():
     TAS = 493
     ALT = 35000
 
-    FF = fuelflow.enroute(mass=60000, tas=TAS, alt=ALT)   # kg/s
+    FF = fuelflow.enroute(mass=48000, tas=TAS, alt=ALT)   # kg/s
 
     CO2 = emission.co2(FF)                    # g/s
     H2O = emission.h2o(FF)                    # g/s
@@ -461,6 +460,7 @@ def openAP_estimate():
     CO = emission.co(FF, tas=TAS, alt=ALT)    # g/s
     HC = emission.hc(FF, tas=TAS, alt=ALT)    # g/s
     return HC
+
 
 if __name__ == "__main__":
     mode = "hdf5"
