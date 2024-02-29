@@ -509,7 +509,7 @@ run_idle_range_equiv() {
 run_surrogates() {
     # cruise
     for ((i=0; i<=5; i+=1)); do
-        EPZ="0.6"
+        EPZ="0.9"
         FARNE="0.10"
         export COMBUSTOR_OPTIONS="--equiv_ratio $EPZ --farnesane $FARNE --outdir surrogate --thrust 0.554 --emodel 5B --total_phi --surrogate $i --name $i"
         # name of slurm job
