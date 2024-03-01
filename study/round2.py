@@ -29,7 +29,7 @@ cbcolors = ['#a6cee3','#1f78b4','#b2df8a','#33a02c','#fb9a99','#e31a1c','#fdbf6f
 plt.rcParams['mathtext.fontset'] = 'cm'
 plt.rcParams['mathtext.rm'] = 'serif'
 plt.rcParams["font.family"] = 'serif'
-plt.rcParams["font.size"] = 14
+plt.rcParams["font.size"] = 16
 
 def make_temperature_contour(index=-1, path="fullmcm", mode="hdf5", scale="short"):
     equiv_ratios = numpy.arange(0.2, 1.1, 0.1)
@@ -100,14 +100,15 @@ def make_species_contour(sp, index=-1, path="fullmcm", name="", mode="hdf5", sca
             masses[j][i] = masses[j][i] if not mask[j][i] else MASK_VALUE/10
     # make contour
     X, Y = numpy.meshgrid(equiv_ratios, farnesane_percents)
-    plt.contourf(X, Y, masses, cmap='viridis', norm=LogNorm(vmin=MASK_VALUE/10, vmax=numpy.amax(masses)))
+    contour = plt.contourf(X, Y, masses, cmap='viridis', norm=LogNorm(vmin=MASK_VALUE/10, vmax=numpy.amax(masses)))
     plt.xticks(numpy.linspace(0.2, 1.0, 5))
     plt.yticks(numpy.linspace(0, 0.2, 5))
-    plt.xlabel('Equivalence Ratio')
-    plt.ylabel('Farnesane Fraction')
-    cbar = plt.colorbar(label=r'Production Rate [$\text{ppm} / \text{s}$]')
+    plt.xlabel('Equivalence Ratio', fontsize=20)
+    plt.ylabel('Farnesane Fraction', fontsize=20)
+    cbar = plt.colorbar(label=r'Production [$\text{ppm} / \text{s}$]')
+    cbar.ax.tick_params(labelsize=24)
+    cbar.set_label(r'Production [$\text{ppm} / \text{s}$]', fontsize=20)
     # Get the current tick labels
-
     ticks = [t for t in cbar.get_ticks()]
     ticks = numpy.logspace(numpy.log10(ticks[0]), numpy.log10(ticks[-1]), 6)
     tick_labels = ["$10^{" + f"{int(numpy.log10(i)):d}" + "}$" for i in ticks]
@@ -154,7 +155,7 @@ def states_plots(species=[], path="fullmcm", mode="csv", scale="long", eq=1.0, f
                 pltfcn(time, data)
                 ax.set_title(k)
                 # ax.set_yticks(numpy.linspace(0, numpy.amax(data) * 1.1, 5))
-                ax.set_ylabel(r'Production Rate [$\text{ppm} / \text{s}$]')
+                ax.set_ylabel(r'Production [$\text{ppm} / \text{s}$]')
                 if scale == "long":
                     ax.set_xlabel("Time [days]")
                 else:
@@ -166,6 +167,7 @@ def states_plots(species=[], path="fullmcm", mode="csv", scale="long", eq=1.0, f
         if isinstance(species, str):
             species = [species]
         fig, ax = plt.subplots()
+        fig.set_size_inches(6, 6.5)
         plt.axvspan(0, numpy.amax(time[time<=10]), facecolor=COLORS[-3], alpha=0.2, label="entrainment")
         for j, sp in enumerate(species):
             data = numpy.array(short_data[f"Y_{sp}"]) * 1e6
@@ -181,9 +183,9 @@ def states_plots(species=[], path="fullmcm", mode="csv", scale="long", eq=1.0, f
                 pltfcn(time, data, color=COLORS[j], label=lb, linestyle=None, marker=markers[j])
             else:
                 pltfcn(time, data, color=COLORS[j], label=lb, linewidth=3)
-        ax.legend(ncols=ncols, bbox_to_anchor=(0.5, 1.3), loc='upper center')
+        ax.legend(ncols=ncols, bbox_to_anchor=(0.5, 1.2), loc='upper center', fontsize=14)
         plt.xlabel("Time [s]")
-        plt.ylabel(r'Production Rate [$\text{ppm} / \text{s}$]')
+        plt.ylabel(r'Production [$\text{ppm} / \text{s}$]')
         if mf:
             plt.yticks(numpy.logspace(numpy.log10(1e4), numpy.log10(1e6), 2))
         plt.grid(True)
@@ -245,6 +247,7 @@ def plot_total_HC_output_contour(path="minimal", name="", mode="hdf5", scale="lo
     plt.xlabel('Equivalence Ratio')
     plt.ylabel('Farnesane Fraction')
     cbar = plt.colorbar(label=r'Total Hydrocarbon Production [$\text{g} / \text{s}$]')
+    cbar.ax.tick_params(labelsize=20)
     ticks = cbar.get_ticks()
     ticks = numpy.logspace(numpy.log10(ticks[0]), numpy.log10(numpy.amax(masses)), 6)
     tick_labels = ["$10^{" + f"{int(numpy.log10(i)):d}" + "}$" for i in ticks]
@@ -261,7 +264,7 @@ def plot_total_HC_output_contour(path="minimal", name="", mode="hdf5", scale="lo
     plt.close()
 
 
-def nox_comparison_plots(species=[], mode="hdf5", scale="long", eq=1.0, fp=0.10, name="", limit=None, pltfcn=plt.plot, ncols=2):
+def nox_comparison_plots(species=[], mode="hdf5", scale="long", eq=1.0, fp=0.10, name="", limit=None, pltfcn=plt.plot, ncols=2, abox=(0.5, 1.25)):
     # load data
     rates = []
     times = []
@@ -278,6 +281,7 @@ def nox_comparison_plots(species=[], mode="hdf5", scale="long", eq=1.0, fp=0.10,
     if isinstance(species, str):
         species = [species]
     fig, ax = plt.subplots()
+    fig.set_size_inches(6, 6.75)
     plt.axvspan(0, numpy.amax(times[0][times[0]<=10]), facecolor=COLORS[-3], alpha=0.2, label="entrainment")
     # Create some custom handles
     plt.plot([], [], color='k', linewidth=3, label="model")
@@ -296,9 +300,9 @@ def nox_comparison_plots(species=[], mode="hdf5", scale="long", eq=1.0, fp=0.10,
         pltfcn(times[1], data1, color=COLORS[j], linestyle=":", linewidth=2)
     # handles, labels = plt.gca().get_legend_handles_labels()
     # handles += [handle1, handle2]
-    plt.legend(ncols=3, bbox_to_anchor=(0.5, 1.3), loc='upper center')
+    plt.legend(ncols=ncols, bbox_to_anchor=abox, loc='upper center', fontsize=14)
     plt.xlabel("Time [s]")
-    plt.ylabel(r'Production Rate [$\text{ppm} / \text{s}$]')
+    plt.ylabel(r'Production [$\text{ppm} / \text{s}$]')
     plt.grid(True)
     plt.tight_layout()
     if name:
@@ -312,7 +316,7 @@ def round_to_power_of_10(value):
     upper_power = 10 ** (power + 1)
     return lower_power, upper_power
 
-def make_water_contour(sp, eq=0.9, path="water_ctp", mode="hdf5", scale="long", limit=MASK_VALUE):
+def make_water_states(sp, eq=0.9, path="water_ctp", mode="hdf5", scale="long", limit=MASK_VALUE):
     water_percents = numpy.arange(0, 0.05, 0.01)
     unformatted = f"{scale}-term-states-"+ "{:.1f}-0.10-{:.2f}" + f".{mode}"
     data = []
@@ -344,18 +348,16 @@ def make_water_contour(sp, eq=0.9, path="water_ctp", mode="hdf5", scale="long", 
     masked_data = numpy.array(masked_data)
     # make plot
     fig, ax = plt.subplots()
+    fig.set_size_inches(6, 6.5)
     plt.axvspan(0, numpy.amax(x[x<=10]), facecolor=COLORS[-3], alpha=0.2, label="entrainment")
     for i, r in enumerate(masked_data):
         plt.loglog(x, r, color=COLORS[i], label=f"{kept[i]:.2f}", linewidth=3)
-    leg = plt.legend()
+    leg = plt.legend(bbox_to_anchor=(0.5, 1.32), loc='upper center', fontsize=16, ncols=3)
     leg.set_title("$X_{H2O}$")
     plt.xlabel('Time [s]')
-    plt.ylabel(r'Production Rate [$\text{ppm} / \text{s}$]')
+    plt.ylabel(r'Production [$\text{ppm} / \text{s}$]')
     lb, ___ = round_to_power_of_10(numpy.amin(masked_data))
     ___, ub = round_to_power_of_10(numpy.amax(masked_data))
-    # print(round_array_to_power_of_10(numpy.logspace(numpy.log10(numpy.amin(masked_data)), numpy.log10(numpy.amax(masked_data)), 4)))
-    # print(numpy.log10(numpy.amin(masked_data)))
-    # plt.yticks(numpy.logspace(numpy.log10(numpy.amin(masked_data)), numpy.log10(numpy.amax(masked_data)), 4))
     if not os.path.exists("figures"):
         os.mkdir("figures")
     plt.grid(True)
@@ -387,7 +389,7 @@ def entrainment_perturb_plot(species, path="entall", mode="hdf5", scale="long", 
     leg = ax.legend()
     leg.set_title(r"$\dot{\omega}_{\text{ent}}$ scalar")
     plt.xlabel("Time [s]")
-    plt.ylabel(r'Production Rate [$\text{ppb} / \text{s}$]')
+    plt.ylabel(r'Production [$\text{ppb} / \text{s}$]')
     plt.grid(True)
     plt.tight_layout()
     plt.savefig(f"figures/{path}-entraincomp.pdf", bbox_inches='tight')
@@ -396,49 +398,53 @@ def entrainment_perturb_plot(species, path="entall", mode="hdf5", scale="long", 
 
 def paper_plots():
     mode = "hdf5"
-    path = "ctpnn"
+    path = "ctp"
     mapfile = os.path.join(DATA_DIR, "combustor_to_atmosphere.yaml")
     with open(mapfile, "r") as f:
         mapping = yaml.load(f, Loader=yaml.SafeLoader)
         mapping = {v: k for k, v in mapping.items()}
-    all_specs = ["TOLUENE", "BENZENE", "C5H8"]
+    all_specs = ["BENZENE", "TOLUENE",  "C5H8"]
     make_all = False
     eq1 = 0.9
     eq2 = 0.6
-    # states_plots(all_specs, path=path, mode=mode, scale="long", eq=eq1, fp=0.1, normalized=False, pltfcn=plt.loglog, ncols=2)
-    # states_plots(all_specs, path=path, mode=mode, scale="long", eq=eq2, fp=0.1, normalized=False, pltfcn=plt.loglog, ncols=2)
-    # states_plots(all_specs, path="rmin", mode=mode, scale="long", eq=eq1, fp=0.1, normalized=False, pltfcn=plt.loglog, ncols=2)
-    # states_plots(all_specs, path="rmin", mode=mode, scale="long", eq=eq2, fp=0.1, normalized=False, pltfcn=plt.loglog, ncols=2)
-    # if make_all:
-    #     states_plots(None, path=path, mode=mode, scale="long", eq=eq2, fp=0.1, normalized=False, pltfcn=plt.loglog, ncols=2)
-    #     states_plots(None, path=path, mode=mode, scale="long", eq=eq1, fp=0.1, normalized=False, pltfcn=plt.loglog, ncols=2)
-    nox_comparison_plots(all_specs, eq=eq1, fp=0.1, pltfcn=plt.loglog)
-    nox_comparison_plots(all_specs, eq=eq2, fp=0.1, pltfcn=plt.loglog)
-    # states_plots(["O2", "N2"], path=path, mode=mode, scale="long", eq=eq2, fp=0.1, normalized=False, pltfcn=plt.loglog, name="o2", mf=True, ncols=3)
-    # states_plots(["O2", "N2"], path=path, mode=mode, scale="long", eq=eq1, fp=0.1, normalized=False, pltfcn=plt.loglog, name="o2", limit=1e-10, mf=True, ncols=3)
-
-    # for name in all_specs: #
-    #     make_species_contour(name, index=0, path=path, mode=mode)
-    #     make_species_contour(mapping[name], index=0, path="initials", mode=mode, scale="initial", ekey="mdot_in")
-    #     make_water_contour(name, path="water_ctp", eq=eq1, limit=1e-10)
-    #     make_water_contour(name, path="water_ctp", eq=eq2, limit=1e-10)
-    # make_temperature_contour(index=3, path=path, mode="yaml")
-    # # radical plots
-    # peroxys = ["BZBIPERO2", "TLBIPERO2", "ISOP34O2"] #"C6H5CO3"
-    # states_plots(peroxys, path=path, mode=mode, scale="long", eq=eq1, fp=0.1, name=f"peroxys-states", pltfcn=plt.loglog)
-    # states_plots(peroxys, path=path, mode=mode, scale="long", eq=eq2, fp=0.1, name=f"peroxys-states", pltfcn=plt.loglog)
-    # states_plots(peroxys, path="nox", mode=mode, scale="long", eq=0.7, fp=0.2, name=f"peroxys-states", pltfcn=plt.loglog)
-    # ovocs = ["A2PANOO", "PHCOOH", "BZEMUCCO2H"] #"C6H5CO3"
-    # states_plots(ovocs, path=path, mode=mode, scale="long", eq=1.5, fp=0.2, name=f"ovocs-states", pltfcn=plt.loglog)
-    # states_plots(ovocs, path=path, mode=mode, scale="long", eq=0.7, fp=0.2, name=f"ovocs-states", pltfcn=plt.loglog)
-    # states_plots(ovocs, path="nox", mode=mode, scale="long", eq=0.7, fp=0.2, name=f"ovocs-states", pltfcn=plt.loglog)
-    # # overall hydrocarbons
-    # HC_open = openAP_estimate()
-    # print(f"HC: {HC_open}")
-    # plot_total_HC_output_contour(path=path)
-    # plot_total_HC_output_contour(path="initials", scale="initial", mname="combustor", model="combustor.yaml", ekey="mdot_in")
-    # # entrainment perturb
-    # entrainment_perturb_plot("BENZENE")
+    if make_all:
+        for path in ["ctp", "ctpnn"]:
+            states_plots(None, path=path, mode=mode, scale="long", eq=eq1, fp=0.1, normalized=False, pltfcn=plt.loglog, ncols=2)
+            states_plots(None, path=path, mode=mode, scale="long", eq=eq2, fp=0.1, normalized=False, pltfcn=plt.loglog, ncols=3)
+    else:
+        states_plots(all_specs, path=path, mode=mode, scale="long", eq=eq1, fp=0.1, normalized=False, pltfcn=plt.loglog, ncols=2)
+        states_plots(all_specs, path=path, mode=mode, scale="long", eq=eq2, fp=0.1, normalized=False, pltfcn=plt.loglog, ncols=2)
+        states_plots(all_specs, path="rmin", mode=mode, scale="long", eq=eq1, fp=0.1, normalized=False, pltfcn=plt.loglog, ncols=2)
+        states_plots(all_specs, path="rmin", mode=mode, scale="long", eq=eq2, fp=0.1, normalized=False, pltfcn=plt.loglog, ncols=2)
+        nox_comparison_plots(all_specs, eq=eq1, fp=0.1, pltfcn=plt.loglog)
+        nox_comparison_plots(all_specs, eq=eq2, fp=0.1, pltfcn=plt.loglog)
+        states_plots(["O2", "N2"], path=path, mode=mode, scale="long", eq=eq2, fp=0.1, normalized=False, pltfcn=plt.loglog, name="o2", mf=True, ncols=3)
+        states_plots(["O2", "N2"], path=path, mode=mode, scale="long", eq=eq1, fp=0.1, normalized=False, pltfcn=plt.loglog, name="o2", limit=1e-10, mf=True, ncols=3)
+        for name in all_specs: #
+            make_species_contour(name, index=0, path=path, mode=mode)
+            make_species_contour(mapping[name], index=0, path="initials", mode=mode, scale="initial", ekey="mdot_in")
+            make_water_states(name, path="water_ctp", eq=eq1, limit=1e-10)
+            make_water_states(name, path="water_ctp", eq=eq2, limit=1e-10)
+        make_temperature_contour(index=3, path=path, mode="yaml")
+        make_temperature_contour(index=2, path=path, mode="yaml")
+        # radical plots
+        peroxys = ["BZBIPERO2", "TLBIPERO2", "ISOP34O2"] #"C6H5CO3"
+        states_plots(peroxys, path=path, mode=mode, scale="long", eq=eq1, fp=0.1, name=f"peroxys-states", pltfcn=plt.loglog)
+        states_plots(peroxys, path=path, mode=mode, scale="long", eq=eq2, fp=0.1, name=f"peroxys-states", pltfcn=plt.loglog)
+        # ovocs = ["A2PANOO", "PHCOOH", "BZEMUCCO2H"] #"C6H5CO3"
+        ovocs = ["BZBIPERNO3", "TLBIPERNO3",  "ISOP34NO3" ]
+        states_plots(ovocs, path=path, mode=mode, scale="long", eq=eq1, fp=0.1, name=f"ovocs-states", pltfcn=plt.loglog)
+        states_plots(ovocs, path=path, mode=mode, scale="long", eq=eq2, fp=0.1, name=f"ovocs-states", pltfcn=plt.loglog)
+        # overall hydrocarbons
+        HC_open = openAP_estimate()
+        print(f"HC: {HC_open}")
+        plot_total_HC_output_contour(path=path)
+        plot_total_HC_output_contour(path="initials", scale="initial", mname="combustor", model="combustor.yaml", ekey="mdot_in")
+        # entrainment perturb
+        entrainment_perturb_plot("BENZENE")
+        # surrogate speciation plots
+        make_surrogate_bar_plots(all_specs, eq=eq1)
+        make_surrogate_bar_plots(all_specs, eq=eq2)
 
 def openAP_estimate():
     # A320 at cruise
@@ -478,7 +484,7 @@ def update_phi_across():
     for eq in numpy.arange(0.2, 1.1, 0.1):
         for fp in numpy.arange(0, 0.21, 0.01):
             # create initial fuel setting
-            X_fuel = {"N-C10H22":1.0}#, "I-C8H18":0.3302, "C7H8":0.2431}
+            X_fuel = {"N-C10H22":0.4267, "I-C8H18":0.3302, "C7H8":0.2431}
             # adjust fuels for farnesane blend
             X_fuel = {k:v * (1-fp) for k,v in X_fuel.items()}
             # add farnesane blend
@@ -491,10 +497,50 @@ def update_phi_across():
             input()
 
 
+def make_surrogate_bar_plots(species, path="surrogate", mode="hdf5", scale="long", eq=0.6, fp=0.10, pltfcn=plt.loglog):
+    if isinstance(species, str):
+        species = [species]
+    all_data = []
+    surrogates = [0, 2, 3, 5]
+    for sn in surrogates:
+        with open(os.path.join(path, f"thermo-states-{eq:.1f}-{fp:.2f}-{sn}.yaml"), "r") as tsf:
+                mdot_exhaust = yaml.load(tsf, Loader=yaml.SafeLoader)["mdot_exhaust"]
+        if mode == "hdf5":
+            short_data = h5py.File(os.path.join(path, f'{scale}-term-states-{eq:.1f}-{fp:.2f}-{sn}.hdf5'), "r")
+            mass = numpy.array(short_data["mass"])
+        subdata = []
+        for sp in species:
+            value = numpy.array(short_data[f"Y_{sp}"][0]) * 1e6 * mdot_exhaust / numpy.array(mass)[0]
+            subdata.append(value)
+        all_data.append(subdata)
+    all_data = numpy.array(all_data)
+    all_data = numpy.transpose(all_data)
+    # create bar plot
+    fig, ax = plt.subplots()
+    fig.set_size_inches(6, 6.5)
+    bar_width = 0.35
+    r1 = [i-bar_width for i in range(0, len(surrogates)*2, 2)]
+    for j in range(len(species)):
+        # Set the width of the bars
+        values = [x + bar_width * j for x in r1]
+        label = species[j].lower() if species[j].lower() != 'c5h8' else 'isoprene'
+        ax.bar(values, all_data[j], color=COLORS[j], width=bar_width, edgecolor='k', label=label)
+    # format figure
+    ax.legend(ncols=3, bbox_to_anchor=(0.5, 1.1), loc='upper center', fontsize=16)
+    ax.set_xticks([i for i in range(0, len(surrogates)*2, 2)])
+    ax.set_xticklabels([f"$S_{i}$" for i in range(len(surrogates))])
+    ax.set_ylabel(r'Production [$\text{ppm} / \text{s}$]', fontsize=20)
+    ax.set_yscale("log")
+    ax.yaxis.grid(True, color="k")
+    plt.tight_layout()
+    plt.savefig(f"figures/{path}-bar-{eq:.1f}-{fp:.2f}.pdf", bbox_inches='tight')
+    plt.close()
+
 
 if __name__ == "__main__":
     mode = "hdf5"
     path = "minimal"
     all_specs = ["TOLUENE", "BENZENE", "C5H8"]
-    # paper_plots()
-    update_phi_across()
+    paper_plots()
+
+    # update_phi_across()
