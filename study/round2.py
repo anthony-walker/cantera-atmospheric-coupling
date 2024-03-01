@@ -100,6 +100,8 @@ def make_species_contour(sp, index=-1, path="fullmcm", name="", mode="hdf5", sca
             masses[j][i] = masses[j][i] if not mask[j][i] else MASK_VALUE/10
     # make contour
     X, Y = numpy.meshgrid(equiv_ratios, farnesane_percents)
+    fig, ax = plt.subplots()
+    fig.set_size_inches(5.5, 8)
     contour = plt.contourf(X, Y, masses, cmap='viridis', norm=LogNorm(vmin=MASK_VALUE/10, vmax=numpy.amax(masses)))
     plt.xticks(numpy.linspace(0.2, 1.0, 5))
     plt.yticks(numpy.linspace(0, 0.2, 5))
@@ -407,44 +409,44 @@ def paper_plots():
     make_all = False
     eq1 = 0.9
     eq2 = 0.6
-    if make_all:
-        for path in ["ctp", "ctpnn"]:
-            states_plots(None, path=path, mode=mode, scale="long", eq=eq1, fp=0.1, normalized=False, pltfcn=plt.loglog, ncols=2)
-            states_plots(None, path=path, mode=mode, scale="long", eq=eq2, fp=0.1, normalized=False, pltfcn=plt.loglog, ncols=3)
-    else:
-        states_plots(all_specs, path=path, mode=mode, scale="long", eq=eq1, fp=0.1, normalized=False, pltfcn=plt.loglog, ncols=2)
-        states_plots(all_specs, path=path, mode=mode, scale="long", eq=eq2, fp=0.1, normalized=False, pltfcn=plt.loglog, ncols=2)
-        states_plots(all_specs, path="rmin", mode=mode, scale="long", eq=eq1, fp=0.1, normalized=False, pltfcn=plt.loglog, ncols=2)
-        states_plots(all_specs, path="rmin", mode=mode, scale="long", eq=eq2, fp=0.1, normalized=False, pltfcn=plt.loglog, ncols=2)
-        nox_comparison_plots(all_specs, eq=eq1, fp=0.1, pltfcn=plt.loglog)
-        nox_comparison_plots(all_specs, eq=eq2, fp=0.1, pltfcn=plt.loglog)
-        states_plots(["O2", "N2"], path=path, mode=mode, scale="long", eq=eq2, fp=0.1, normalized=False, pltfcn=plt.loglog, name="o2", mf=True, ncols=3)
-        states_plots(["O2", "N2"], path=path, mode=mode, scale="long", eq=eq1, fp=0.1, normalized=False, pltfcn=plt.loglog, name="o2", limit=1e-10, mf=True, ncols=3)
-        for name in all_specs: #
-            make_species_contour(name, index=0, path=path, mode=mode)
-            make_species_contour(mapping[name], index=0, path="initials", mode=mode, scale="initial", ekey="mdot_in")
-            make_water_states(name, path="water_ctp", eq=eq1, limit=1e-10)
-            make_water_states(name, path="water_ctp", eq=eq2, limit=1e-10)
-        make_temperature_contour(index=3, path=path, mode="yaml")
-        make_temperature_contour(index=2, path=path, mode="yaml")
-        # radical plots
-        peroxys = ["BZBIPERO2", "TLBIPERO2", "ISOP34O2"] #"C6H5CO3"
-        states_plots(peroxys, path=path, mode=mode, scale="long", eq=eq1, fp=0.1, name=f"peroxys-states", pltfcn=plt.loglog)
-        states_plots(peroxys, path=path, mode=mode, scale="long", eq=eq2, fp=0.1, name=f"peroxys-states", pltfcn=plt.loglog)
-        # ovocs = ["A2PANOO", "PHCOOH", "BZEMUCCO2H"] #"C6H5CO3"
-        ovocs = ["BZBIPERNO3", "TLBIPERNO3",  "ISOP34NO3" ]
-        states_plots(ovocs, path=path, mode=mode, scale="long", eq=eq1, fp=0.1, name=f"ovocs-states", pltfcn=plt.loglog)
-        states_plots(ovocs, path=path, mode=mode, scale="long", eq=eq2, fp=0.1, name=f"ovocs-states", pltfcn=plt.loglog)
-        # overall hydrocarbons
-        HC_open = openAP_estimate()
-        print(f"HC: {HC_open}")
-        plot_total_HC_output_contour(path=path)
-        plot_total_HC_output_contour(path="initials", scale="initial", mname="combustor", model="combustor.yaml", ekey="mdot_in")
-        # entrainment perturb
-        entrainment_perturb_plot("BENZENE")
-        # surrogate speciation plots
-        make_surrogate_bar_plots(all_specs, eq=eq1)
-        make_surrogate_bar_plots(all_specs, eq=eq2)
+    for path in ["ctp", "ctpnn"]:
+        if make_all:
+                states_plots(None, path=path, mode=mode, scale="long", eq=eq1, fp=0.1, normalized=False, pltfcn=plt.loglog, ncols=2)
+                states_plots(None, path=path, mode=mode, scale="long", eq=eq2, fp=0.1, normalized=False, pltfcn=plt.loglog, ncols=3)
+        else:
+            states_plots(all_specs, path=path, mode=mode, scale="long", eq=eq1, fp=0.1, normalized=False, pltfcn=plt.loglog, ncols=2)
+            states_plots(all_specs, path=path, mode=mode, scale="long", eq=eq2, fp=0.1, normalized=False, pltfcn=plt.loglog, ncols=2)
+            states_plots(all_specs, path="rmin", mode=mode, scale="long", eq=eq1, fp=0.1, normalized=False, pltfcn=plt.loglog, ncols=2)
+            states_plots(all_specs, path="rmin", mode=mode, scale="long", eq=eq2, fp=0.1, normalized=False, pltfcn=plt.loglog, ncols=2)
+            nox_comparison_plots(all_specs, eq=eq1, fp=0.1, pltfcn=plt.loglog)
+            nox_comparison_plots(all_specs, eq=eq2, fp=0.1, pltfcn=plt.loglog)
+            states_plots(["O2", "N2"], path=path, mode=mode, scale="long", eq=eq2, fp=0.1, normalized=False, pltfcn=plt.loglog, name="o2", mf=True, ncols=3)
+            states_plots(["O2", "N2"], path=path, mode=mode, scale="long", eq=eq1, fp=0.1, normalized=False, pltfcn=plt.loglog, name="o2", limit=1e-10, mf=True, ncols=3)
+            for name in all_specs: #
+                make_species_contour(name, index=0, path=path, mode=mode)
+                make_species_contour(mapping[name], index=0, path="initials", mode=mode, scale="initial", ekey="mdot_in")
+                make_water_states(name, path="water_ctp", eq=eq1, limit=1e-10)
+                make_water_states(name, path="water_ctp", eq=eq2, limit=1e-10)
+            make_temperature_contour(index=3, path=path, mode="yaml")
+            make_temperature_contour(index=2, path=path, mode="yaml")
+            # radical plots
+            peroxys = ["BZBIPERO2", "TLBIPERO2", "ISOP34O2"] #"C6H5CO3"
+            states_plots(peroxys, path=path, mode=mode, scale="long", eq=eq1, fp=0.1, name=f"peroxys-states", pltfcn=plt.loglog)
+            states_plots(peroxys, path=path, mode=mode, scale="long", eq=eq2, fp=0.1, name=f"peroxys-states", pltfcn=plt.loglog)
+            # ovocs = ["A2PANOO", "PHCOOH", "BZEMUCCO2H"] #"C6H5CO3"
+            ovocs = ["BZBIPERNO3", "TLBIPERNO3",  "ISOP34NO3" ]
+            states_plots(ovocs, path=path, mode=mode, scale="long", eq=eq1, fp=0.1, name=f"ovocs-states", pltfcn=plt.loglog)
+            states_plots(ovocs, path=path, mode=mode, scale="long", eq=eq2, fp=0.1, name=f"ovocs-states", pltfcn=plt.loglog)
+            # overall hydrocarbons
+            HC_open = openAP_estimate()
+            print(f"HC: {HC_open}")
+            plot_total_HC_output_contour(path=path)
+            plot_total_HC_output_contour(path="initials", scale="initial", mname="combustor", model="combustor.yaml", ekey="mdot_in")
+            # entrainment perturb
+            entrainment_perturb_plot("BENZENE")
+            # surrogate speciation plots
+            make_surrogate_bar_plots(all_specs, eq=eq1)
+            make_surrogate_bar_plots(all_specs, eq=eq2)
 
 def openAP_estimate():
     # A320 at cruise
@@ -542,5 +544,4 @@ if __name__ == "__main__":
     path = "minimal"
     all_specs = ["TOLUENE", "BENZENE", "C5H8"]
     paper_plots()
-
     # update_phi_across()
