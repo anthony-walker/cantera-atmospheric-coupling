@@ -17,7 +17,7 @@ from matplotlib.colors import LogNorm
 from cac.verification import polimi_model
 from cac.combustor import combustor_atm_sim, multizone_combustor
 from multiprocessing import Pool
-from cac.constants import COLORS, DATA_DIR, MARKERS
+from cac.constants import COLORS, DATA_DIR, MARKERS, HATCHES
 from cac.reactors import PlumeSolution
 from openap import FuelFlow, Emission
 from matplotlib.lines import Line2D
@@ -128,7 +128,7 @@ def make_species_contour(sp, index=-1, path="fullmcm", name="", mode="hdf5", sca
     plt.close()
 
 
-def states_plots(species=[], path="fullmcm", mode="csv", scale="long", eq=1.0, fp=0.10, name=None, normalized=False, limit=MASK_VALUE, pltfcn=plt.plot, ncols=2, markers=[], mf=False):
+def states_plots(species=[], path="fullmcm", mode="csv", scale="long", eq=1.0, fp=0.10, name=None, normalized=False, limit=MASK_VALUE, pltfcn=plt.plot, ncols=2, markers=[], mf=False, legend_on=True, return_fig=False, fig=None, ax=None, linestyle="-", entr_on=True, CID=0):
     # load data
     with open(os.path.join(path, f"thermo-states-{eq:.1f}-{fp:.2f}.yaml"), "r") as tsf:
         mdot_exhaust = yaml.load(tsf, Loader=yaml.SafeLoader)["mdot_exhaust"]
@@ -168,9 +168,11 @@ def states_plots(species=[], path="fullmcm", mode="csv", scale="long", eq=1.0, f
     else:
         if isinstance(species, str):
             species = [species]
-        fig, ax = plt.subplots()
+        if fig is None or ax is None:
+            fig, ax = plt.subplots()
         fig.set_size_inches(6, 6.5)
-        plt.axvspan(0, numpy.amax(time[time<=10]), facecolor=COLORS[-3], alpha=0.2, label="entrainment")
+        if entr_on:
+            plt.axvspan(0, numpy.amax(time[time<=10]), facecolor=COLORS[-3], alpha=0.2, label="entrainment")
         for j, sp in enumerate(species):
             data = numpy.array(short_data[f"Y_{sp}"]) * 1e6
             if not mf:
@@ -182,20 +184,26 @@ def states_plots(species=[], path="fullmcm", mode="csv", scale="long", eq=1.0, f
                 data = data / numpy.amax(data)
             lb = sp.lower() if sp != "C5H8" else "isoprene"
             if markers:
-                pltfcn(time, data, color=COLORS[j], label=lb, linestyle=None, marker=markers[j])
+                pltfcn(time, data, color=COLORS[j], label=lb, linestyle=linestyle, marker=markers[j])
             else:
-                pltfcn(time, data, color=COLORS[j], label=lb, linewidth=3)
-        ax.legend(ncols=ncols, bbox_to_anchor=(0.5, 1.2), loc='upper center', fontsize=14)
+                pltfcn(time, data, color=COLORS[j+CID], label=lb, linewidth=3, linestyle=linestyle)
+
+        if legend_on:
+            ax.legend(ncols=ncols, bbox_to_anchor=(0.5, 1.2), loc='upper center', fontsize=14)
         plt.xlabel("Time [s]")
         plt.ylabel(r'Production [$\text{ppm} / \text{s}$]')
         if mf:
             plt.yticks(numpy.logspace(numpy.log10(1e4), numpy.log10(1e6), 2))
         plt.grid(True)
         plt.tight_layout()
+        if return_fig:
+            return fig, ax
+        # save after return
         if name is not None:
             plt.savefig(f"figures/{path}-{name}-{scale}-{eq:.1f}-{fp:.2f}.pdf", bbox_inches='tight')
         else:
             plt.savefig(f"figures/{path}-states-{scale}-{eq:.1f}-{fp:.2f}.pdf", bbox_inches='tight')
+
         plt.close()
 
 
@@ -526,7 +534,7 @@ def make_surrogate_bar_plots(species, path="surrogate", mode="hdf5", scale="long
         # Set the width of the bars
         values = [x + bar_width * j for x in r1]
         label = species[j].lower() if species[j].lower() != 'c5h8' else 'isoprene'
-        ax.bar(values, all_data[j], color=COLORS[j], width=bar_width, edgecolor='k', label=label)
+        ax.bar(values, all_data[j], color=COLORS[j], width=bar_width, edgecolor='k', label=label, hatch=HATCHES[j])
     # format figure
     ax.legend(ncols=3, bbox_to_anchor=(0.5, 1.1), loc='upper center', fontsize=16)
     ax.set_xticks([i for i in range(0, len(surrogates)*2, 2)])
@@ -539,9 +547,29 @@ def make_surrogate_bar_plots(species, path="surrogate", mode="hdf5", scale="long
     plt.close()
 
 
+def defense_plots():
+    benz_sp = ["BENZENE", "BZBIPERO2", "BZBIPERNO3"]
+    tol_sp = ["TOLUENE", "TLBIPERO2", "TLBIPERNO3"]
+    iso_sp = ["C5H8", "ISOP34O2", "ISOP34NO3"]
+    all_specs = ["BENZENE", "TOLUENE", "C5H8"]
+    mode = "hdf5"
+    for eq in [0.6, 0.9]:
+        for path in ["ctp", "ctpnn"]:
+            for n, sl in [("benz", benz_sp), ("tol", tol_sp), ("iso", iso_sp)]:
+                states_plots(sl, path=path, mode=mode, scale="long", eq=eq, fp=0.1, normalized=False, pltfcn=plt.loglog, ncols=2, name=n, legend_on=False)
+                fig, ax = states_plots(sl, path=path, mode=mode, scale="long", eq=eq, fp=0.1, normalized=False, pltfcn=plt.loglog, ncols=2, name=n, legend_on=False, return_fig=True, entr_on=False)
+                states_plots(sl, path=path, mode=mode, scale="long", eq=eq, fp=0, normalized=False, pltfcn=plt.loglog, ncols=2, name=n, legend_on=False, fig=fig, ax=ax, linestyle=":", entr_on=False)
+        for sp in all_specs:
+            fig, ax = states_plots(sp, path="ctpnn", mode=mode, scale="long", eq=eq, fp=0.1, normalized=False, pltfcn=plt.loglog, ncols=2, name=n, legend_on=False, return_fig=True, entr_on=True)
+            fig, ax = states_plots(sp, path="ctp", mode=mode, scale="long", eq=eq, fp=0.1, normalized=False, pltfcn=plt.loglog, ncols=2, name=n, legend_on=False, return_fig=True, entr_on=False, fig=fig, ax=ax, linestyle="-.", CID=1)
+            fig, ax = states_plots(sp, path="ctp", mode=mode, scale="long", eq=eq, fp=0.0, normalized=False, pltfcn=plt.loglog, ncols=2, name=sp.lower(), legend_on=False, return_fig=True, entr_on=False, fig=fig, ax=ax, linestyle="--", CID=3)
+            states_plots(sp, path="rmin", mode=mode, scale="long", eq=eq, fp=0.1, normalized=False, pltfcn=plt.loglog, ncols=2, name=sp.lower(), legend_on=False, entr_on=False, fig=fig, ax=ax, linestyle=":", CID=2)
+
+
 if __name__ == "__main__":
     mode = "hdf5"
     path = "minimal"
     all_specs = ["TOLUENE", "BENZENE", "C5H8"]
-    paper_plots()
+    # paper_plots()
+    defense_plots()
     # update_phi_across()

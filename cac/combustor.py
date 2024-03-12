@@ -716,7 +716,7 @@ def combustor_atm_sim(equiv_ratio, farnesane, outdir, stime=0.0, fmodel=None, am
         short_data = h5py.File(rf, "r")
         T4 = short_data["T"][0]
         A4 = numpy.pi * (0.62 ** 2) / 4 # meters
-        M4 = get_prop_by_thrust_level(thrust_level, "MN5")
+        M4 = get_prop_by_thrust_level(thrust_level, "SecMach")
         p4 = p_atm
         gamma = thermo_states.get("gamma", 1.4)
         Y_mapped = numpy.zeros(atms.n_species)
